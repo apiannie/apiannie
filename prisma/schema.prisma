@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                String       @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  token             String
+  basepath          String
+  switchNotice      Boolean
+  desc              String
+  groupId           String
+  projectType       String
+  envs              ProjectEnv[]
+  icon              String
+  color             String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  preScript         String
+  afterScript       String
+  projectMockScript String
+  isMockOpen        Boolean      @default(false)
+  strice            Boolean      @default(false)
+  isJson5           Boolean      @default(true)
+  tags              ProjectTag[]
+}
+
+type ProjectTag {
+  name String
+  desc String
+}
+
+type ProjectEnv {
+  name   String
+  domain String
+  header String[]
+  global ProjectGlobal[]
+}
+
+type ProjectGlobal {
+  name  String
+  value String
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  username  String
+  password  String
+  email     String   @unique
+  passsalt  String
+  study     Boolean  @default(false)
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  type      UserType @default(SITE)
+}
+
+enum UserType {
+  SITE
+  THIRD
+}
+
+model Storage {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  data String
+}
