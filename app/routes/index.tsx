@@ -1,6 +1,6 @@
 import { Box, Heading, HStack, Link as ChakraLink } from '@chakra-ui/react';
 import { Link } from "@remix-run/react";
-
+import { CircularProgress, CircularProgressLabel } from '@chakra-ui/react'
 
 export default function Index() {
   return (
@@ -27,6 +27,7 @@ export default function Index() {
           Nothing here
         </ChakraLink>
       </HStack>
+      <CircularProgress value={80} />
     </Box>
   );
 }
