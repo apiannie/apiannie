@@ -1,6 +1,7 @@
 import logo from "~/images/logo.svg";
 import Main from "./Main";
-import Header from "./Header";
+import Layout from "~/components/Layout";
+
 export function links() {
   return [
     {
@@ -12,9 +13,8 @@ export function links() {
 
 export default function Index() {
   return (
-    <>
-      <Header />
+    <Layout>
       <Main />
-    </>
+    </Layout>
   );
 }

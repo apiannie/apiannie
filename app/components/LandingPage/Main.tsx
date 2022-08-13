@@ -12,7 +12,7 @@ import {
 
 export default function Index() {
   return (
-    <Container maxW={"4xl"}>
+    <Container minH={"100vh"} maxW={"4xl"}>
       <Stack
         as={Box}
         textAlign={"center"}
@@ -29,15 +29,15 @@ export default function Index() {
           <Text
             fontSize={{ base: "2xl", sm: "4xl", md: "6xl" }}
             as={"span"}
-            color={"green.400"}
+            color={"teal.400"}
           >
             for API development
           </Text>
         </Heading>
-        <Text color={"gray.500"}>
+        <Text fontSize={{ base: "1xl" }} color={"gray.500"}>
           API documentation, debuging, mocking and testing tool
           <br />
-          for frontend developers, backend engineers and testers
+          for frontend developers, backend engineers and QAs
         </Text>
         <Text color={"gray.500"}></Text>
         <Stack
@@ -47,40 +47,12 @@ export default function Index() {
           alignSelf={"center"}
           position={"relative"}
         >
-          <Button
-            colorScheme={"green"}
-            bg={"green.400"}
-            rounded={"full"}
-            px={6}
-            _hover={{
-              bg: "green.500",
-            }}
-          >
+          <Button colorScheme={"teal"} px={6}>
             Get Started
           </Button>
           <Button variant={"link"} colorScheme={"blue"} size={"sm"}>
             Learn more
           </Button>
-          <Box>
-            <Icon
-              as={Arrow}
-              color={useColorModeValue("gray.800", "gray.300")}
-              w={71}
-              position={"absolute"}
-              right={-71}
-              top={"10px"}
-            />
-            <Text
-              fontSize={"lg"}
-              fontFamily={"Caveat"}
-              position={"absolute"}
-              right={"-125px"}
-              top={"-15px"}
-              transform={"rotate(10deg)"}
-            >
-              Starting at $15/mo
-            </Text>
-          </Box>
         </Stack>
       </Stack>
     </Container>

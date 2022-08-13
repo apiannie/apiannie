@@ -16,7 +16,7 @@ import theme from "./theme";
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
-  title: "New Remix App",
+  title: "Apifi",
   viewport: "width=device-width,initial-scale=1",
 });
 

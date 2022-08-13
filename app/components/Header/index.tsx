@@ -7,12 +7,10 @@ import {
   Stack,
   Collapse,
   Icon,
-  Link,
   Popover,
   PopoverTrigger,
   PopoverContent,
   useColorModeValue,
-  useBreakpointValue,
   useDisclosure,
   Image,
   useColorMode,
@@ -26,7 +24,7 @@ import {
   SunIcon,
 } from "@chakra-ui/icons";
 import { FaGithub } from "react-icons/fa";
-
+import { Link } from "~/ui/Link";
 import logo from "~/images/logo.png";
 
 export default function WithSubnavigation() {
@@ -34,7 +32,11 @@ export default function WithSubnavigation() {
   const { colorMode, toggleColorMode } = useColorMode();
 
   return (
-    <Box>
+    <Box
+      borderBottom={1}
+      borderStyle={"solid"}
+      borderColor={useColorModeValue("gray.200", "gray.900")}
+    >
       <Flex
         bg={useColorModeValue("white", "gray.800")}
         color={useColorModeValue("gray.600", "white")}
@@ -42,8 +44,8 @@ export default function WithSubnavigation() {
         py={{ base: 4 }}
         px={{ base: 4 }}
         align={"center"}
-        maxWidth={1200}
         margin="0 auto"
+        maxWidth={1200}
       >
         <Flex
           flex={{ base: 1, md: "auto" }}
@@ -60,12 +62,13 @@ export default function WithSubnavigation() {
           />
         </Flex>
         <Flex flex={{ base: 1 }} justify={{ base: "center", md: "start" }}>
-          <Image
-            src={logo}
-            display={{ base: "none", md: "flex" }}
-            height="32px"
-          />
-
+          <Link to="/">
+            <Image
+              src={logo}
+              display={{ base: "none", md: "flex" }}
+              height="32px"
+            />
+          </Link>
           <Flex display={{ base: "none", md: "flex" }} ml={10}>
             <DesktopNav />
           </Flex>
@@ -78,7 +81,7 @@ export default function WithSubnavigation() {
           spacing={6}
         >
           <Button variant="link">
-            <Link isExternal href={"https://github.com/apifi-io/apifi"}>
+            <Link isExternal to={"https://github.com/apifi-io/apifi"}>
               <Icon as={FaGithub} w={5} h={5} />
             </Link>
           </Button>
@@ -86,19 +89,15 @@ export default function WithSubnavigation() {
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
           <Button as={"a"} fontSize={"sm"} fontWeight={400} variant={"link"}>
-            Sign In
+            <Link to="/signin">Sign In</Link>
           </Button>
           <Button
             display={{ base: "none", md: "inline-flex" }}
             fontSize={"sm"}
             fontWeight={600}
-            color={"white"}
-            bg={"pink.400"}
-            _hover={{
-              bg: "pink.300",
-            }}
+            colorScheme="teal"
           >
-            Try Free
+            <Link to="/signup">Sign up</Link>
           </Button>
         </Stack>
       </Flex>
@@ -218,7 +217,7 @@ const MobileNavItem = ({ label, children, href }: NavItem) => {
       <Flex
         py={2}
         as={Link}
-        href={href ?? "#"}
+        to={href ?? "#"}
         justify={"space-between"}
         align={"center"}
         _hover={{
@@ -270,13 +269,4 @@ interface NavItem {
   href?: string;
 }
 
-const NAV_ITEMS: Array<NavItem> = [
-  {
-    label: "Learn Design",
-    href: "#",
-  },
-  {
-    label: "Pricing",
-    href: "#",
-  },
-];
+const NAV_ITEMS: Array<NavItem> = [];
