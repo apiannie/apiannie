@@ -14,6 +14,7 @@ import {
   useDisclosure,
   Image,
   useColorMode,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import {
   HamburgerIcon,
@@ -24,8 +25,8 @@ import {
   SunIcon,
 } from "@chakra-ui/icons";
 import { FaGithub } from "react-icons/fa";
-import { Link } from "~/ui/Link";
 import logo from "~/images/logo.png";
+import { Link } from "@remix-run/react";
 
 export default function WithSubnavigation() {
   const { isOpen, onToggle } = useDisclosure();
@@ -81,14 +82,15 @@ export default function WithSubnavigation() {
           spacing={6}
         >
           <Button variant="link">
-            <Link isExternal to={"https://github.com/apifi-io/apifi"}>
+            <Link to={"https://github.com/apifi-io/apifi"}>
               <Icon as={FaGithub} w={5} h={5} />
             </Link>
           </Button>
+
           <Button onClick={toggleColorMode} variant="outline">
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
-          <Button as={"a"} fontSize={"sm"} fontWeight={400} variant={"link"}>
+          <Button fontSize={"sm"} fontWeight={400} variant={"link"}>
             <Link to="/account/signin">Sign In</Link>
           </Button>
           <Button
@@ -97,9 +99,7 @@ export default function WithSubnavigation() {
             fontWeight={600}
             colorScheme="teal"
           >
-            <Link plain to="/account/signup">
-              Sign up
-            </Link>
+            <Link to="/account/signup">Sign up</Link>
           </Button>
         </Stack>
       </Flex>
@@ -122,20 +122,7 @@ const DesktopNav = () => {
         <Box key={navItem.label}>
           <Popover trigger={"hover"} placement={"bottom-start"}>
             <PopoverTrigger>
-              <Link
-                to="#"
-                p={2}
-                href={navItem.href ?? "#"}
-                fontSize={"sm"}
-                fontWeight={500}
-                color={linkColor}
-                _hover={{
-                  textDecoration: "none",
-                  color: linkHoverColor,
-                }}
-              >
-                {navItem.label}
-              </Link>
+              {/* <Link to="#">{navItem.label}</Link> */}
             </PopoverTrigger>
 
             {navItem.children && (
@@ -163,8 +150,7 @@ const DesktopNav = () => {
 
 const DesktopSubNav = ({ label, href, subLabel }: NavItem) => {
   return (
-    <Link
-      to={href || "#"}
+    <ChakraLink
       role={"group"}
       display={"block"}
       p={2}
@@ -194,7 +180,7 @@ const DesktopSubNav = ({ label, href, subLabel }: NavItem) => {
           <Icon color={"pink.400"} w={5} h={5} as={ChevronRightIcon} />
         </Flex>
       </Stack>
-    </Link>
+    </ChakraLink>
   );
 };
 
@@ -255,7 +241,7 @@ const MobileNavItem = ({ label, children, href }: NavItem) => {
         >
           {children &&
             children.map((child) => (
-              <Link to="#" key={child.label} py={2} href={child.href}>
+              <Link to="#" key={child.label}>
                 {child.label}
               </Link>
             ))}

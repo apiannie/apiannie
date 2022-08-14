@@ -13,8 +13,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 
-import { Link } from "~/ui";
-import { Form } from "@remix-run/react";
+import { Form, Link } from "@remix-run/react";
 
 export default function SignUp() {
   return (

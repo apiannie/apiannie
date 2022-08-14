@@ -9,7 +9,7 @@ import {
   useColorModeValue,
   createIcon,
 } from "@chakra-ui/react";
-import { Link } from "~/ui";
+import { Link } from "@remix-run/react";
 
 export default function Index() {
   return (
@@ -48,7 +48,7 @@ export default function Index() {
           alignSelf={"center"}
           position={"relative"}
         >
-          <Link plain to="/account/signup">
+          <Link to="/account/signup">
             <Button colorScheme={"teal"} px={6}>
               Get Started
             </Button>

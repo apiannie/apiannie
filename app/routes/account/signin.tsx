@@ -16,9 +16,9 @@ import {
   InputRightElement,
 } from "@chakra-ui/react";
 
-import { Link } from "~/ui";
 import { useState } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { Link } from "@remix-run/react";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
