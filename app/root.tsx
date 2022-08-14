@@ -10,8 +10,9 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
-import { MetaFunction, LinksFunction } from "@remix-run/node"; // Depends on the runtime you choose
+import { MetaFunction, LinksFunction, json, LoaderArgs } from "@remix-run/node"; // Depends on the runtime you choose
 import { ServerStyleContext, ClientStyleContext } from "./context";
+import { getUser } from "./session.server";
 import theme from "./theme";
 
 export const meta: MetaFunction = () => ({
@@ -77,6 +78,12 @@ const Document = withEmotionCache(
     );
   }
 );
+
+// export async function loader({ request }: LoaderArgs) {
+//   return json({
+//     user: await getUser(request),
+//   });
+// }
 
 export default function App() {
   return (

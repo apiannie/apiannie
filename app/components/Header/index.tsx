@@ -89,7 +89,7 @@ export default function WithSubnavigation() {
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
           <Button as={"a"} fontSize={"sm"} fontWeight={400} variant={"link"}>
-            <Link to="/signin">Sign In</Link>
+            <Link to="/account/signin">Sign In</Link>
           </Button>
           <Button
             display={{ base: "none", md: "inline-flex" }}
@@ -97,7 +97,9 @@ export default function WithSubnavigation() {
             fontWeight={600}
             colorScheme="teal"
           >
-            <Link to="/signup">Sign up</Link>
+            <Link plain to="/account/signup">
+              Sign up
+            </Link>
           </Button>
         </Stack>
       </Flex>
@@ -121,6 +123,7 @@ const DesktopNav = () => {
           <Popover trigger={"hover"} placement={"bottom-start"}>
             <PopoverTrigger>
               <Link
+                to="#"
                 p={2}
                 href={navItem.href ?? "#"}
                 fontSize={"sm"}
@@ -161,7 +164,7 @@ const DesktopNav = () => {
 const DesktopSubNav = ({ label, href, subLabel }: NavItem) => {
   return (
     <Link
-      href={href}
+      to={href || "#"}
       role={"group"}
       display={"block"}
       p={2}
@@ -252,7 +255,7 @@ const MobileNavItem = ({ label, children, href }: NavItem) => {
         >
           {children &&
             children.map((child) => (
-              <Link key={child.label} py={2} href={child.href}>
+              <Link to="#" key={child.label} py={2} href={child.href}>
                 {child.label}
               </Link>
             ))}

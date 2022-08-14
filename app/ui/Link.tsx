@@ -2,13 +2,11 @@ import { Link as ChakraLink } from "@chakra-ui/react";
 import { Link as RemixLink } from "@remix-run/react";
 
 type Props = {
-  to: React.ComponentProps<typeof RemixLink>["to"];
-  children: React.ReactNode;
-  color?: React.ComponentProps<typeof ChakraLink>["color"];
-  isExternal?: boolean;
-};
+  plain?: boolean;
+} & React.ComponentProps<typeof RemixLink> &
+  React.ComponentProps<typeof ChakraLink>;
 
-export function Link({ to, children, isExternal, color, ...rest }: Props) {
+export function Link({ to, plain, children, isExternal, ...rest }: Props) {
   if (isExternal) {
     return (
       <ChakraLink isExternal href={to as string} {...rest}>
@@ -17,11 +15,13 @@ export function Link({ to, children, isExternal, color, ...rest }: Props) {
     );
   }
 
+  if (plain) {
+    return <RemixLink to={to}>{children}</RemixLink>;
+  }
+
   return (
-    <RemixLink to={to}>
-      <ChakraLink color={color} {...rest}>
-        {children}
-      </ChakraLink>
-    </RemixLink>
+    <ChakraLink as={RemixLink} to={to} {...rest}>
+      {children}
+    </ChakraLink>
   );
 }

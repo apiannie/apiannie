@@ -9,6 +9,7 @@ import {
   useColorModeValue,
   createIcon,
 } from "@chakra-ui/react";
+import { Link } from "~/ui";
 
 export default function Index() {
   return (
@@ -47,9 +48,12 @@ export default function Index() {
           alignSelf={"center"}
           position={"relative"}
         >
-          <Button colorScheme={"teal"} px={6}>
-            Get Started
-          </Button>
+          <Link plain to="/account/signup">
+            <Button colorScheme={"teal"} px={6}>
+              Get Started
+            </Button>
+          </Link>
+
           <Button variant={"link"} colorScheme={"blue"} size={"sm"}>
             Learn more
           </Button>

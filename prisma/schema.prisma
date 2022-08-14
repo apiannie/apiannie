@@ -77,7 +77,7 @@ type ProjectGlobal {
 
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  username  String
+  name      String
   password  String
   email     String   @unique
   passsalt  String
