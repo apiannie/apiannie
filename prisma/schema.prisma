@@ -80,12 +80,16 @@ model User {
   name      String
   password  String
   email     String   @unique
-  passsalt  String
   study     Boolean  @default(false)
-  role      String
+  role      UserRole @default(DEV)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   type      UserType @default(SITE)
+}
+
+enum UserRole {
+  ADMIN
+  DEV
 }
 
 enum UserType {

@@ -19,6 +19,14 @@ import {
 import { useState } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { Link } from "@remix-run/react";
+import { json, LoaderArgs, redirect } from "@remix-run/node";
+import { getUserId } from "~/session.server";
+
+export async function loader({ request }: LoaderArgs) {
+  const userId = await getUserId(request);
+  if (userId) return redirect("/dashboard");
+  return json({});
+}
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -72,7 +80,7 @@ export default function Login() {
               </Stack>
               <Stack pt={6}>
                 <Text align={"center"}>
-                  New to Apifi?{" "}
+                  New to Api Annie?{" "}
                   <Link to="/account/signup" color={"blue.400"}>
                     Sign up
                   </Link>

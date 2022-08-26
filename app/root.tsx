@@ -17,7 +17,7 @@ import theme from "./theme";
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
-  title: "Apifi",
+  title: "Api Annie",
   viewport: "width=device-width,initial-scale=1",
 });
 

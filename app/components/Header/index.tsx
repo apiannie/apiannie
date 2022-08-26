@@ -82,7 +82,7 @@ export default function WithSubnavigation() {
           spacing={6}
         >
           <Button variant="link">
-            <Link to={"https://github.com/apifi-io/apifi"}>
+            <Link to={"https://github.com/apiannie/apiannie"}>
               <Icon as={FaGithub} w={5} h={5} />
             </Link>
           </Button>

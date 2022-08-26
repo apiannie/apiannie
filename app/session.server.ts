@@ -30,6 +30,9 @@ export async function getUserId(
 ): Promise<User["id"] | undefined> {
   const session = await getSession(request);
   const userId = session.get(USER_SESSION_KEY);
+  if (!ObjectID.isValid(userId)) {
+    return undefined;
+  }
   return userId;
 }
 
