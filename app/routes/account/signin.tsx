@@ -14,13 +14,23 @@ import {
   useColorModeValue,
   InputGroup,
   InputRightElement,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import { Link } from "@remix-run/react";
-import { json, LoaderArgs, redirect } from "@remix-run/node";
-import { getUserId } from "~/session.server";
+import { Form, Link, useActionData } from "@remix-run/react";
+import {
+  ActionArgs,
+  json,
+  LoaderArgs,
+  MetaFunction,
+  redirect,
+} from "@remix-run/node";
+import { createUserSession, getUserId } from "~/session.server";
+import { safeRedirect, validateEmail } from "~/utils";
+import { verifyLogin } from "~/models/user.server";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
@@ -28,8 +38,70 @@ export async function loader({ request }: LoaderArgs) {
   return json({});
 }
 
+export async function action({ request }: ActionArgs) {
+  const formData = await request.formData();
+  const email = formData.get("email");
+  const password = formData.get("password");
+  const redirectTo = safeRedirect(formData.get("redirectTo"), "/dashboard");
+  const remember = formData.get("remember");
+
+  if (!validateEmail(email)) {
+    return json(
+      { errors: { email: "Email is invalid", password: null } },
+      { status: 400 }
+    );
+  }
+
+  if (typeof password !== "string" || password.length === 0) {
+    return json(
+      { errors: { email: null, password: "Password is required" } },
+      { status: 400 }
+    );
+  }
+
+  if (password.length < 8) {
+    return json(
+      { errors: { email: null, password: "Password is too short" } },
+      { status: 400 }
+    );
+  }
+
+  const user = await verifyLogin(email, password);
+
+  if (!user) {
+    return json(
+      { errors: { email: "Invalid email or password", password: null } },
+      { status: 400 }
+    );
+  }
+
+  return createUserSession({
+    request,
+    userId: user.id,
+    remember: remember === "on" ? true : false,
+    redirectTo,
+  });
+}
+
+export const meta: MetaFunction = () => {
+  return {
+    title: "Login | Api Annie",
+  };
+};
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const actionData = useActionData<typeof action>();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (actionData?.errors?.email) {
+      emailRef.current?.focus();
+    } else if (actionData?.errors?.password) {
+      passwordRef.current?.focus();
+    }
+  }, [actionData]);
 
   return (
     <Layout>
@@ -47,46 +119,66 @@ export default function Login() {
             boxShadow={"lg"}
             p={8}
           >
-            <Stack spacing={4}>
-              <FormControl id="email">
-                <FormLabel>Email address</FormLabel>
-                <Input type="email" />
-              </FormControl>
-              <FormControl id="password">
-                <FormLabel>Password</FormLabel>
-                <InputGroup>
-                  <Input type={showPassword ? "text" : "password"} />
-                  <InputRightElement h={"full"}>
-                    <Button
-                      variant={"ghost"}
-                      onClick={() =>
-                        setShowPassword((showPassword) => !showPassword)
-                      }
-                    >
-                      {showPassword ? <ViewIcon /> : <ViewOffIcon />}
-                    </Button>
-                  </InputRightElement>
-                </InputGroup>
-              </FormControl>
-              <Stack spacing={10}>
-                <Stack
-                  direction={{ base: "column", sm: "row" }}
-                  align={"start"}
-                  justify={"space-between"}
-                >
-                  <Checkbox>Remember me</Checkbox>
+            <Form method="post">
+              <Stack spacing={4}>
+                <FormControl id="email">
+                  <FormLabel>Email address</FormLabel>
+                  {actionData?.errors?.email && (
+                    <Alert status="error">
+                      <AlertIcon />
+                      {actionData.errors.email}
+                    </Alert>
+                  )}
+                  <Input ref={emailRef} name="email" type="email" />
+                </FormControl>
+                <FormControl id="password">
+                  <FormLabel>Password</FormLabel>
+                  {actionData?.errors?.password && (
+                    <Alert status="error">
+                      <AlertIcon />
+                      {actionData.errors.password}
+                    </Alert>
+                  )}
+                  <InputGroup>
+                    <Input
+                      ref={passwordRef}
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                    />
+                    <InputRightElement h={"full"}>
+                      <Button
+                        variant={"ghost"}
+                        onClick={() =>
+                          setShowPassword((showPassword) => !showPassword)
+                        }
+                      >
+                        {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                      </Button>
+                    </InputRightElement>
+                  </InputGroup>
+                </FormControl>
+                <Stack spacing={10}>
+                  <Stack
+                    direction={{ base: "column", sm: "row" }}
+                    align={"start"}
+                    justify={"space-between"}
+                  >
+                    <Checkbox>Remember me</Checkbox>
+                  </Stack>
+                  <Button type="submit" colorScheme="teal">
+                    Sign in
+                  </Button>
                 </Stack>
-                <Button colorScheme="teal">Sign in</Button>
+                <Stack pt={6}>
+                  <Text align={"center"}>
+                    New to Api Annie?{" "}
+                    <Link to="/account/signup" color={"blue.400"}>
+                      Sign up
+                    </Link>
+                  </Text>
+                </Stack>
               </Stack>
-              <Stack pt={6}>
-                <Text align={"center"}>
-                  New to Api Annie?{" "}
-                  <Link to="/account/signup" color={"blue.400"}>
-                    Sign up
-                  </Link>
-                </Text>
-              </Stack>
-            </Stack>
+            </Form>
           </Box>
         </Stack>
       </Flex>

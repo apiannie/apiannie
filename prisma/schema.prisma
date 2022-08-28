@@ -80,6 +80,7 @@ model User {
   name      String
   password  String
   email     String   @unique
+  avatar    String?
   study     Boolean  @default(false)
   role      UserRole @default(DEV)
   createdAt DateTime @default(now())

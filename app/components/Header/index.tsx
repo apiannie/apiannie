@@ -15,6 +15,13 @@ import {
   Image,
   useColorMode,
   Link as ChakraLink,
+  Menu,
+  MenuButton,
+  Avatar,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  AvatarProps,
 } from "@chakra-ui/react";
 import {
   HamburgerIcon,
@@ -26,12 +33,60 @@ import {
 } from "@chakra-ui/icons";
 import { FaGithub } from "react-icons/fa";
 import logo from "~/images/logo.png";
-import { Link } from "@remix-run/react";
+import { Form, Link } from "@remix-run/react";
+import { useOptionalUser } from "~/utils";
+
+function GuestMenuButtons() {
+  return (
+    <>
+      <Button fontSize={"sm"} fontWeight={400} variant={"link"}>
+        <Link to="/account/signin">Sign In</Link>
+      </Button>
+      <Button
+        display={{ base: "none", md: "inline-flex" }}
+        fontSize={"sm"}
+        fontWeight={600}
+        colorScheme="teal"
+      >
+        <Link to="/account/signup">Sign up</Link>
+      </Button>
+    </>
+  );
+}
+
+function UserMenuButtons(props: { avatar: AvatarProps["src"] }) {
+  return (
+    <Flex alignItems={"center"}>
+      <Menu>
+        <MenuButton
+          as={Button}
+          rounded={"full"}
+          variant={"link"}
+          cursor={"pointer"}
+          minW={0}
+        >
+          <Avatar src={props.avatar} size={"sm"}></Avatar>
+        </MenuButton>
+        <MenuList>
+          <MenuItem>Link 1</MenuItem>
+          <MenuItem>Link 2</MenuItem>
+          <MenuDivider />
+          <MenuItem>
+            <Form action="/account/logout" method="post">
+              <button type="submit">Sign out</button>
+            </Form>
+          </MenuItem>
+        </MenuList>
+      </Menu>
+    </Flex>
+  );
+}
 
 export default function WithSubnavigation() {
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
-
+  const user = useOptionalUser();
+  console.log(user);
   return (
     <Box
       borderBottom={1}
@@ -82,25 +137,22 @@ export default function WithSubnavigation() {
           spacing={6}
         >
           <Button variant="link">
-            <Link to={"https://github.com/apiannie/apiannie"}>
+            <ChakraLink
+              isExternal
+              href={"https://github.com/apiannie/apiannie"}
+            >
               <Icon as={FaGithub} w={5} h={5} />
-            </Link>
+            </ChakraLink>
           </Button>
 
           <Button onClick={toggleColorMode} variant="outline">
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
-          <Button fontSize={"sm"} fontWeight={400} variant={"link"}>
-            <Link to="/account/signin">Sign In</Link>
-          </Button>
-          <Button
-            display={{ base: "none", md: "inline-flex" }}
-            fontSize={"sm"}
-            fontWeight={600}
-            colorScheme="teal"
-          >
-            <Link to="/account/signup">Sign up</Link>
-          </Button>
+          {user ? (
+            <UserMenuButtons avatar={user.avatar} />
+          ) : (
+            <GuestMenuButtons />
+          )}
         </Stack>
       </Flex>
 

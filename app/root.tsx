@@ -14,6 +14,7 @@ import { MetaFunction, LinksFunction, json, LoaderArgs } from "@remix-run/node";
 import { ServerStyleContext, ClientStyleContext } from "./context";
 import { getUser } from "./session.server";
 import theme from "./theme";
+import { generateFromString } from "generate-avatar";
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
@@ -79,11 +80,12 @@ const Document = withEmotionCache(
   }
 );
 
-// export async function loader({ request }: LoaderArgs) {
-//   return json({
-//     user: await getUser(request),
-//   });
-// }
+export async function loader({ request }: LoaderArgs) {
+  let user = await getUser(request);
+  return json({
+    user: { ...user },
+  });
+}
 
 export default function App() {
   return (
