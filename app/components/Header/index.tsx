@@ -33,7 +33,7 @@ import {
 } from "@chakra-ui/icons";
 import { FaGithub } from "react-icons/fa";
 import logo from "~/images/logo.png";
-import { Form, Link } from "@remix-run/react";
+import { Form, Link, useSubmit } from "@remix-run/react";
 import { useOptionalUser } from "~/utils";
 
 function GuestMenuButtons() {
@@ -55,6 +55,8 @@ function GuestMenuButtons() {
 }
 
 function UserMenuButtons(props: { avatar: AvatarProps["src"] }) {
+  const submit = useSubmit();
+
   return (
     <Flex alignItems={"center"}>
       <Menu>
@@ -71,10 +73,12 @@ function UserMenuButtons(props: { avatar: AvatarProps["src"] }) {
           <MenuItem>Link 1</MenuItem>
           <MenuItem>Link 2</MenuItem>
           <MenuDivider />
-          <MenuItem>
-            <Form action="/account/logout" method="post">
-              <button type="submit">Sign out</button>
-            </Form>
+          <MenuItem
+            onClick={(e) =>
+              submit(null, { method: "post", action: "/account/logout" })
+            }
+          >
+            Sign out
           </MenuItem>
         </MenuList>
       </Menu>
@@ -86,7 +90,6 @@ export default function WithSubnavigation() {
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
   const user = useOptionalUser();
-  console.log(user);
   return (
     <Box
       borderBottom={1}
@@ -149,7 +152,7 @@ export default function WithSubnavigation() {
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
           {user ? (
-            <UserMenuButtons avatar={user.avatar} />
+            <UserMenuButtons avatar={user.avatar || undefined} />
           ) : (
             <GuestMenuButtons />
           )}
