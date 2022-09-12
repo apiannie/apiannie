@@ -34,7 +34,7 @@ import { verifyLogin } from "~/models/user.server";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
-  if (userId) return redirect("/dashboard");
+  if (userId) return redirect("/workspaces");
   return json({});
 }
 
@@ -42,7 +42,7 @@ export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
   const email = formData.get("email");
   const password = formData.get("password");
-  const redirectTo = safeRedirect(formData.get("redirectTo"), "/dashboard");
+  const redirectTo = safeRedirect(formData.get("redirectTo"), "/workspaces");
   const remember = formData.get("remember");
 
   if (!validateEmail(email)) {

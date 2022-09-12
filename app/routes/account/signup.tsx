@@ -23,7 +23,7 @@ import { createUser, getUserByEmail } from "~/models/user.server";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
-  if (userId) return redirect("/dashboard");
+  if (userId) return redirect("/workspaces");
   return json({});
 }
 

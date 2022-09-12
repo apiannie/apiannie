@@ -35,6 +35,8 @@ import { FaGithub } from "react-icons/fa";
 import logo from "~/images/logo.png";
 import { Form, Link, useSubmit } from "@remix-run/react";
 import { useOptionalUser } from "~/utils";
+import UserMenuButton from "./UserMenuButton";
+import ColorModeButton from "./ColorModeButton";
 
 function GuestMenuButtons() {
   return (
@@ -51,38 +53,6 @@ function GuestMenuButtons() {
         <Link to="/account/signup">Sign up</Link>
       </Button>
     </>
-  );
-}
-
-function UserMenuButtons(props: { avatar: AvatarProps["src"] }) {
-  const submit = useSubmit();
-
-  return (
-    <Flex alignItems={"center"}>
-      <Menu>
-        <MenuButton
-          as={Button}
-          rounded={"full"}
-          variant={"link"}
-          cursor={"pointer"}
-          minW={0}
-        >
-          <Avatar src={props.avatar} size={"sm"}></Avatar>
-        </MenuButton>
-        <MenuList>
-          <MenuItem>Link 1</MenuItem>
-          <MenuItem>Link 2</MenuItem>
-          <MenuDivider />
-          <MenuItem
-            onClick={(e) =>
-              submit(null, { method: "post", action: "/account/logout" })
-            }
-          >
-            Sign out
-          </MenuItem>
-        </MenuList>
-      </Menu>
-    </Flex>
   );
 }
 
@@ -148,11 +118,9 @@ export default function WithSubnavigation() {
             </ChakraLink>
           </Button>
 
-          <Button onClick={toggleColorMode} variant="outline">
-            {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
-          </Button>
+          <ColorModeButton />
           {user ? (
-            <UserMenuButtons avatar={user.avatar || undefined} />
+            <UserMenuButton avatar={user.avatar || undefined} />
           ) : (
             <GuestMenuButtons />
           )}
