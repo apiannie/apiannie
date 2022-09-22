@@ -1,7 +1,7 @@
 // root.tsx
-import React, { useContext, useEffect } from "react";
+import { ChakraProvider } from "@chakra-ui/react";
 import { withEmotionCache } from "@emotion/react";
-import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+import { json, LinksFunction, LoaderArgs, MetaFunction } from "@remix-run/node"; // Depends on the runtime you choose
 import {
   Links,
   LiveReload,
@@ -10,11 +10,9 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
-import { MetaFunction, LinksFunction, json, LoaderArgs } from "@remix-run/node"; // Depends on the runtime you choose
-import { ServerStyleContext, ClientStyleContext } from "./context";
+import React, { useContext, useEffect } from "react";
+import { ClientStyleContext, ServerStyleContext } from "./context";
 import { getUser } from "./session.server";
-import theme from "./theme";
-import { generateFromString } from "generate-avatar";
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",

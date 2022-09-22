@@ -31,18 +31,25 @@ model Post {
   updatedAt DateTime @updatedAt
 }
 
+enum WorkspaceUserRole {
+  OWNER
+  MEMBER
+  VISITOR
+}
+
+type WorkspaceUser {
+  id   String            @db.ObjectId
+  name String
+  role WorkspaceUserRole
+}
+
 model Workspace {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  memberIds String[] @db.ObjectId
-  members   User[]   @relation(fields: [memberIds], references: [id])
-
-  ownerId String @db.ObjectId
-
-  projects Project[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  users     WorkspaceUser[]
+  projects  Project[]
 }
 
 model Project {
@@ -91,20 +98,23 @@ type ProjectGlobal {
   value String
 }
 
-model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  password  String
-  email     String   @unique
-  avatar    String?
-  study     Boolean  @default(false)
-  role      UserRole @default(DEV)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  type      UserType @default(SITE)
+type UserWorkspace {
+  id   String @db.ObjectId
+  name String
+}
 
-  Workspaces   Workspace[] @relation(fields: [workspaceIds], references: [id])
-  workspaceIds String[]    @db.ObjectId
+model User {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  password   String
+  email      String          @unique
+  avatar     String?
+  study      Boolean         @default(false)
+  role       UserRole        @default(DEV)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  type       UserType        @default(SITE)
+  workspaces UserWorkspace[]
 }
 
 enum UserRole {
