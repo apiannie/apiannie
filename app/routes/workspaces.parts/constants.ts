@@ -1,0 +1,4 @@
+export enum Action {
+  NEW_WORKSPACE = "NEW_WORKSPACE",
+  NEW_PROJECT = "NEW_PROJECT",
+}

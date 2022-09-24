@@ -52,33 +52,45 @@ model Workspace {
   projects  Project[]
 }
 
-model Project {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  name              String
-  token             String
-  basepath          String
-  switchNotice      Boolean
-  desc              String
-  projectType       String
-  envs              ProjectEnv[]
-  icon              String
-  color             String
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  preScript         String
-  afterScript       String
-  projectMockScript String
-  isMockOpen        Boolean         @default(false)
-  strice            Boolean         @default(false)
-  isJson5           Boolean         @default(true)
-  tags              ProjectTag[]
-  Interface         Interface[]
-  InterfaceCol      InterfaceCol[]
-  InterfaceCat      InterfaceCat[]
-  InterfaceCase     InterfaceCase[]
+enum ProjectUserRole {
+  OWNER
+  WRITE
+  READ
+}
 
-  workspaceId String
-  Workspace   Workspace @relation(fields: [workspaceId], references: [id])
+type ProjectUser {
+  id   String          @db.ObjectId
+  name String
+  role ProjectUserRole
+}
+
+model Project {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  // token         String
+  // basepath      String
+  // switchNotice  Boolean
+  // desc          String
+  // projectType   String
+  envs           ProjectEnv[]
+  // icon              String
+  // color             String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  // preScript         String
+  // afterScript       String
+  // projectMockScript String
+  isMockOpen     Boolean         @default(false)
+  strice         Boolean         @default(false)
+  isJson5        Boolean         @default(true)
+  tags           ProjectTag[]
+  interface      Interface[]
+  interfaceCols  InterfaceCol[]
+  interfaceCats  InterfaceCat[]
+  interfaceCases InterfaceCase[]
+  users          ProjectUser[]
+  workspaceId    String
+  Workspace      Workspace       @relation(fields: [workspaceId], references: [id])
 }
 
 type ProjectTag {

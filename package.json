@@ -20,6 +20,7 @@
     "@remix-run/node": "^1.6.7",
     "@remix-run/react": "^1.6.7",
     "@remix-run/serve": "^1.6.7",
+    "@remix-validated-form/with-zod": "^2.0.1",
     "bcrypt": "^5.0.1",
     "bcryptjs": "^2.4.3",
     "bson": "^4.6.5",
@@ -28,7 +29,10 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.4.0",
-    "validatorjs": "^3.22.1"
+    "remix-validated-form": "^4.5.5",
+    "tiny-invariant": "^1.2.0",
+    "validatorjs": "^3.22.1",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^1.6.7",

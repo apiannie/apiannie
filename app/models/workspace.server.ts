@@ -1,20 +1,7 @@
-import { User, Workspace, WorkspaceUserRole } from "@prisma/client";
+import { User, Workspace } from "@prisma/client";
 import { prisma } from "./prisma.server";
 
-
-export async function getWorkspacesByUserId(userId: User["id"]) {
-    // console.log(prisma);
-    // return prisma.workspace.findMany({
-    //     where: {
-    //         memberIds: {
-    //             has: userId,
-    //         }
-    //     }
-    // });
-    return [];
-}
-
-export async function createWorkspace(user: User, workspaceName: Workspace["name"]) {
+export const createWorkspace = async (user: User, workspaceName: Workspace["name"]) => {
     let workspace = await prisma.workspace.create({
         data: {
             name: workspaceName,
@@ -22,8 +9,8 @@ export async function createWorkspace(user: User, workspaceName: Workspace["name
                 id: user.id,
                 name: user.name,
                 role: "OWNER",
-            }]
-        }
+            }],
+        },
     })
     await prisma.user.update({
         where: {
@@ -39,5 +26,14 @@ export async function createWorkspace(user: User, workspaceName: Workspace["name
         }
     })
 
+    return workspace;
+}
+
+export const getWorkspaceById = async (id:string) => {
+    let workspace = await prisma.workspace.findFirstOrThrow({
+        where: {
+            id: id,
+        }
+    })
     return workspace;
 }

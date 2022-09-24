@@ -1,110 +1,69 @@
 import {
-  Alert,
-  AlertIcon,
   Box,
   BoxProps,
-  Button,
   CloseButton,
   Divider,
   Drawer,
   DrawerContent,
   Flex,
   FlexProps,
-  FormControl,
-  FormLabel,
   HStack,
   Icon,
   IconButton,
   Image,
-  Input,
-  InputGroup,
-  InputRightAddon,
   Link,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  ModalProps,
   Text,
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { User } from "@prisma/client";
-import { ActionArgs, json, LoaderArgs, redirect } from "@remix-run/node";
+import { ActionFunction, json, LoaderArgs, redirect } from "@remix-run/node";
 import {
-  Outlet,
-  useFetcher,
-  useMatches,
-  useParams,
   Link as RemixLink,
+  Outlet,
+  useParams,
+  useTransition,
 } from "@remix-run/react";
-import React, { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { FiBell, FiFolder, FiMenu, FiPlus } from "react-icons/fi";
-import Validator from "validatorjs";
 import ColorModeButton from "~/components/Header/ColorModeButton";
 import UserMenuButton from "~/components/Header/UserMenuButton";
 import logo from "~/images/logo.png";
-import {
-  createWorkspace,
-  getWorkspacesByUserId,
-} from "~/models/workspace.server";
 import { requireUser, requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
+import { Action } from "./workspaces.parts/constants";
+import NewWorkspaceModal, {
+  newWorkspaceAction,
+} from "./workspaces.parts/NewWorkspaceModal";
 
-export async function loader({ request }: LoaderArgs) {
-  // console.log(request, context, params);
+export async function loader({ request, params }: LoaderArgs) {
   let userId = await requireUserId(request);
-  let workspaces = await getWorkspacesByUserId(userId);
-  // return json({
-  //   user: { ...user },
-  // });
+  let user = await requireUser(request);
+  let { workspaceId } = params;
+  let workspaces = user.workspaces;
+  if (workspaces.length === 0) {
+  } else if (!workspaceId) {
+    return redirect(`/workspaces/${workspaces[0].id}`);
+  }
+
   return json({
     workspaces: workspaces,
   });
 }
 
-enum Action {
-  NEW_WORKSPACE = "NEW_WORKSPACE",
-}
-
-export async function action({ request }: ActionArgs) {
+export const action: ActionFunction = async ({ request }) => {
   let user = await requireUser(request);
-  const data = Object.fromEntries(await request.formData());
+  let formData = await request.formData();
 
-  switch (data._action) {
+  switch (formData.get("_action")) {
     case Action.NEW_WORKSPACE:
-      return createWorkspaceAction(data, user);
+      return newWorkspaceAction({ formData, user });
     default:
       return {
         status: 400,
       };
   }
-}
-
-async function createWorkspaceAction(
-  data: {
-    [k: string]: FormDataEntryValue;
-  },
-  user: User
-) {
-  const validator = new Validator(data, {
-    name: ["required", "string"],
-  });
-
-  if (validator.fails()) {
-    return json({
-      errors: validator.errors.errors,
-      status: 400,
-    });
-  }
-
-  let workspace = await createWorkspace(user, data.name as string);
-  return redirect(`/workspaces/${workspace.id}`);
-}
+};
 
 export default function Workspaces() {
   const user = useUser();
@@ -114,18 +73,6 @@ export default function Workspaces() {
     </SidebarWithHeader>
   );
 }
-
-interface LinkItemProps {
-  name: string;
-  icon: IconType;
-}
-const LinkItems: Array<LinkItemProps> = [
-  { name: "Home", icon: FiFolder },
-  { name: "Trending", icon: FiFolder },
-  { name: "Explore", icon: FiFolder },
-  { name: "Favourites", icon: FiFolder },
-  { name: "Settings", icon: FiFolder },
-];
 
 function SidebarWithHeader({ children }: { children: ReactNode }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -166,6 +113,13 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
   const user = useUser();
   const modal = useDisclosure();
   const params = useParams();
+  const transition = useTransition();
+
+  let workspaceId = params.workspaceId;
+
+  if (transition.location?.pathname) {
+    workspaceId = transition.location.pathname.substring("/workspaces/".length);
+  }
 
   return (
     <Box
@@ -187,30 +141,31 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         />
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
-      <InputGroup alignItems="center" p={4} justifyContent="space-between">
-        <Input placeholder="Search workspace" mr={1} />
-        <IconButton
-          aria-label="Add workspace"
-          size="md"
-          icon={<FiPlus />}
-          onClick={modal.onOpen}
-        />
-      </InputGroup>
-      <NewWorkspaceModal
-        isOpen={modal.isOpen}
-        onClose={modal.onClose}
-        action="NEW_WORKSPACE"
-      />
-      <Divider my="2" />
+      <NewWorkspaceModal isOpen={modal.isOpen} onClose={modal.onClose} />
+      <Divider mb="2" />
+      <NavItem
+        icon={FiPlus}
+        active={false}
+        borderWidth="1px"
+        borderColor="gray.200"
+        borderStyle="dashed"
+        mb={1}
+        onClick={modal.onOpen}
+      >
+        Add workspace
+      </NavItem>
       {user.workspaces.map((workspace) => (
-        <NavItem
-          key={workspace.id}
-          icon={FiFolder}
-          active={workspace.id === params.workspaceId}
+        <Link
           to={`/workspaces/${workspace.id}`}
+          as={RemixLink}
+          style={{ textDecoration: "none" }}
+          _focus={{ boxShadow: "none" }}
+          key={workspace.id}
         >
-          {workspace.name}
-        </NavItem>
+          <NavItem icon={FiFolder} active={workspace.id === workspaceId}>
+            {workspace.name}
+          </NavItem>
+        </Link>
       ))}
     </Box>
   );
@@ -220,48 +175,40 @@ interface NavItemProps extends FlexProps {
   icon: IconType;
   children: string | number;
   active?: boolean;
-  to: string;
 }
-const NavItem = ({ icon, children, active, to, ...rest }: NavItemProps) => {
+const NavItem = ({ icon, children, active, ...rest }: NavItemProps) => {
   return (
-    <Link
-      to={to}
-      as={RemixLink}
-      style={{ textDecoration: "none" }}
-      _focus={{ boxShadow: "none" }}
-    >
-      <Flex
-        align="center"
-        p="4"
-        mx="4"
-        borderRadius="lg"
-        role="group"
-        cursor="pointer"
-        _hover={
-          active
-            ? undefined
-            : {
-                bg: "cyan.200",
-                color: "white",
-              }
-        }
-        bg={active ? "cyan.400" : undefined}
-        color={active ? "white" : undefined}
-        {...rest}
-      >
-        {icon && (
-          <Icon
-            mr="4"
-            fontSize="16"
-            _groupHover={{
+    <Flex
+      align="center"
+      p="3"
+      mx="4"
+      borderRadius="lg"
+      role="group"
+      cursor="pointer"
+      _hover={
+        active
+          ? undefined
+          : {
+              bg: "cyan.200",
               color: "white",
-            }}
-            as={icon}
-          />
-        )}
-        {children}
-      </Flex>
-    </Link>
+            }
+      }
+      bg={active ? "cyan.400" : undefined}
+      color={active ? "white" : undefined}
+      {...rest}
+    >
+      {icon && (
+        <Icon
+          mr="4"
+          fontSize="16"
+          _groupHover={{
+            color: "white",
+          }}
+          as={icon}
+        />
+      )}
+      {children}
+    </Flex>
   );
 };
 
@@ -313,70 +260,3 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
     </Flex>
   );
 };
-
-function NewWorkspaceModal({
-  isOpen,
-  onClose,
-  action,
-}: {
-  isOpen: ModalProps["isOpen"];
-  onClose: ModalProps["onClose"];
-  action: string;
-}) {
-  const fetcher = useFetcher();
-  const initialRef = React.useRef(null);
-  const finalRef = React.useRef(null);
-  let errors = (fetcher.data?.errors || {}) as Validator.ValidationErrors;
-
-  useEffect(() => {
-    if (fetcher.type === "done" && Object.keys(errors).length == 0) {
-      onClose();
-    }
-  }, [fetcher.type]);
-
-  return (
-    <Modal
-      initialFocusRef={initialRef}
-      finalFocusRef={finalRef}
-      isOpen={isOpen}
-      onClose={onClose}
-    >
-      <ModalOverlay />
-      <fetcher.Form replace method="post">
-        <ModalContent>
-          <ModalHeader>Create workspace</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <FormControl>
-              <FormLabel>Name</FormLabel>
-              <Input
-                name="name"
-                ref={initialRef}
-                placeholder="Workspace name"
-              />
-              {errors.name && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {errors.name}
-                </Alert>
-              )}
-            </FormControl>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button
-              type="submit"
-              name="_action"
-              value={action}
-              colorScheme="blue"
-              mr={3}
-            >
-              Save
-            </Button>
-            <Button onClick={onClose}>Cancel</Button>
-          </ModalFooter>
-        </ModalContent>
-      </fetcher.Form>
-    </Modal>
-  );
-}
