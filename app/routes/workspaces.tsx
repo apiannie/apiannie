@@ -26,11 +26,11 @@ import {
 import { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { FiBell, FiFolder, FiMenu, FiPlus } from "react-icons/fi";
-import ColorModeButton from "~/components/Header/ColorModeButton";
-import UserMenuButton from "~/components/Header/UserMenuButton";
 import logo from "~/images/logo.png";
 import { requireUser, requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
+import ColorModeButton from "./home.parts/ColorModeButton";
+import UserMenuButton from "./home.parts/UserMenuButton";
 import { Action } from "./workspaces.parts/constants";
 import NewWorkspaceModal, {
   newWorkspaceAction,

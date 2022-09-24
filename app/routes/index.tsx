@@ -1,12 +1,8 @@
-import { json, LoaderArgs, redirect } from "@remix-run/node";
-import LandingPage, { links } from "~/components/LandingPage";
+import { LoaderArgs, redirect } from "@remix-run/node";
 import { getUserId } from "~/session.server";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
   if (userId) return redirect("/workspaces");
-  return json({});
+  else return redirect("/home");
 }
-
-export default LandingPage;
-export { links };

@@ -10,18 +10,18 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { User } from "@prisma/client";
-import { ActionArgs, json, LoaderArgs, LoaderFunction } from "@remix-run/node";
+import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
+import { useLoaderData, useTransition } from "@remix-run/react";
 import { FiPlus } from "react-icons/fi";
+import invariant from "tiny-invariant";
 import Validator from "validatorjs";
 import { createProject } from "~/models/project.server";
+import { getWorkspaceById } from "~/models/workspace.server";
 import { requireUser } from "~/session.server";
 import { Action } from "../workspaces.parts/constants";
 import NewProjectModal, {
   newProjectAction,
 } from "../workspaces.parts/NewProjectModal";
-import invariant from "tiny-invariant";
-import { getWorkspaceById } from "~/models/workspace.server";
-import { useLoaderData, useTransition } from "@remix-run/react";
 
 export const loader = async ({ params }: LoaderArgs) => {
   let { workspaceId } = params;

@@ -32,7 +32,7 @@ export default function UserMenuButton(props: { avatar: AvatarProps["src"] }) {
           <MenuDivider />
           <MenuItem
             onClick={(e) =>
-              submit(null, { method: "post", action: "/account/logout" })
+              submit(null, { method: "post", action: "/home/logout" })
             }
           >
             Sign out
