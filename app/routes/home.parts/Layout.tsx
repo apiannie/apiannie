@@ -1,44 +1,35 @@
 import {
-  Avatar,
-  AvatarProps,
-  Box,
-  Button,
-  Collapse,
-  Flex,
-  Grid,
-  Icon,
-  IconButton,
-  Link,
-  Menu,
-  MenuDivider,
-  MenuItem,
-  MenuList,
-  Stack,
-  useColorMode,
-  useColorModeValue,
-  useDisclosure,
-  Image,
-  Text,
-  Popover,
-  PopoverContent,
-  MenuButton,
-  PopoverTrigger,
-  VisuallyHidden,
-  Container,
-} from "@chakra-ui/react";
-import { PropsWithChildren, ReactNode } from "react";
-import { useOptionalUser } from "~/utils";
-import {
   ChevronDownIcon,
   ChevronRightIcon,
   CloseIcon,
   HamburgerIcon,
-  MoonIcon,
-  SunIcon,
 } from "@chakra-ui/icons";
-import { Link as RemixLink, useSubmit } from "@remix-run/react";
+import {
+  Box,
+  Button,
+  Collapse,
+  Container,
+  Flex,
+  Grid,
+  Icon,
+  IconButton,
+  Image,
+  Link,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Stack,
+  Text,
+  useColorMode,
+  useColorModeValue,
+  useDisclosure,
+  VisuallyHidden,
+} from "@chakra-ui/react";
+import { Link as RemixLink } from "@remix-run/react";
+import { PropsWithChildren, ReactNode } from "react";
 import { FaGithub, FaTwitter } from "react-icons/fa";
 import logo from "~/images/logo.png";
+import { useOptionalUser } from "~/utils";
 import ColorModeButton from "./ColorModeButton";
 import UserMenuButton from "./UserMenuButton";
 

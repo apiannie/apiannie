@@ -1,15 +1,9 @@
 import {
-  Alert,
-  AlertIcon,
   Box,
   Button,
   Checkbox,
   Flex,
-  FormControl,
-  FormLabel,
   Heading,
-  Input,
-  InputGroup,
   InputRightElement,
   Stack,
   Text,
@@ -24,11 +18,16 @@ import {
   MetaFunction,
   redirect,
 } from "@remix-run/node";
-import { Form, Link, useActionData } from "@remix-run/react";
+import { Link, useActionData } from "@remix-run/react";
+import { withZod } from "@remix-validated-form/with-zod";
 import { useEffect, useRef, useState } from "react";
+import { ValidatedForm, validationError } from "remix-validated-form";
+import { z } from "zod";
 import { verifyLogin } from "~/models/user.server";
 import { createUserSession, getUserId } from "~/session.server";
-import { safeRedirect, validateEmail } from "~/utils";
+import FormInput from "~/ui/Form/FormInput";
+import FormSubmitButton from "~/ui/Form/FormSubmitButton";
+import { safeRedirect } from "~/utils";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
@@ -38,45 +37,28 @@ export async function loader({ request }: LoaderArgs) {
 
 export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
-  const email = formData.get("email");
-  const password = formData.get("password");
+  const result = await validator.validate(formData);
+
+  if (result.error) {
+    return validationError(result.error);
+  }
+
+  const { email, password, remember } = result.data;
   const redirectTo = safeRedirect(formData.get("redirectTo"), "/workspaces");
-  const remember = formData.get("remember");
-
-  if (!validateEmail(email)) {
-    return json(
-      { errors: { email: "Email is invalid", password: null } },
-      { status: 400 }
-    );
-  }
-
-  if (typeof password !== "string" || password.length === 0) {
-    return json(
-      { errors: { email: null, password: "Password is required" } },
-      { status: 400 }
-    );
-  }
-
-  if (password.length < 8) {
-    return json(
-      { errors: { email: null, password: "Password is too short" } },
-      { status: 400 }
-    );
-  }
-
   const user = await verifyLogin(email, password);
 
   if (!user) {
-    return json(
-      { errors: { email: "Invalid email or password", password: null } },
-      { status: 400 }
+    return validationError(
+      { fieldErrors: { password: "Incorrect password" } },
+      result.submittedData,
+      { status: 401 }
     );
   }
 
   return createUserSession({
     request,
     userId: user.id,
-    remember: remember === "on" ? true : false,
+    remember: !!remember,
     redirectTo,
   });
 }
@@ -87,16 +69,28 @@ export const meta: MetaFunction = () => {
   };
 };
 
+export const validator = withZod(
+  z.object({
+    email: z
+      .string()
+      .trim()
+      .min(1, { message: "Please input your email" })
+      .email(),
+    password: z.string().min(1, "Please input your password"),
+    remember: z.string().optional(),
+  })
+);
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
-  const actionData = useActionData<typeof action>();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const actionData = useActionData();
 
   useEffect(() => {
-    if (actionData?.errors?.email) {
+    if (actionData?.fieldErrors?.email) {
       emailRef.current?.focus();
-    } else if (actionData?.errors?.password) {
+    } else if (actionData?.fieldErrors?.password) {
       passwordRef.current?.focus();
     }
   }, [actionData]);
@@ -116,55 +110,39 @@ export default function Login() {
           boxShadow={"lg"}
           p={8}
         >
-          <Form method="post">
+          <ValidatedForm validator={validator} method="post">
             <Stack spacing={4}>
-              <FormControl id="email">
-                <FormLabel>Email address</FormLabel>
-                {actionData?.errors?.email && (
-                  <Alert status="error">
-                    <AlertIcon />
-                    {actionData.errors.email}
-                  </Alert>
-                )}
-                <Input ref={emailRef} name="email" type="email" />
-              </FormControl>
-              <FormControl id="password">
-                <FormLabel>Password</FormLabel>
-                {actionData?.errors?.password && (
-                  <Alert status="error">
-                    <AlertIcon />
-                    {actionData.errors.password}
-                  </Alert>
-                )}
-                <InputGroup>
-                  <Input
-                    ref={passwordRef}
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                  />
-                  <InputRightElement h={"full"}>
-                    <Button
-                      variant={"ghost"}
-                      onClick={() =>
-                        setShowPassword((showPassword) => !showPassword)
-                      }
-                    >
-                      {showPassword ? <ViewIcon /> : <ViewOffIcon />}
-                    </Button>
-                  </InputRightElement>
-                </InputGroup>
-              </FormControl>
+              <FormInput label="Email address" name="email" ref={emailRef} />
+              <FormInput
+                label="Password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                ref={passwordRef}
+              >
+                <InputRightElement h={"full"}>
+                  <Button
+                    variant={"ghost"}
+                    onClick={() =>
+                      setShowPassword((showPassword) => !showPassword)
+                    }
+                  >
+                    {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                  </Button>
+                </InputRightElement>
+              </FormInput>
               <Stack spacing={10}>
                 <Stack
                   direction={{ base: "column", sm: "row" }}
                   align={"start"}
                   justify={"space-between"}
                 >
-                  <Checkbox>Remember me</Checkbox>
+                  <Checkbox name="remember" value="on">
+                    Remember me
+                  </Checkbox>
                 </Stack>
-                <Button type="submit" colorScheme="teal">
+                <FormSubmitButton type="submit" colorScheme="teal">
                   Sign in
-                </Button>
+                </FormSubmitButton>
               </Stack>
               <Stack pt={6}>
                 <Text align={"center"}>
@@ -175,7 +153,7 @@ export default function Login() {
                 </Text>
               </Stack>
             </Stack>
-          </Form>
+          </ValidatedForm>
         </Box>
       </Stack>
     </Flex>
