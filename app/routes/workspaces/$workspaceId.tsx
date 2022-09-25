@@ -1,21 +1,24 @@
 import {
+  Box,
   Button,
   Flex,
-  Input,
+  Icon,
+  Link,
+  SimpleGrid,
   Tab,
   TabList,
   TabPanel,
   TabPanels,
   Tabs,
+  Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { User } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { useLoaderData, useTransition } from "@remix-run/react";
+import { FcList } from "react-icons/fc";
 import { FiPlus } from "react-icons/fi";
 import invariant from "tiny-invariant";
-import Validator from "validatorjs";
-import { createProject } from "~/models/project.server";
+import { getProjectsByWorkspaceId } from "~/models/project.server";
 import { getWorkspaceById } from "~/models/workspace.server";
 import { requireUser } from "~/session.server";
 import { Action } from "../workspaces.parts/constants";
@@ -26,9 +29,11 @@ import NewProjectModal, {
 export const loader = async ({ params }: LoaderArgs) => {
   let { workspaceId } = params;
   invariant(workspaceId, "workspaceId is null");
-  let workspace = await getWorkspaceById(workspaceId);
-
-  return json({ workspace });
+  let [workspace, projects] = await Promise.all([
+    getWorkspaceById(workspaceId),
+    getProjectsByWorkspaceId(workspaceId),
+  ]);
+  return json({ workspace, projects });
 };
 
 export const action = async ({ request, params }: ActionArgs) => {
@@ -46,54 +51,6 @@ export const action = async ({ request, params }: ActionArgs) => {
         status: 400,
       });
   }
-
-  const data = Object.fromEntries(await request.formData());
-
-  return json({ status: "success" });
-
-  switch (data._action) {
-    case Action.NEW_WORKSPACE:
-      return createProjectAction(data, user, workspaceId);
-    default:
-      return {
-        status: 400,
-      };
-  }
-};
-
-const createProjectAction = async (
-  data: {
-    [k: string]: FormDataEntryValue;
-  },
-  user: User,
-  workspaceId: string | undefined
-) => {
-  const validator = new Validator(
-    {
-      ...data,
-      workspaceId,
-    },
-    {
-      name: ["required", "string"],
-      workspaceId: ["required", "string"],
-    }
-  );
-
-  if (validator.fails()) {
-    return json({
-      errors: validator.errors.errors,
-      status: 400,
-    });
-  }
-
-  let project = await createProject(
-    user,
-    data.name as string,
-    workspaceId as string,
-    []
-  );
-
-  return json(project);
 };
 
 export default function Workspace() {
@@ -123,31 +80,74 @@ export default function Workspace() {
   );
 }
 
-function Projects() {
+const Projects = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { workspace } = useLoaderData<typeof loader>();
+  const { workspace, projects } = useLoaderData<typeof loader>();
   return (
-    <Flex
-      flexDirection="row"
-      justifyContent="space-between"
-      p={3}
-      borderRadius="md"
-      background={"cyan.50"}
-    >
-      <Input maxW={96} placeholder="Search project" />
-      <Button
-        onClick={onOpen}
-        leftIcon={<FiPlus />}
-        colorScheme="pink"
-        variant="solid"
-      >
-        Project
-      </Button>
-      <NewProjectModal
-        users={workspace.users}
-        isOpen={isOpen}
-        onClose={onClose}
-      />
-    </Flex>
+    <Box>
+      <SimpleGrid columns={[1, 2, 2, 3, 3, 4]} spacing={6}>
+        {[null, ...projects].map((project) =>
+          project ? (
+            <ProjectItem key={project.id} project={project} />
+          ) : (
+            <Box key="add-project" onClick={onOpen}>
+              <NewProjectModal
+                users={workspace.users}
+                isOpen={isOpen}
+                onClose={onClose}
+              />
+              <ProjectItem project={null} />
+            </Box>
+          )
+        )}
+      </SimpleGrid>
+    </Box>
   );
-}
+};
+
+const ProjectItem = ({
+  project,
+}: {
+  project: {
+    name: string;
+    id: string;
+  } | null;
+}) => {
+  return (
+    <Link
+      isExternal
+      href={project ? `/projects/${project.id}` : undefined}
+      _hover={{
+        textDecoration: "none",
+      }}
+    >
+      <Flex
+        borderStyle={project ? "solid" : "dashed"}
+        height="80px"
+        borderWidth={2}
+        borderRadius="xl"
+        borderColor="gray.500"
+        bg="white.800"
+        flexDirection="row"
+        alignItems="center"
+        justifyContent={project ? "flex-start" : "center"}
+        _hover={{
+          bg: "white",
+        }}
+        cursor="pointer"
+      >
+        <Icon as={project ? FcList : FiPlus} w={10} h={10} mx={2} />
+        {project && (
+          <Text
+            overflow={"hidden"}
+            textOverflow={"ellipsis"}
+            fontSize="xl"
+            noOfLines={2}
+          >
+            {project.name}
+          </Text>
+        )}
+      </Flex>
+    </Link>
+  );
+};

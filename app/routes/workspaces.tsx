@@ -25,7 +25,7 @@ import {
 } from "@remix-run/react";
 import { ReactNode } from "react";
 import { IconType } from "react-icons";
-import { FiBell, FiFolder, FiMenu, FiPlus } from "react-icons/fi";
+import { FiBell, FiLayers, FiMenu, FiPlus } from "react-icons/fi";
 import logo from "~/images/logo.png";
 import { requireUser, requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
@@ -162,8 +162,8 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           _focus={{ boxShadow: "none" }}
           key={workspace.id}
         >
-          <NavItem icon={FiFolder} active={workspace.id === workspaceId}>
-            {workspace.name}
+          <NavItem icon={FiLayers} active={workspace.id === workspaceId}>
+            <Text noOfLines={1}>{workspace.name}</Text>
           </NavItem>
         </Link>
       ))}
@@ -173,7 +173,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 
 interface NavItemProps extends FlexProps {
   icon: IconType;
-  children: string | number;
+  children: ReactNode;
   active?: boolean;
 }
 const NavItem = ({ icon, children, active, ...rest }: NavItemProps) => {

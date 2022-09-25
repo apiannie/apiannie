@@ -13,3 +13,16 @@ export const createProject = async (user: User, workspaceId: string, name: strin
 
     return project
 }
+
+export const getProjectsByWorkspaceId = async (workspaceId: string) => {
+    let projects = await prisma.project.findMany({
+        select: {
+            id: true,
+            name: true,
+        },
+        where: {
+            workspaceId: workspaceId,
+        }
+    })
+    return projects;
+}
