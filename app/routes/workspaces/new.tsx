@@ -17,8 +17,8 @@ import logo from "~/images/logo.png";
 import {
   newWorkspaceAction,
   newWorkspaceValidator as validator,
-} from "../workspaces.parts/NewWorkspaceModal";
-import { Action } from "../workspaces.parts/constants";
+} from "./#lib/NewWorkspaceModal";
+import { Action } from "./#lib/constants";
 import { ActionArgs } from "@remix-run/node";
 import { requireUser } from "~/session.server";
 

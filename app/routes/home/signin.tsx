@@ -28,6 +28,7 @@ import { createUserSession, getUserId } from "~/session.server";
 import FormInput from "~/ui/Form/FormInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { safeRedirect } from "~/utils";
+import Layout from "./#lib/Layout";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
@@ -96,66 +97,68 @@ export default function Login() {
   }, [actionData]);
 
   return (
-    <Flex minH={"100vh"} bg={useColorModeValue("gray.50", "gray.800")}>
-      <Stack spacing={8} mx={"auto"} width="440px" maxW={"lg"} py={20} px={6}>
-        <Stack align={"center"}>
-          <Heading fontSize={"4xl"}>Sign in to your account</Heading>
-          <Text fontSize={"lg"} color={"gray.600"}>
-            to enjoy all of our cool <Link to="#">features</Link> ✌️
-          </Text>
-        </Stack>
-        <Box
-          rounded={"lg"}
-          bg={useColorModeValue("white", "gray.700")}
-          boxShadow={"lg"}
-          p={8}
-        >
-          <ValidatedForm validator={validator} method="post">
-            <Stack spacing={4}>
-              <FormInput label="Email address" name="email" ref={emailRef} />
-              <FormInput
-                label="Password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                ref={passwordRef}
-              >
-                <InputRightElement h={"full"}>
-                  <Button
-                    variant={"ghost"}
-                    onClick={() =>
-                      setShowPassword((showPassword) => !showPassword)
-                    }
-                  >
-                    {showPassword ? <ViewIcon /> : <ViewOffIcon />}
-                  </Button>
-                </InputRightElement>
-              </FormInput>
-              <Stack spacing={10}>
-                <Stack
-                  direction={{ base: "column", sm: "row" }}
-                  align={"start"}
-                  justify={"space-between"}
+    <Layout>
+      <Flex minH={"100vh"} bg={useColorModeValue("gray.50", "gray.800")}>
+        <Stack spacing={8} mx={"auto"} width="440px" maxW={"lg"} py={20} px={6}>
+          <Stack align={"center"}>
+            <Heading fontSize={"4xl"}>Sign in to your account</Heading>
+            <Text fontSize={"lg"} color={"gray.600"}>
+              to enjoy all of our cool <Link to="#">features</Link> ✌️
+            </Text>
+          </Stack>
+          <Box
+            rounded={"lg"}
+            bg={useColorModeValue("white", "gray.700")}
+            boxShadow={"lg"}
+            p={8}
+          >
+            <ValidatedForm validator={validator} method="post">
+              <Stack spacing={4}>
+                <FormInput label="Email address" name="email" ref={emailRef} />
+                <FormInput
+                  label="Password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  ref={passwordRef}
                 >
-                  <Checkbox name="remember" value="on">
-                    Remember me
-                  </Checkbox>
+                  <InputRightElement h={"full"}>
+                    <Button
+                      variant={"ghost"}
+                      onClick={() =>
+                        setShowPassword((showPassword) => !showPassword)
+                      }
+                    >
+                      {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                    </Button>
+                  </InputRightElement>
+                </FormInput>
+                <Stack spacing={10}>
+                  <Stack
+                    direction={{ base: "column", sm: "row" }}
+                    align={"start"}
+                    justify={"space-between"}
+                  >
+                    <Checkbox name="remember" value="on">
+                      Remember me
+                    </Checkbox>
+                  </Stack>
+                  <FormSubmitButton type="submit" colorScheme="teal">
+                    Sign in
+                  </FormSubmitButton>
                 </Stack>
-                <FormSubmitButton type="submit" colorScheme="teal">
-                  Sign in
-                </FormSubmitButton>
+                <Stack pt={6}>
+                  <Text align={"center"}>
+                    New to Api Annie?{" "}
+                    <Link to="/home/signup" color={"blue.400"}>
+                      Sign up
+                    </Link>
+                  </Text>
+                </Stack>
               </Stack>
-              <Stack pt={6}>
-                <Text align={"center"}>
-                  New to Api Annie?{" "}
-                  <Link to="/home/signup" color={"blue.400"}>
-                    Sign up
-                  </Link>
-                </Text>
-              </Stack>
-            </Stack>
-          </ValidatedForm>
-        </Box>
-      </Stack>
-    </Flex>
+            </ValidatedForm>
+          </Box>
+        </Stack>
+      </Flex>
+    </Layout>
   );
 }

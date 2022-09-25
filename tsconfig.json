@@ -3,7 +3,7 @@
     "remix.env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "app/routes/workspaces.parts/constants.js"
+    "app/routes/components.parts/constants.js"
   ],
   "compilerOptions": {
     "module": "esnext",

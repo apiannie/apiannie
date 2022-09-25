@@ -17,6 +17,7 @@ import { createUserSession, getUserId } from "~/session.server";
 import FormInput from "~/ui/Form/FormInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { safeRedirect } from "~/utils";
+import Layout from "./#lib/Layout";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
@@ -94,55 +95,57 @@ export default function SignUp() {
   const actionData = useActionData<typeof action>();
 
   return (
-    <Flex
-      minH={"100vh"}
-      justify={"center"}
-      bg={useColorModeValue("gray.50", "gray.800")}
-    >
-      <Stack width="440px" spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
-        <Stack align={"center"}>
-          <Heading fontSize={"4xl"} textAlign={"center"}>
-            Sign up
-          </Heading>
-          <Text fontSize={"lg"} color={"gray.600"}>
-            to enjoy all of our cool <Link to="#">features</Link> ✌️
-          </Text>
-        </Stack>
-        <Box
-          rounded={"lg"}
-          bg={useColorModeValue("white", "gray.700")}
-          boxShadow={"lg"}
-          p={8}
-        >
-          <Stack spacing={4}>
-            <ValidatedForm validator={validator} method="post">
-              <FormInput name="name" label="Name" type="text" />
-              <FormInput name="email" label="Email" type="email" />
-              <FormInput name="password" label="Password" type="password" />
-              <FormInput
-                name="passwordConfirm"
-                label="Confirm Password"
-                type="password"
-              />
-
-              <Stack spacing={10} pt={2}>
-                <FormSubmitButton size="lg" colorScheme="teal">
-                  Sign up
-                </FormSubmitButton>
-              </Stack>
-            </ValidatedForm>
-
-            <Stack pt={6}>
-              <Text align={"center"}>
-                Already a user?{" "}
-                <Link to="/home/signin" color={"blue.400"}>
-                  Sign in
-                </Link>
-              </Text>
-            </Stack>
+    <Layout>
+      <Flex
+        minH={"100vh"}
+        justify={"center"}
+        bg={useColorModeValue("gray.50", "gray.800")}
+      >
+        <Stack width="440px" spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
+          <Stack align={"center"}>
+            <Heading fontSize={"4xl"} textAlign={"center"}>
+              Sign up
+            </Heading>
+            <Text fontSize={"lg"} color={"gray.600"}>
+              to enjoy all of our cool <Link to="#">features</Link> ✌️
+            </Text>
           </Stack>
-        </Box>
-      </Stack>
-    </Flex>
+          <Box
+            rounded={"lg"}
+            bg={useColorModeValue("white", "gray.700")}
+            boxShadow={"lg"}
+            p={8}
+          >
+            <Stack spacing={4}>
+              <ValidatedForm validator={validator} method="post">
+                <FormInput name="name" label="Name" type="text" />
+                <FormInput name="email" label="Email" type="email" />
+                <FormInput name="password" label="Password" type="password" />
+                <FormInput
+                  name="passwordConfirm"
+                  label="Confirm Password"
+                  type="password"
+                />
+
+                <Stack spacing={10} pt={2}>
+                  <FormSubmitButton size="lg" colorScheme="teal">
+                    Sign up
+                  </FormSubmitButton>
+                </Stack>
+              </ValidatedForm>
+
+              <Stack pt={6}>
+                <Text align={"center"}>
+                  Already a user?{" "}
+                  <Link to="/home/signin" color={"blue.400"}>
+                    Sign in
+                  </Link>
+                </Text>
+              </Stack>
+            </Stack>
+          </Box>
+        </Stack>
+      </Flex>
+    </Layout>
   );
 }

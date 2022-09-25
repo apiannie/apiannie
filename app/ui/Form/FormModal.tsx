@@ -39,9 +39,6 @@ export default function FormModal<DataType>({
       onClose();
     }
   };
-
-  console.log(fetcher);
-
   useEffect(() => {
     if (fetcher.type === "done") {
       if (!fetcher.data?.fieldErrors) {

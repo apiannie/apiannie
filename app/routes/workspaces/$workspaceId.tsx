@@ -21,12 +21,10 @@ import invariant from "tiny-invariant";
 import { getProjectsByWorkspaceId } from "~/models/project.server";
 import { getWorkspaceById } from "~/models/workspace.server";
 import { requireUser } from "~/session.server";
-import { Action } from "../workspaces.parts/constants";
-import Layout from "../workspaces.parts/Layout";
-import NewProjectModal, {
-  newProjectAction,
-} from "../workspaces.parts/NewProjectModal";
-import { newWorkspaceAction } from "../workspaces.parts/NewWorkspaceModal";
+import { Action } from "./#lib/constants";
+import Layout from "./#lib/Layout";
+import NewProjectModal, { newProjectAction } from "./#lib/NewProjectModal";
+import { newWorkspaceAction } from "./#lib/NewWorkspaceModal";
 
 export const loader = async ({ params }: LoaderArgs) => {
   let { workspaceId } = params;
