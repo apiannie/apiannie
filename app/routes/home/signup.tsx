@@ -66,10 +66,12 @@ export const validator = withZod(
     .object({
       name: z
         .string()
+        .trim()
         .min(1, { message: "Please input your name" })
         .min(2, { message: "Name should contain at least 2 characters" }),
       email: z
         .string()
+        .trim()
         .min(1, { message: "Please input your email" })
         .max(128, { message: "Email is too long (over 128)" })
         .email(),

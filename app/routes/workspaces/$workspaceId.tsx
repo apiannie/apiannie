@@ -42,9 +42,9 @@ export const action = async ({ request, params }: ActionArgs) => {
     case Action.NEW_PROJECT:
       return newProjectAction({ formData, user, workspaceId });
     default:
-      return {
+      return json({
         status: 400,
-      };
+      });
   }
 
   const data = Object.fromEntries(await request.formData());
@@ -125,6 +125,7 @@ export default function Workspace() {
 
 function Projects() {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { workspace } = useLoaderData<typeof loader>();
   return (
     <Flex
       flexDirection="row"
@@ -142,7 +143,11 @@ function Projects() {
       >
         Project
       </Button>
-      <NewProjectModal isOpen={isOpen} onClose={onClose} />
+      <NewProjectModal
+        users={workspace.users}
+        isOpen={isOpen}
+        onClose={onClose}
+      />
     </Flex>
   );
 }

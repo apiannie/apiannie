@@ -15,6 +15,7 @@ export type FormModalProps<DataType> = Omit<
 export default function FormModal<DataType>({
   onClose,
 
+  id,
   children,
   validator,
   onSubmit,
@@ -23,6 +24,7 @@ export default function FormModal<DataType>({
   subaction,
   resetAfterSubmit,
   disableFocusOnError,
+  noValidate,
 
   replace,
   method,
@@ -49,6 +51,7 @@ export default function FormModal<DataType>({
   return (
     <Modal onClose={close} {...rest}>
       <ValidatedForm
+        id={id}
         validator={validator}
         onSubmit={onSubmit}
         fetcher={fetcher}
@@ -60,6 +63,7 @@ export default function FormModal<DataType>({
         replace={replace}
         method={method}
         action={action}
+        noValidate={noValidate}
       >
         {children}
       </ValidatedForm>
