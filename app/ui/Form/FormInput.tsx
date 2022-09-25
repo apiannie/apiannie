@@ -12,7 +12,7 @@ import { useField } from "remix-validated-form";
 
 export interface FormInputProps extends InputProps {
   name: string;
-  label: string;
+  label?: string;
 }
 
 export default React.forwardRef<HTMLInputElement, FormInputProps>(
@@ -21,7 +21,7 @@ export default React.forwardRef<HTMLInputElement, FormInputProps>(
     const { error, getInputProps } = useField(name);
     return (
       <FormControl>
-        <FormLabel>{label}</FormLabel>
+        {label && <FormLabel>{label}</FormLabel>}
         <InputGroup>
           <Input ref={ref} {...getInputProps({ id: name, ...rest })} />
           {children}

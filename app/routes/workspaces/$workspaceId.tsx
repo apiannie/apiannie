@@ -22,9 +22,11 @@ import { getProjectsByWorkspaceId } from "~/models/project.server";
 import { getWorkspaceById } from "~/models/workspace.server";
 import { requireUser } from "~/session.server";
 import { Action } from "../workspaces.parts/constants";
+import Layout from "../workspaces.parts/Layout";
 import NewProjectModal, {
   newProjectAction,
 } from "../workspaces.parts/NewProjectModal";
+import { newWorkspaceAction } from "../workspaces.parts/NewWorkspaceModal";
 
 export const loader = async ({ params }: LoaderArgs) => {
   let { workspaceId } = params;
@@ -40,11 +42,13 @@ export const action = async ({ request, params }: ActionArgs) => {
   let user = await requireUser(request);
   let { workspaceId } = params;
 
-  invariant(workspaceId, "workspaceId is null");
   let formData = await request.formData();
 
   switch (formData.get("_action")) {
+    case Action.NEW_WORKSPACE:
+      return newWorkspaceAction({ formData, user });
     case Action.NEW_PROJECT:
+      invariant(workspaceId, "workspaceId is null");
       return newProjectAction({ formData, user, workspaceId });
     default:
       return json({
@@ -58,25 +62,27 @@ export default function Workspace() {
   const transition = useTransition();
 
   return (
-    <Tabs>
-      <TabList>
-        <Tab>Projects</Tab>
-        <Tab>Members</Tab>
-        <Tab>Settings</Tab>
-      </TabList>
+    <Layout>
+      <Tabs>
+        <TabList>
+          <Tab>Projects</Tab>
+          <Tab>Members</Tab>
+          <Tab>Settings</Tab>
+        </TabList>
 
-      <TabPanels>
-        <TabPanel>
-          <Projects />
-        </TabPanel>
-        <TabPanel>
-          <p>two!</p>
-        </TabPanel>
-        <TabPanel>
-          <p>three!</p>
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+        <TabPanels>
+          <TabPanel>
+            <Projects />
+          </TabPanel>
+          <TabPanel>
+            <p>two!</p>
+          </TabPanel>
+          <TabPanel>
+            <p>three!</p>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Layout>
   );
 }
 

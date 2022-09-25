@@ -34,7 +34,6 @@ export const newWorkspaceAction = async ({
   user: User;
 }) => {
   const result = await newWorkspaceValidator.validate(formData);
-
   if (result.error) {
     return validationError(result.error);
   }

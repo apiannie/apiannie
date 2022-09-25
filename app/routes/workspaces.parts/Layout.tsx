@@ -7,6 +7,9 @@ import {
   DrawerContent,
   Flex,
   FlexProps,
+  Grid,
+  GridItem,
+  Hide,
   HStack,
   Icon,
   IconButton,
@@ -16,7 +19,6 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { ActionFunction, json, LoaderArgs, redirect } from "@remix-run/node";
 import {
   Link as RemixLink,
   Outlet,
@@ -27,61 +29,18 @@ import { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { FiBell, FiLayers, FiMenu, FiPlus } from "react-icons/fi";
 import logo from "~/images/logo.png";
-import { requireUser, requireUserId } from "~/session.server";
 import { useUser } from "~/utils";
-import ColorModeButton from "./home.parts/ColorModeButton";
-import UserMenuButton from "./home.parts/UserMenuButton";
-import { Action } from "./workspaces.parts/constants";
-import NewWorkspaceModal, {
-  newWorkspaceAction,
-} from "./workspaces.parts/NewWorkspaceModal";
+import ColorModeButton from "../home.parts/ColorModeButton";
+import UserMenuButton from "../home.parts/UserMenuButton";
+import NewWorkspaceModal from "./NewWorkspaceModal";
 
-export async function loader({ request, params }: LoaderArgs) {
-  let userId = await requireUserId(request);
-  let user = await requireUser(request);
-  let { workspaceId } = params;
-  let workspaces = user.workspaces;
-  if (workspaces.length === 0) {
-  } else if (!workspaceId) {
-    return redirect(`/workspaces/${workspaces[0].id}`);
-  }
-
-  return json({
-    workspaces: workspaces,
-  });
-}
-
-export const action: ActionFunction = async ({ request }) => {
-  let user = await requireUser(request);
-  let formData = await request.formData();
-
-  switch (formData.get("_action")) {
-    case Action.NEW_WORKSPACE:
-      return newWorkspaceAction({ formData, user });
-    default:
-      return {
-        status: 400,
-      };
-  }
-};
-
-export default function Workspaces() {
-  const user = useUser();
-  return (
-    <SidebarWithHeader>
-      <Outlet />
-    </SidebarWithHeader>
-  );
-}
-
-function SidebarWithHeader({ children }: { children: ReactNode }) {
+export default function Layout({ children }: { children: ReactNode }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
-      <SidebarContent
-        onClose={() => onClose}
-        display={{ base: "none", md: "block" }}
-      />
+      <Hide below="md">
+        <SidebarContent onClose={() => onClose} />
+      </Hide>
       <Drawer
         autoFocus={false}
         isOpen={isOpen}
@@ -122,7 +81,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
   }
 
   return (
-    <Box
+    <Grid
       transition="3s ease"
       bg={useColorModeValue("white", "gray.900")}
       borderRight="1px"
@@ -130,10 +89,10 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
       w={{ base: "full", md: 72 }}
       pos="fixed"
       h="full"
+      templateRows={"100px 60px 1fr"}
       {...rest}
-      overflowY="auto"
     >
-      <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+      <Flex alignItems="center" mx="8" justifyContent="space-between">
         <Image
           src={logo}
           display={{ base: "none", md: "flex" }}
@@ -141,33 +100,37 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         />
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
-      <NewWorkspaceModal isOpen={modal.isOpen} onClose={modal.onClose} />
-      <Divider mb="2" />
-      <NavItem
-        icon={FiPlus}
-        active={false}
-        borderWidth="1px"
-        borderColor="gray.200"
-        borderStyle="dashed"
-        mb={1}
-        onClick={modal.onOpen}
-      >
-        Add workspace
-      </NavItem>
-      {user.workspaces.map((workspace) => (
-        <Link
-          to={`/workspaces/${workspace.id}`}
-          as={RemixLink}
-          style={{ textDecoration: "none" }}
-          _focus={{ boxShadow: "none" }}
-          key={workspace.id}
+      <GridItem>
+        <NavItem
+          icon={FiPlus}
+          active={false}
+          borderWidth="1px"
+          borderColor="gray.200"
+          borderStyle="dashed"
+          mb={1}
+          onClick={modal.onOpen}
         >
-          <NavItem icon={FiLayers} active={workspace.id === workspaceId}>
-            <Text noOfLines={1}>{workspace.name}</Text>
-          </NavItem>
-        </Link>
-      ))}
-    </Box>
+          Add workspace
+        </NavItem>
+        <NewWorkspaceModal isOpen={modal.isOpen} onClose={modal.onClose} />
+        <Divider />
+      </GridItem>
+      <GridItem overflowY="auto">
+        {user.workspaces.map((workspace) => (
+          <Link
+            to={`/workspaces/${workspace.id}`}
+            as={RemixLink}
+            style={{ textDecoration: "none" }}
+            _focus={{ boxShadow: "none" }}
+            key={workspace.id}
+          >
+            <NavItem icon={FiLayers} active={workspace.id === workspaceId}>
+              <Text noOfLines={1}>{workspace.name}</Text>
+            </NavItem>
+          </Link>
+        ))}
+      </GridItem>
+    </Grid>
   );
 };
 

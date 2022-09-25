@@ -1,6 +1,7 @@
 import {
   Alert,
   AlertIcon,
+  Box,
   ModalBody,
   ModalCloseButton,
   ModalContent,
