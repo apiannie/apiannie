@@ -1,3 +1,4 @@
+import { json } from "@remix-run/node";
 import { useMatches } from "@remix-run/react";
 import { useMemo } from "react";
 
@@ -64,4 +65,8 @@ export function useUser(): User {
     );
   }
   return maybeUser;
+}
+
+export const httpResponse = {
+  NotFound: new Response("Not Found", { status: 404 }),
 }

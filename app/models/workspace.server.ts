@@ -26,7 +26,7 @@ export const createWorkspace = async (user: User, workspaceName: Workspace["name
 }
 
 export const getWorkspaceById = async (id:string) => {
-    let workspace = await prisma.workspace.findFirstOrThrow({
+    let workspace = await prisma.workspace.findFirst({
         where: {
             id: id,
         }
