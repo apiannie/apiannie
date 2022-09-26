@@ -32,7 +32,7 @@ model Post {
 }
 
 enum WorkspaceUserRole {
-  OWNER
+  ADMIN
   MEMBER
   VISITOR
 }
@@ -48,20 +48,9 @@ model Workspace {
   name      String
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+  owner     String          @db.ObjectId
   users     WorkspaceUser[]
   projects  Project[]
-}
-
-enum ProjectUserRole {
-  OWNER
-  WRITE
-  READ
-}
-
-type ProjectUser {
-  id   String          @db.ObjectId
-  name String
-  role ProjectUserRole
 }
 
 model Project {
@@ -88,7 +77,6 @@ model Project {
   interfaceCols  InterfaceCol[]
   interfaceCats  InterfaceCat[]
   interfaceCases InterfaceCase[]
-  users          ProjectUser[]
   workspaceId    String
   Workspace      Workspace       @relation(fields: [workspaceId], references: [id])
 }

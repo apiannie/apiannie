@@ -19,7 +19,7 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { ProjectUserRole, WorkspaceUser } from "@prisma/client";
+import { WorkspaceUser } from "@prisma/client";
 import { json } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
 import React from "react";
@@ -34,30 +34,9 @@ import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { Action } from "./constants";
 
 export const newProjectValidator = withZod(
-  z
-    .object({
-      name: z.string().min(1, "project name is required"),
-      users: z
-        .object({
-          id: z.string().trim().min(1),
-          name: z.string().trim().min(1),
-          role: z.enum([
-            ProjectUserRole.OWNER,
-            ProjectUserRole.WRITE,
-            ProjectUserRole.READ,
-          ]),
-        })
-        .array(),
-    })
-    .refine(
-      (data) => {
-        return data.users.some((user) => user.role === ProjectUserRole.OWNER);
-      },
-      {
-        path: ["memberTable"],
-        message: "At least 1 owner is required",
-      }
-    )
+  z.object({
+    name: z.string().min(1, "project name is required"),
+  })
 );
 
 export const newProjectAction = async ({
@@ -74,53 +53,10 @@ export const newProjectAction = async ({
     return validationError(result.error);
   }
 
-  const { name, users } = result.data;
+  const { name } = result.data;
 
-  let project = await createProject(user, workspaceId, name, users);
+  let project = await createProject(user, workspaceId, name);
   return json({ project });
-};
-
-const MemberTable = ({ users }: { users: WorkspaceUser[] }) => {
-  const { error } = useField("memberTable");
-  return (
-    <TableContainer mt={4}>
-      <Table>
-        {error && (
-          <TableCaption>
-            <Alert status="error">
-              <AlertIcon /> {error}
-            </Alert>
-          </TableCaption>
-        )}
-        <Thead>
-          <Tr>
-            <Th>User</Th>
-            <Th>Role</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {users.map((user, i) => (
-            <Tr key={user.id}>
-              <Td>{user.name}</Td>
-              <Td>
-                <input type="hidden" name={`users[${i}].id`} value={user.id} />
-                <input
-                  type="hidden"
-                  name={`users[${i}].name`}
-                  value={user.name}
-                />
-                <Select name={`users[${i}].role`}>
-                  <option value={ProjectUserRole.OWNER}>Owner</option>
-                  <option value={ProjectUserRole.WRITE}>Write</option>
-                  <option value={ProjectUserRole.READ}>Read</option>
-                </Select>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-    </TableContainer>
-  );
 };
 
 export default function NewProjectModal({
@@ -153,7 +89,6 @@ export default function NewProjectModal({
         <ModalCloseButton />
         <ModalBody pb={6}>
           <FormInput name="name" label="Name" placeholder="Project name" />
-          <MemberTable users={users} />
         </ModalBody>
 
         <ModalFooter>

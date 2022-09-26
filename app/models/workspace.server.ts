@@ -5,11 +5,7 @@ export const createWorkspace = async (user: User, workspaceName: Workspace["name
     let workspace = await prisma.workspace.create({
         data: {
             name: workspaceName,
-            users: [{
-                id: user.id,
-                name: user.name,
-                role: "OWNER",
-            }],
+            owner: user.id,
         },
     })
     await prisma.user.update({
