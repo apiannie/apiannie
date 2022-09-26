@@ -30,8 +30,8 @@ import { IconType } from "react-icons";
 import { FiBell, FiLayers, FiMenu, FiPlus } from "react-icons/fi";
 import logo from "~/images/logo.png";
 import { useUser } from "~/utils";
-import ColorModeButton from "../../home/#lib/ColorModeButton";
-import UserMenuButton from "../../home/#lib/UserMenuButton";
+import ColorModeButton from "../../home/..lib/ColorModeButton";
+import UserMenuButton from "../../home/..lib/UserMenuButton";
 import NewWorkspaceModal from "./NewWorkspaceModal";
 
 export default function Layout({ children }: { children: ReactNode }) {

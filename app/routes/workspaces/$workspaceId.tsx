@@ -22,10 +22,10 @@ import { getProjectsByWorkspaceId } from "~/models/project.server";
 import { getWorkspaceById } from "~/models/workspace.server";
 import { requireUser } from "~/session.server";
 import { httpResponse } from "~/utils";
-import { Action } from "./#lib/constants";
-import Layout from "./#lib/Layout";
-import NewProjectModal, { newProjectAction } from "./#lib/NewProjectModal";
-import { newWorkspaceAction } from "./#lib/NewWorkspaceModal";
+import { Action } from "./..lib/constants";
+import Layout from "./..lib/Layout";
+import NewProjectModal, { newProjectAction } from "./..lib/NewProjectModal";
+import { newWorkspaceAction } from "./..lib/NewWorkspaceModal";
 
 export const loader = async ({ params }: LoaderArgs) => {
   let { workspaceId } = params;

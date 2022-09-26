@@ -17,7 +17,7 @@ import { createUserSession, getUserId } from "~/session.server";
 import FormInput from "~/ui/Form/FormInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { safeRedirect } from "~/utils";
-import Layout from "./#lib/Layout";
+import Layout from "./..lib/Layout";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);

@@ -71,8 +71,8 @@ import {
 import { getWorkspaceById } from "~/models/workspace.server";
 import { requireUser } from "~/session.server";
 import { httpResponse, useUser } from "~/utils";
-import ColorModeButton from "../home/#lib/ColorModeButton";
-import UserMenuButton from "../home/#lib/UserMenuButton";
+import ColorModeButton from "../home/..lib/ColorModeButton";
+import UserMenuButton from "../home/..lib/UserMenuButton";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   let user = await requireUser(request);

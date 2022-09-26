@@ -2,7 +2,7 @@ import { Box, Button, Container, Heading, Stack, Text } from "@chakra-ui/react";
 import { json, LoaderArgs, redirect } from "@remix-run/node";
 import { Link as RemixLink } from "@remix-run/react";
 import { getUserId } from "~/session.server";
-import Layout from "./home/#lib/Layout";
+import Layout from "./home/..lib/Layout";
 
 export function links() {
   return [
