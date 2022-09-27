@@ -13,23 +13,19 @@ import {
   Grid,
   GridItem,
   Heading,
-  Hide,
   HStack,
   Icon,
   IconButton,
   Image,
-  Input,
   List,
   ListIcon,
   ListItem,
   Modal,
   ModalBody,
-  ModalCloseButton,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  ModalProps,
   Skeleton,
   Spacer,
   Stack,
@@ -37,17 +33,15 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Project, User } from "@prisma/client";
+import { User } from "@prisma/client";
 import { json, LoaderArgs } from "@remix-run/node";
 import {
-  Form,
   Link as RemixLink,
   NavLink,
   Outlet,
   useFetcher,
   useLoaderData,
   useMatches,
-  useParams,
   useTransition,
 } from "@remix-run/react";
 import { ReactNode } from "react";
@@ -131,13 +125,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const width = 96;
   return (
     <Box h="100vh" bg={useColorModeValue("gray.50", "gray.900")}>
-      {/* <Hide below="md"> */}
-      <SidebarContent w={{ base: "full", md: width }} />
-      {/* </Hide> */}
-      {/* <MobileNav h="12" onOpen={onOpen} ml={{ base: 0, md: width }} />
-      <Box ml={{ base: 0, md: width }} p="4">
-        <Outlet />
-      </Box> */}
+      <SidebarContent />
     </Box>
   );
 }
@@ -147,19 +135,12 @@ interface SidebarProps extends BoxProps {}
 const SidebarContent = ({ ...rest }: SidebarProps) => {
   const { project } = useLoaderData<typeof loader>();
   const matches = useMatches();
-
+  const user = useUser();
   const sideNav = matches[matches.length - 1]?.handle?.sideNav;
 
   return (
-    <Grid
-      transition="3s ease"
-      h="100vh"
-      templateColumns={"80px 1fr"}
-      templateRows={"56px minmax(0, 1fr)"}
-      {...rest}
-    >
+    <Grid h="100vh" templateColumns={"80px 304px 1fr"} {...rest}>
       <GridItem
-        rowSpan={2}
         flexDirection={"column"}
         bg={useColorModeValue("cyan.50", "gray.700")}
         borderRight="1px"
@@ -187,26 +168,47 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
           name="Settings"
         />
       </GridItem>
-      <GridItem
-        p={2}
+      <Grid
         bg={useColorModeValue("teal.50", "gray.800")}
         borderRightWidth="1px"
         borderRightColor={useColorModeValue("gray.200", "gray.700")}
+        templateRows="56px minmax(0, 1fr)"
+        h="100vh"
       >
-        <ProjecChangeButton />
-      </GridItem>
-      <GridItem
-        bg={useColorModeValue("teal.50", "gray.800")}
-        borderRightWidth="1px"
-        borderRightColor={useColorModeValue("gray.200", "gray.700")}
-      >
+        <ProjecChangeButton p={2} />
         {sideNav}
+      </Grid>
+      <GridItem>
+        <Grid h="100vh" templateRows={"56px minmax(0, 1fr)"}>
+          <HStack
+            px={{ base: 4, md: 4 }}
+            height="full"
+            alignItems="center"
+            bg={useColorModeValue("teal.50", "gray.800")}
+            borderBottomWidth="1px"
+            borderBottomColor={useColorModeValue("gray.200", "gray.700")}
+            justifyContent={{ base: "space-between", md: "flex-end" }}
+            spacing={{ base: "0", md: "6" }}
+          >
+            <ColorModeButton />
+            <IconButton
+              size="md"
+              variant="ghost"
+              aria-label="open menu"
+              icon={<FiBell />}
+            />
+            <UserMenuButton avatar={user.avatar || undefined} />
+          </HStack>
+          <Box overflowY={"auto"}>
+            <Outlet />
+          </Box>
+        </Grid>
       </GridItem>
     </Grid>
   );
 };
 
-const ProjecChangeButton = () => {
+const ProjecChangeButton = (props: BoxProps) => {
   const fetcher = useFetcher<Awaited<ReturnType<typeof loadProjects>>>();
   const { project } = useLoaderData<typeof loader>();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -218,7 +220,7 @@ const ProjecChangeButton = () => {
   );
 
   return (
-    <Box>
+    <Box {...props}>
       <fetcher.Form method="post">
         <Button
           name="_action"
@@ -255,7 +257,6 @@ const ProjecChangeButton = () => {
                           NO PROJECT
                         </Text>
                       )}
-
                       <AccordionIcon />
                     </AccordionButton>
                     {workspace.projects.length > 0 && (

@@ -100,7 +100,7 @@ export default function Workspace() {
     <Box bg={useColorModeValue("gray.100", "gray.900")}>
       <Grid templateColumns="288px 1fr">
         <Grid
-          bg={useColorModeValue("white", "gray.900")}
+          bg={useColorModeValue("teal.50", "gray.800")}
           borderRight="1px"
           borderRightColor={useColorModeValue("gray.200", "gray.700")}
           h="100vh"
@@ -120,6 +120,7 @@ export default function Workspace() {
                 leftIcon={<FiPlus />}
                 colorScheme="teal"
                 variant="ghost"
+                onClick={modal.onOpen}
               >
                 Add
               </Button>
@@ -148,7 +149,7 @@ export default function Workspace() {
             px={{ base: 4, md: 4 }}
             height="full"
             alignItems="center"
-            bg={useColorModeValue("white", "gray.900")}
+            bg={useColorModeValue("teal.50", "gray.800")}
             borderBottomWidth="1px"
             borderBottomColor={useColorModeValue("gray.200", "gray.700")}
             justifyContent={{ base: "space-between", md: "flex-end" }}
