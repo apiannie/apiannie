@@ -1,7 +1,7 @@
 import { Box } from "@chakra-ui/react";
 
 export const handle = {
-  sideNav: "Hi APIS",
+  sideNav: <Box>APIs</Box>,
 };
 
 export default function Apis() {

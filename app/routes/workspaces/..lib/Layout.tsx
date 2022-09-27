@@ -1,6 +1,7 @@
 import {
   Box,
   BoxProps,
+  Button,
   CloseButton,
   Divider,
   Drawer,
@@ -9,12 +10,14 @@ import {
   FlexProps,
   Grid,
   GridItem,
+  Heading,
   Hide,
   HStack,
   Icon,
   IconButton,
   Image,
   Link,
+  Spacer,
   Text,
   useColorModeValue,
   useDisclosure,
@@ -25,6 +28,7 @@ import {
   useParams,
   useTransition,
 } from "@remix-run/react";
+import React from "react";
 import { ReactNode } from "react";
 import { IconType } from "react-icons";
 import { FiBell, FiLayers, FiMenu, FiPlus } from "react-icons/fi";
@@ -57,7 +61,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* mobilenav */}
       <MobileNav onOpen={onOpen} />
       <Box ml={{ base: 0, md: 72 }} p="4">
-        {children}
+        <Box mt={12}>{children}</Box>
       </Box>
     </Box>
   );
@@ -89,7 +93,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
       w={{ base: "full", md: 72 }}
       pos="fixed"
       h="full"
-      templateRows={"100px 60px 1fr"}
+      templateRows={"100px 32px 1fr"}
       {...rest}
     >
       <Flex alignItems="center" mx="8" justifyContent="space-between">
@@ -97,21 +101,25 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           src={logo}
           display={{ base: "none", md: "flex" }}
           height="32px"
+          m="auto"
         />
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
       <GridItem>
-        <NavItem
-          icon={FiPlus}
-          active={false}
-          borderWidth="1px"
-          borderColor="gray.200"
-          borderStyle="dashed"
-          mb={1}
-          onClick={modal.onOpen}
-        >
-          Add workspace
-        </NavItem>
+        <HStack px={2}>
+          <Heading ml="2" fontWeight={"500"} size={"sm"} color="gray.400">
+            WORKSPACES
+          </Heading>
+          <Spacer />
+          <Button
+            size={"sm"}
+            leftIcon={<FiPlus />}
+            colorScheme="teal"
+            variant="ghost"
+          >
+            Add
+          </Button>
+        </HStack>
         <NewWorkspaceModal isOpen={modal.isOpen} onClose={modal.onClose} />
         <Divider />
       </GridItem>
@@ -191,6 +199,9 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
       borderBottomWidth="1px"
       borderBottomColor={useColorModeValue("gray.200", "gray.700")}
       justifyContent={{ base: "space-between", md: "flex-end" }}
+      pos={"fixed"}
+      left={0}
+      right={0}
       {...rest}
     >
       <IconButton

@@ -120,7 +120,7 @@ const loadProjects = async (user: User) => {
   });
 
   let workspaces = user.workspaces.map((workspace) => ({
-    projects: projectsMap[workspace.id],
+    projects: projectsMap[workspace.id] || [],
     ...workspace,
   }));
   return { workspaces };
@@ -130,14 +130,14 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const width = 96;
   return (
-    <Box minH="100vh" bg={useColorModeValue("gray.50", "gray.900")}>
-      <Hide below="md">
-        <SidebarContent w={{ base: "full", md: width }} />
-      </Hide>
-      <MobileNav h="12" onOpen={onOpen} ml={{ base: 0, md: width }} />
+    <Box h="100vh" bg={useColorModeValue("gray.50", "gray.900")}>
+      {/* <Hide below="md"> */}
+      <SidebarContent w={{ base: "full", md: width }} />
+      {/* </Hide> */}
+      {/* <MobileNav h="12" onOpen={onOpen} ml={{ base: 0, md: width }} />
       <Box ml={{ base: 0, md: width }} p="4">
         <Outlet />
-      </Box>
+      </Box> */}
     </Box>
   );
 }
@@ -153,10 +153,9 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
   return (
     <Grid
       transition="3s ease"
-      pos="fixed"
-      h="full"
+      h="100vh"
       templateColumns={"80px 1fr"}
-      templateRows={"56px 1fr"}
+      templateRows={"56px minmax(0, 1fr)"}
       {...rest}
     >
       <GridItem
@@ -251,30 +250,38 @@ const ProjecChangeButton = () => {
                       <Box flex="1" textAlign="left">
                         <strong>{workspace.name}</strong>
                       </Box>
+                      {workspace.projects.length === 0 && (
+                        <Text fontSize="sm" color="gray.400">
+                          NO PROJECT
+                        </Text>
+                      )}
+
                       <AccordionIcon />
                     </AccordionButton>
-                    <AccordionPanel pb={4}>
-                      {workspace.projects.map((pro) => (
-                        <List spacing={3} key={pro.id}>
-                          <ListItem>
-                            <RemixLink to={`/projects/${pro.id}`}>
-                              <Box
-                                h="full"
-                                _hover={{
-                                  bg: "cyan.200",
-                                  color: "white",
-                                }}
-                                onClick={onClose}
-                                py={1}
-                              >
-                                <ListIcon as={FiList} color="green.500" />
-                                {pro.name}
-                              </Box>
-                            </RemixLink>
-                          </ListItem>
-                        </List>
-                      ))}
-                    </AccordionPanel>
+                    {workspace.projects.length > 0 && (
+                      <AccordionPanel pb={4}>
+                        {workspace.projects.map((pro) => (
+                          <List spacing={3} key={pro.id}>
+                            <ListItem>
+                              <RemixLink to={`/projects/${pro.id}`}>
+                                <Box
+                                  h="full"
+                                  _hover={{
+                                    bg: "cyan.200",
+                                    color: "white",
+                                  }}
+                                  onClick={onClose}
+                                  py={1}
+                                >
+                                  <ListIcon as={FiList} color="green.500" />
+                                  {pro.name}
+                                </Box>
+                              </RemixLink>
+                            </ListItem>
+                          </List>
+                        ))}
+                      </AccordionPanel>
+                    )}
                   </AccordionItem>
                 ))}
               </Accordion>
