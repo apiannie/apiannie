@@ -82,13 +82,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     throw httpResponse.NotFound;
   }
 
-  let workspace = await getWorkspaceById(project.workspaceId);
-  invariant(
-    workspace,
-    `workspace ${project.workspaceId} for project ${project.id} does not exist`
-  );
-
-  return json({ user: user, project: project, workspace: workspace });
+  return json({ user: user, project: project });
 };
 
 export const action = async ({ request, params }: LoaderArgs) => {
@@ -136,7 +130,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
   const { project } = useLoaderData<typeof loader>();
   const matches = useMatches();
   const user = useUser();
-  const sideNav = matches[matches.length - 1]?.handle?.sideNav;
+  const sideNav = matches[2]?.handle?.sideNav;
 
   return (
     <Grid h="100vh" templateColumns={"80px 304px 1fr"} {...rest}>

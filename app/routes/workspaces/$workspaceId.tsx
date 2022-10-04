@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  CloseButton,
   Divider,
   Flex,
   FlexProps,
@@ -26,30 +25,32 @@ import {
 } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import {
-  useLoaderData,
-  useTransition,
   Link as RemixLink,
+  useLoaderData,
   useParams,
+  useTransition,
 } from "@remix-run/react";
+import { ReactNode } from "react";
+import { IconType } from "react-icons";
 import { FcList } from "react-icons/fc";
-import { FiBell, FiLayers, FiMenu, FiPlus } from "react-icons/fi";
+import { FiBell, FiLayers, FiPlus } from "react-icons/fi";
 import invariant from "tiny-invariant";
+import logo from "~/images/logo.png";
 import { getProjectsByWorkspaceId } from "~/models/project.server";
 import { getWorkspaceById } from "~/models/workspace.server";
-import { requireUser } from "~/session.server";
+import { requireUser, requireUserId } from "~/session.server";
 import { httpResponse, useUser } from "~/utils";
+import ColorModeButton from "../home/..lib/ColorModeButton";
+import UserMenuButton from "../home/..lib/UserMenuButton";
 import { Action } from "./..lib/constants";
 import NewProjectModal, { newProjectAction } from "./..lib/NewProjectModal";
 import NewWorkspaceModal, {
   newWorkspaceAction,
 } from "./..lib/NewWorkspaceModal";
-import logo from "~/images/logo.png";
-import { IconType } from "react-icons";
-import { ReactNode } from "react";
-import ColorModeButton from "../home/..lib/ColorModeButton";
-import UserMenuButton from "../home/..lib/UserMenuButton";
 
-export const loader = async ({ params }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderArgs) => {
+  let userId = await requireUserId(request);
+
   let { workspaceId } = params;
   invariant(workspaceId, "workspaceId is null");
   let [workspace, projects] = await Promise.all([
@@ -164,25 +165,27 @@ export default function Workspace() {
             />
             <UserMenuButton avatar={user.avatar || undefined} />
           </HStack>
-          <Tabs display={"grid"} gridTemplateRows="36px minmax(0, 1fr)">
-            <TabList>
-              <Tab>Projects</Tab>
-              <Tab>Members</Tab>
-              <Tab>Settings</Tab>
-            </TabList>
+          <Box overflowY={"auto"}>
+            <Tabs p={4}>
+              <TabList>
+                <Tab>Projects</Tab>
+                <Tab>Members</Tab>
+                <Tab>Settings</Tab>
+              </TabList>
 
-            <TabPanels overflowY={"auto"}>
-              <TabPanel>
-                <Projects />
-              </TabPanel>
-              <TabPanel>
-                <p>two!</p>
-              </TabPanel>
-              <TabPanel>
-                <p>three!</p>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
+              <TabPanels>
+                <TabPanel>
+                  <Projects />
+                </TabPanel>
+                <TabPanel>
+                  <p>two!</p>
+                </TabPanel>
+                <TabPanel>
+                  <p>three!</p>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </Box>
         </Grid>
       </Grid>
     </Box>
@@ -266,7 +269,7 @@ const ProjectItem = ({
   return (
     <Link
       isExternal
-      href={project ? `/projects/${project.id}` : undefined}
+      href={project ? `/projects/${project.id}/apis` : undefined}
       _hover={{
         textDecoration: "none",
       }}

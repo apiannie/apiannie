@@ -21,16 +21,6 @@ type KeyValueEnabled {
   enabled Boolean @default(true)
 }
 
-model Post {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  slug     String @unique
-  title    String
-  markdown String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 enum WorkspaceUserRole {
   ADMIN
   MEMBER
@@ -78,7 +68,10 @@ model Project {
   interfaceCats  InterfaceCat[]
   interfaceCases InterfaceCase[]
   workspaceId    String
-  Workspace      Workspace       @relation(fields: [workspaceId], references: [id])
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  groups    Group[]
+  apis      Api[]
 }
 
 type ProjectTag {
@@ -263,4 +256,82 @@ model Avatar {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
   basecode String
   type     String
+}
+
+model Group {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  projectId String   @db.ObjectId
+  prefix    String   @default("")
+  parentId  String?  @db.ObjectId
+  apis      Api[]
+  project   Project  @relation(fields: [projectId], references: [id])
+  parent    Group?   @relation("GroupStructure", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  Group[]  @relation("GroupStructure")
+}
+
+model Api {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  groupId   String?  @db.ObjectId
+  projectId String   @db.ObjectId
+  data      ApiData
+
+  group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+type ApiData {
+  name        String
+  path        String
+  descripiton String?
+  params      RequestQueryParam[]
+  headers     RequestHeader[]
+  reqeustBody RequestBody?
+}
+
+type RequestBody {
+  type  RequestBodyType
+  param Json
+}
+
+enum RequestBodyType {
+  FORM_DATA
+  FORM_URLENCODED
+  JSON
+}
+
+type RequestHeader {
+  name        String
+  description String?
+  example     String?
+  isOptional  Boolean
+}
+
+type RequestQueryParam {
+  name        String
+  example     String?
+  description String?
+  isOptional  Boolean
+  isArray     Boolean
+}
+
+enum ParamType {
+  INT
+  FLOAT
+  BOOLEAN
+  STRING
+  OBJECT
+  ARRAY
+}
+
+type Response {
+  code        Int
+  description String?
+  contentType String?
+  data        Json
 }
