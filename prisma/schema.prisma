@@ -259,17 +259,18 @@ model Avatar {
 }
 
 model Group {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String
-  projectId String   @db.ObjectId
-  prefix    String   @default("")
-  parentId  String?  @db.ObjectId
-  apis      Api[]
-  project   Project  @relation(fields: [projectId], references: [id])
-  parent    Group?   @relation("GroupStructure", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children  Group[]  @relation("GroupStructure")
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  projectId   String   @db.ObjectId
+  prefix      String   @default("")
+  description String   @default("")
+  parentId    String?  @db.ObjectId
+  apis        Api[]
+  project     Project  @relation(fields: [projectId], references: [id])
+  parent      Group?   @relation("GroupStructure", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    Group[]  @relation("GroupStructure")
 }
 
 model Api {

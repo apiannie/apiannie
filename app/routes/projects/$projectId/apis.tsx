@@ -26,7 +26,7 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { ActionArgs, json } from "@remix-run/node";
+import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { Link, useMatches } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconType } from "react-icons";
@@ -278,7 +278,7 @@ const SideNavContent = () => {
   );
 };
 
-const FileNavbar = ({ as }: {}) => {
+const FileNavbar = () => {
   const matches = useMatches();
   const project: Project = matches[1].data.project;
   invariant(project);
@@ -314,6 +314,7 @@ const Folder = ({ depth, group }: { group: Group; depth: number }) => {
     groupId: string;
   }>();
   const isActive = groupId === group.id;
+  const bg = useColorModeValue("blue.100", "blue.800");
   return (
     <AccordionItem border={"none"}>
       {({ isExpanded }) => (
@@ -343,11 +344,7 @@ const Folder = ({ depth, group }: { group: Group; depth: number }) => {
                 cursor="pointer"
                 role="group"
                 h={8}
-                bg={
-                  isActive
-                    ? useColorModeValue("blue.100", "blue.800")
-                    : undefined
-                }
+                bg={isActive ? bg : undefined}
               >
                 <FolderIcon isExpanded={isExpanded} />
                 <Text>{group.name}</Text>

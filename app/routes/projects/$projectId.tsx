@@ -76,6 +76,11 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     throw httpResponse.NotFound;
   }
 
+  let url = new URL(request.url);
+  if (url.pathname === `/projects/${projectId}`) {
+    throw httpResponse.NotFound;
+  }
+
   let project = await getProjectById(projectId);
 
   if (!project) {
@@ -239,7 +244,12 @@ const ProjecChangeButton = (props: BoxProps) => {
           <ModalHeader textAlign={"center"}>Switch project</ModalHeader>
           <ModalBody>
             {fetcher.data ? (
-              <Accordion defaultIndex={[defaultIndex]} allowMultiple>
+              <Accordion
+                defaultIndex={[defaultIndex]}
+                allowMultiple
+                maxH={"calc(100vh - 280px)"}
+                overflowY="auto"
+              >
                 {workspaces.map((workspace) => (
                   <AccordionItem key={workspace.id}>
                     <AccordionButton>
@@ -258,7 +268,7 @@ const ProjecChangeButton = (props: BoxProps) => {
                         {workspace.projects.map((pro) => (
                           <List spacing={3} key={pro.id}>
                             <ListItem>
-                              <RemixLink to={`/projects/${pro.id}`}>
+                              <RemixLink to={`/projects/${pro.id}/apis`}>
                                 <Box
                                   h="full"
                                   _hover={{

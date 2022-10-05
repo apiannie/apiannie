@@ -43,11 +43,16 @@ export const getProjectsByWorkspaceIds = async (workspaceIds: string[]) => {
 }
 
 
-export interface Api extends PrismaApi {
-
+export interface Api  {
+    id: string;
+    name: string;
+    groupId: string | null; 
 }
 
-export interface Group extends PrismaGroup {
+export interface Group {
+    id: string;
+    name: string;
+    parentId: string | null; 
     apis: Api[]
     groups: Group[]
 }
@@ -59,8 +64,16 @@ export const getProjectById = async (id: string) => {
             id: id,
         },
         include: {
-            groups: true,
-            apis: true,
+            groups: {
+                select: {
+                    id: true, name: true, parentId: true,
+                }
+            },
+            apis: {
+                select: {
+                    id: true, name: true, groupId: true,
+                }
+            },
         }
     })
 
@@ -71,8 +84,8 @@ export const getProjectById = async (id: string) => {
     let groupMap = new Map<string, Group>();
     let groups = project.groups.map(group => ({
         ...group,
-        apis: [],
-        groups: []
+        apis: new Array<Api>(),
+        groups: new Array<Group>()
     }));
 
     let root: {
