@@ -13,6 +13,8 @@ import {
   HStack,
   Icon,
   IconButton,
+  IconProps,
+  Link,
   ModalBody,
   ModalCloseButton,
   ModalContent,
@@ -25,10 +27,12 @@ import {
   Tooltip,
   useColorModeValue,
   useDisclosure,
+  VStack,
 } from "@chakra-ui/react";
-import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { Link, useMatches } from "@remix-run/react";
+import { ActionArgs, json, LoaderArgs, redirect } from "@remix-run/node";
+import { Link as RemixLink, useMatches } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
+import { useEffect, useState } from "react";
 import { IconType } from "react-icons";
 import {
   FiAirplay,
@@ -38,10 +42,10 @@ import {
   FiFilePlus,
   FiFolderPlus,
 } from "react-icons/fi";
-import { NavLink, Outlet, useParams } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { array, string, z } from "zod";
 import { createGroup } from "~/models/api.server";
 import { Api, Group, Project } from "~/models/project.server";
 import { requireUser } from "~/session.server";
@@ -62,14 +66,14 @@ enum Action {
 
 export const action = async ({ request, params }: ActionArgs) => {
   let formData = await request.formData();
-  let { projectId } = params;
+  let { projectId, groupId } = params;
 
   invariant(projectId);
 
   switch (formData.get("_action")) {
     case Action.NEW_GROUP:
       const user = await requireUser(request);
-      return json(await newGroupAction(formData, projectId));
+      return await newGroupAction(formData, projectId);
     default:
       throw httpResponse.NotFound;
   }
@@ -82,7 +86,13 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
   }
 
   const { parentId, name } = result.data;
-  return createGroup({ parentId: parentId, projectId: projectId, name });
+  let group = await createGroup({
+    parentId: parentId,
+    projectId: projectId,
+    name,
+  });
+
+  return redirect(`/projects/${group.projectId}/apis/groups/${group.id}`);
 };
 
 const getActiveGroup = () => {
@@ -93,6 +103,7 @@ const getActiveGroup = () => {
 function SideNav() {
   const groupModal = useDisclosure();
   const apiModal = useDisclosure();
+
   return (
     <Grid templateRows={"40px minmax(0, 1fr)"}>
       <GridItem>
@@ -158,11 +169,9 @@ const newGroupValidator = withZod(
 const NewGroupModal = ({
   isOpen,
   onClose,
-  parentId,
 }: {
-  isOpen: ModalProps["isOpen"];
-  onClose: ModalProps["onClose"];
-  parentId?: string;
+  isOpen: boolean;
+  onClose: (data?: any) => void;
 }) => {
   const params = useParams();
   return (
@@ -182,7 +191,7 @@ const NewGroupModal = ({
         <ModalCloseButton />
         <ModalBody pb={6}>
           <FormInput name="name" label="Name" placeholder="Group name" />
-          <input name="projectId" value={parentId} type="hidden" />
+          <input name="parentId" value={params.groupId} type="hidden" />
         </ModalBody>
 
         <ModalFooter>
@@ -269,7 +278,7 @@ const SideNavContent = () => {
             _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
           >
             <Icon as={FiAirplay} mt={0.5} />
-            <Text>Overview</Text>
+            <Text userSelect={"none"}>Overview</Text>
           </HStack>
         )}
       </NavLink>
@@ -278,23 +287,106 @@ const SideNavContent = () => {
   );
 };
 
+const useAccordion = (initialValue?: string[] | null | undefined) => {
+  let initial: { [key: string]: boolean } = {};
+  if (initialValue instanceof Array) {
+    for (let value of initialValue) {
+      initial[value] = true;
+    }
+  }
+  const [accordionMap, setAccordionMap] = useState(initial);
+
+  const onAdd = (value: string | string[]) => {
+    let newValues: { [key: string]: boolean } = {};
+    if (!(value instanceof Array)) {
+      value = [value];
+    }
+    for (let v of value) {
+      newValues[v] = true;
+    }
+    setAccordionMap({
+      ...accordionMap,
+      ...newValues,
+    });
+  };
+
+  const onDelete = (value: string) => {
+    let clone = Object.assign({}, accordionMap);
+    delete clone[value];
+    setAccordionMap(clone);
+  };
+
+  return {
+    accordionMap,
+    onAdd,
+    onDelete,
+  };
+};
+
+const groupDFS = (group: Group, id: string, path: string[]) => {
+  if (group.id === id) {
+    path.push(group.id);
+    return true;
+  }
+  path.push(group.id);
+  for (let child of group.groups) {
+    if (groupDFS(child, id, path)) {
+      return true;
+    }
+  }
+  path.pop();
+  return false;
+};
+
 const FileNavbar = () => {
   const matches = useMatches();
   const project: Project = matches[1].data.project;
+  const { groupId } = useParams();
+  const { accordionMap, onAdd, onDelete } = useAccordion();
+
+  invariant(project);
+
+  useEffect(() => {
+    let path: string[] = [];
+    if (!groupId) {
+      return;
+    }
+    for (let group of project.root.groups) {
+      path = [];
+      if (groupDFS(group, groupId, path)) {
+        break;
+      }
+    }
+    onAdd(path);
+  }, [groupId]);
+
   invariant(project);
   return (
-    <Accordion allowMultiple reduceMotion>
+    <Flex flexDir={"column"}>
       {project.root.groups.map((group) => (
-        <Folder key={group.id} group={group} depth={0} />
+        <Folder
+          accordionMap={accordionMap}
+          onAdd={onAdd}
+          onDelete={onDelete}
+          key={group.id}
+          group={group}
+          depth={0}
+        />
       ))}
       {project.root.apis.map((api) => (
         <File key={api.id} api={api} depth={0} />
       ))}
-    </Accordion>
+    </Flex>
   );
 };
 
-const FolderIcon = ({ isExpanded }: { isExpanded: boolean }) => {
+const FolderIcon = ({
+  isExpanded,
+  onClick,
+}: {
+  isExpanded: boolean;
+  onClick: () => void;
+}) => {
   return (
     <Center
       mr={1}
@@ -302,64 +394,88 @@ const FolderIcon = ({ isExpanded }: { isExpanded: boolean }) => {
       h="4"
       borderRadius={"full"}
       _groupHover={{ background: "blackAlpha.50" }}
+      onClick={onClick}
     >
       <Icon as={isExpanded ? FiChevronDown : FiChevronRight} fontSize="12px" />
     </Center>
   );
 };
 
-const Folder = ({ depth, group }: { group: Group; depth: number }) => {
+const Folder = ({
+  depth,
+  group,
+  accordionMap,
+  onAdd,
+  onDelete,
+}: {
+  group: Group;
+  depth: number;
+  accordionMap: { [key: string]: boolean };
+  onAdd: (value: string) => void;
+  onDelete: (value: string) => void;
+}) => {
   const { projectId, groupId } = useParams<{
     projectId: string;
     groupId: string;
   }>();
   const isActive = groupId === group.id;
   const bg = useColorModeValue("blue.100", "blue.800");
+  const isOpen = accordionMap[group.id];
   return (
-    <AccordionItem border={"none"}>
-      {({ isExpanded }) => (
-        <>
-          <Link to={`/projects/${projectId}/apis/groups/${group.id}`}>
-            {isExpanded && !isActive ? (
-              <Flex
-                pl={`${8 + depth * 12}px`}
-                _hover={{ background: "blackAlpha.50" }}
-                cursor="pointer"
-                role="group"
-                h={8}
-              >
-                <AccordionButton
-                  _hover={{ background: undefined }}
-                  w="inherit"
-                  p={0}
-                >
-                  <FolderIcon isExpanded={isExpanded} />
-                </AccordionButton>
-                <Center>{group.name}</Center>
-              </Flex>
-            ) : (
-              <AccordionButton
-                pl={`${8 + depth * 12}px`}
-                _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
-                cursor="pointer"
-                role="group"
-                h={8}
-                bg={isActive ? bg : undefined}
-              >
-                <FolderIcon isExpanded={isExpanded} />
-                <Text>{group.name}</Text>
-              </AccordionButton>
-            )}
-          </Link>
-
-          <AccordionPanel p={0}>
-            {group.groups.map((g) => (
-              <Folder group={g} depth={depth + 1} />
-            ))}
-          </AccordionPanel>
-        </>
-      )}
-    </AccordionItem>
+    <Flex border={"none"} flexDir="column">
+      <HStack
+        spacing={0}
+        w="full"
+        pl={`${8 + depth * 12}px`}
+        _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
+        cursor="pointer"
+        role="group"
+        h={8}
+        bg={isActive ? bg : undefined}
+        onClick={(_e) =>
+          isActive ? (isOpen ? onDelete(group.id) : onAdd(group.id)) : undefined
+        }
+      >
+        <FolderIcon
+          isExpanded={isOpen}
+          onClick={(e) =>
+            !isActive
+              ? isOpen
+                ? onDelete(group.id)
+                : onAdd(group.id)
+              : undefined
+          }
+        />
+        <Flex flexGrow={1}>
+          <Box
+            as={RemixLink}
+            flexGrow={1}
+            to={`/projects/${projectId}/apis/groups/${group.id}`}
+          >
+            <Text py={1} userSelect={"none"}>
+              {group.name}
+            </Text>
+          </Box>
+        </Flex>
+      </HStack>
+      <Flex
+        display={isOpen ? "flex" : "none"}
+        flexDir={"column"}
+        w="full"
+        p={0}
+      >
+        {group.groups.map((g) => (
+          <Folder
+            key={g.id}
+            accordionMap={accordionMap}
+            onAdd={onAdd}
+            onDelete={onDelete}
+            group={g}
+            depth={depth + 1}
+          />
+        ))}
+      </Flex>
+    </Flex>
   );
 };
 

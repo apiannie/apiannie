@@ -44,7 +44,7 @@ import {
   useMatches,
   useTransition,
 } from "@remix-run/react";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { IconType } from "react-icons";
 import {
   FiActivity,

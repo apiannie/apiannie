@@ -9,8 +9,10 @@ import {
 
 export type FormModalProps<DataType> = Omit<
   ModalProps & FormProps<DataType>,
-  "fetcher"
->;
+  "fetcher" | "onClose"
+> & {
+  onClose: (data?: any) => void;
+};
 
 export default function FormModal<DataType>({
   onClose,
@@ -42,7 +44,7 @@ export default function FormModal<DataType>({
   useEffect(() => {
     if (fetcher.type === "done") {
       if (!fetcher.data?.fieldErrors) {
-        onClose();
+        onClose(fetcher.data);
       }
     }
   }, [fetcher.type]);
