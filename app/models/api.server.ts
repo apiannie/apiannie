@@ -1,4 +1,4 @@
-import { Group } from '@prisma/client';
+import { RequestMethod } from '@prisma/client';
 import { prisma } from './prisma.server';
 
 export interface ApiData {
@@ -47,5 +47,19 @@ export const getGroupById = async(id: string) => {
         return null
     }
     group.description ||= "";
-    return group
+    return group;
+}
+
+export const createApi = async(
+    projectId: string,
+    groupId: string | undefined,
+    data: {name: string, path: string, method: RequestMethod}) => {
+    let api = await prisma.api.create({
+        data: {
+            projectId: projectId,
+            groupId: groupId,
+            data: data,
+        }
+    })
+    return api;
 }

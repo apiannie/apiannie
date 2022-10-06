@@ -42,22 +42,6 @@ export const getProjectsByWorkspaceIds = async (workspaceIds: string[]) => {
     return projects;
 }
 
-
-export interface Api  {
-    id: string;
-    name: string;
-    groupId: string | null; 
-}
-
-export interface Group {
-    id: string;
-    name: string;
-    parentId: string | null; 
-    apis: Api[]
-    groups: Group[]
-}
-
-
 export const getProjectById = async (id: string) => {
     let project = await prisma.project.findFirst({
         where: {
@@ -71,7 +55,11 @@ export const getProjectById = async (id: string) => {
             },
             apis: {
                 select: {
-                    id: true, name: true, groupId: true,
+                    id: true, groupId: true, data: {
+                        select: {
+                            name: true, method: true, path: true,
+                        }
+                    }
                 }
             },
         }
@@ -81,17 +69,25 @@ export const getProjectById = async (id: string) => {
         return null;
     }
 
+    type Api = typeof project.apis[0]
+    type PlainGroup = typeof project.groups[0]
+    type Group = PlainGroup & {
+        apis: Api[],
+        groups: Group[], 
+    }
+
     let groupMap = new Map<string, Group>();
+    let apiMap = new Map<string, Api>();
     let groups = project.groups.map(group => ({
         ...group,
-        apis: new Array<Api>(),
-        groups: new Array<Group>()
+        apis: new Array(),
+        groups: new Array()
     }));
 
-    let root: {
-        apis: Api[],
-        groups: Group[]
-    } = {
+    let root: Group = {
+        id: "",
+        name: "root",
+        parentId: null,
         apis: [],
         groups: [],
     };
@@ -126,3 +122,5 @@ export const getProjectById = async (id: string) => {
 }
 
 export type Project = Awaited<ReturnType<typeof getProjectById>>
+export type Api = NonNullable<Project>["root"]["apis"][0]
+export type Group = NonNullable<Project>["root"]["groups"][0] 

@@ -10,7 +10,9 @@ import {
 import React from "react";
 import { useField } from "remix-validated-form";
 
-export interface FormInputProps extends InputProps {
+export interface FormInputProps
+  extends InputProps,
+    Pick<React.HTMLProps<HTMLButtonElement>, "autoComplete"> {
   name: string;
   label?: string;
 }

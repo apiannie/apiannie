@@ -13,11 +13,12 @@ import {
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { Ref, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useField, ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { getGroupById, updateGroup } from "~/models/api.server";
+import FormHInput from "~/ui/Form/FormHInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { MinimalInputProps } from "~/ui/Form/type";
 import { httpResponse } from "~/utils";
@@ -54,48 +55,6 @@ export const action = async ({ request, params }: ActionArgs) => {
   });
 
   return json(updated);
-};
-
-const FormHInput = <T extends React.FunctionComponent>({
-  name,
-  label,
-  labelWidth,
-  input,
-  isRequired,
-  ...rest
-}: {
-  name: string;
-  label: string;
-  labelWidth: string;
-  isRequired?: boolean;
-  input: T;
-} & MinimalInputProps) => {
-  const { error, getInputProps } = useField(name);
-  return (
-    <FormControl isRequired={isRequired} display={"flex"}>
-      <Flex
-        alignItems={"center"}
-        justifyContent="end"
-        w={labelWidth}
-        h={10}
-        mr={4}
-      >
-        <FormLabel m={0}>{label}</FormLabel>
-      </Flex>
-      <VStack flexGrow={1}>
-        {React.createElement(input, {
-          id: name,
-          ...getInputProps(rest),
-        })}
-        {error && (
-          <Alert status="error">
-            <AlertIcon />
-            {error}
-          </Alert>
-        )}
-      </VStack>
-    </FormControl>
-  );
 };
 
 const validator = withZod(
@@ -136,7 +95,7 @@ export default function ApiGroup() {
             labelWidth="200px"
             name="description"
             label="Description"
-            input={Input}
+            input={Textarea}
           />
           <Center>
             <FormSubmitButton colorScheme="blue" px={12}>

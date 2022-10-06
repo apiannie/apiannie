@@ -1,8 +1,4 @@
 import {
-  Accordion,
-  AccordionButton,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Center,
   Divider,
@@ -13,8 +9,10 @@ import {
   HStack,
   Icon,
   IconButton,
-  IconProps,
-  Link,
+  Input,
+  InputGroup,
+  InputLeftAddon,
+  InputProps,
   ModalBody,
   ModalCloseButton,
   ModalContent,
@@ -22,6 +20,8 @@ import {
   ModalHeader,
   ModalOverlay,
   ModalProps,
+  Select,
+  Spacer,
   Spacer,
   Text,
   Tooltip,
@@ -29,27 +29,29 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { ActionArgs, json, LoaderArgs, redirect } from "@remix-run/node";
+import { RequestMethod } from "@prisma/client";
+import { ActionArgs, redirect } from "@remix-run/node";
 import { Link as RemixLink, useMatches } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { useEffect, useState } from "react";
-import { IconType } from "react-icons";
 import {
   FiAirplay,
   FiChevronDown,
   FiChevronRight,
   FiCopy,
   FiFilePlus,
+  FiFolder,
   FiFolderPlus,
 } from "react-icons/fi";
-import { NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
+import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { array, string, z } from "zod";
-import { createGroup } from "~/models/api.server";
+import { z } from "zod";
+import { createApi, createGroup } from "~/models/api.server";
 import { Api, Group, Project } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import FormCancelButton from "~/ui/Form/FormCancelButton";
+import FormHInput from "~/ui/Form/FormHInput";
 import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
@@ -67,14 +69,17 @@ enum Action {
 export const action = async ({ request, params }: ActionArgs) => {
   let formData = await request.formData();
   let { projectId, groupId } = params;
-
+  console.log("action");
   invariant(projectId);
 
   switch (formData.get("_action")) {
     case Action.NEW_GROUP:
       const user = await requireUser(request);
       return await newGroupAction(formData, projectId);
+    case Action.NEW_API:
+      return await newApiAction(formData, projectId);
     default:
+      console.log("_action:", formData.get("_action"));
       throw httpResponse.NotFound;
   }
 };
@@ -95,9 +100,20 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
   return redirect(`/projects/${group.projectId}/apis/groups/${group.id}`);
 };
 
-const getActiveGroup = () => {
-  let url = new URL(location.href);
-  return url.searchParams.get("activeGroup");
+const newApiAction = async (formData: FormData, projectId: string) => {
+  const result = await newApiValidator.validate(formData);
+  if (result.error) {
+    return validationError(result.error);
+  }
+
+  const { name, path, method, groupId } = result.data;
+  let api = await createApi(projectId, groupId, {
+    name,
+    path,
+    method,
+  });
+
+  return redirect(`/projects/${projectId}/apis/details/${api.id}`);
 };
 
 function SideNav() {
@@ -145,6 +161,12 @@ function SideNav() {
                 icon={<FiFilePlus />}
                 variant="ghost"
                 colorScheme="gray"
+                onClick={(e) => {
+                  if (e.target instanceof HTMLElement) {
+                    e.target.blur();
+                  }
+                  apiModal.onOpen();
+                }}
               />
             </Tooltip>
             <NewApiModal isOpen={apiModal.isOpen} onClose={apiModal.onClose} />
@@ -190,7 +212,12 @@ const NewGroupModal = ({
         <ModalHeader>Create group</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          <FormInput name="name" label="Name" placeholder="Group name" />
+          <FormInput
+            name="name"
+            label="Name"
+            placeholder="Group name"
+            autoComplete="off"
+          />
           <input name="parentId" value={params.groupId} type="hidden" />
         </ModalBody>
 
@@ -212,9 +239,22 @@ const NewGroupModal = ({
   );
 };
 
+const RequestMethods = [
+  RequestMethod.GET,
+  RequestMethod.POST,
+  RequestMethod.PUT,
+  RequestMethod.PATCH,
+  RequestMethod.DELETE,
+  RequestMethod.OPTION,
+  RequestMethod.HEAD,
+] as const;
+
 const newApiValidator = withZod(
   z.object({
-    name: z.string().min(1, "group name is required"),
+    name: z.string().trim().min(1, "api name is required"),
+    path: z.string().trim().min(1, "path is required"),
+    method: z.enum(RequestMethods),
+    groupId: z.string().trim().optional(),
   })
 );
 
@@ -226,22 +266,45 @@ const NewApiModal = ({
   onClose: ModalProps["onClose"];
 }) => {
   const params = useParams();
+  let groupId = "";
+  if (params.groupId) {
+    groupId = params.groupId;
+  }
   return (
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      validator={newGroupValidator}
+      validator={newApiValidator}
       replace
       method="post"
-      size="lg"
+      size="xl"
+      action={`/projects/${params.projectId}/apis`}
     >
       <ModalOverlay />
 
       <ModalContent>
-        <ModalHeader>Create group</ModalHeader>
+        <ModalHeader>Create Api</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          <FormInput name="name" label="Name" placeholder="Group name" />
+          <VStack spacing={5}>
+            <FormHInput
+              labelWidth="60px"
+              name="name"
+              label="Name"
+              size="sm"
+              input={Input}
+              autoComplete="off"
+            />
+            <FormHInput
+              labelWidth="60px"
+              name="path"
+              label="Path"
+              input={PathInput}
+              autoComplete="off"
+            />
+          </VStack>
+
+          <input type={"hidden"} name="groupId" value={groupId} />
         </ModalBody>
 
         <ModalFooter>
@@ -251,7 +314,7 @@ const NewApiModal = ({
           <FormSubmitButton
             type="submit"
             name="_action"
-            value={Action.NEW_GROUP}
+            value={Action.NEW_API}
             colorScheme="blue"
           >
             Create
@@ -259,6 +322,25 @@ const NewApiModal = ({
         </ModalFooter>
       </ModalContent>
     </FormModal>
+  );
+};
+
+const PathInput = (props: InputProps) => {
+  return (
+    <InputGroup size={"sm"}>
+      <InputLeftAddon
+        children={
+          <Select name="method" variant="unstyled">
+            {RequestMethods.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
+          </Select>
+        }
+      />
+      <Input {...props} />
+    </InputGroup>
   );
 };
 
@@ -341,22 +423,45 @@ const groupDFS = (group: Group, id: string, path: string[]) => {
 const FileNavbar = () => {
   const matches = useMatches();
   const project: Project = matches[1].data.project;
-  const { groupId } = useParams();
+  let { groupId, apiId } = useParams();
   const { accordionMap, onAdd, onDelete } = useAccordion();
 
   invariant(project);
 
   useEffect(() => {
     let path: string[] = [];
+    if (!groupId && !apiId) {
+      return;
+    }
+    let groupMap = new Map<string, Group>();
+    let apiMap = new Map<string, Api>();
+    let stack = new Array<Group>(project.root);
+
+    while (stack.length > 0) {
+      let group = stack.pop();
+      invariant(group);
+      for (let g of group.groups) {
+        groupMap.set(g.id, g);
+        stack.push(g);
+      }
+      for (let api of group.apis) {
+        apiMap.set(api.id, api);
+      }
+    }
+
+    if (apiId) {
+      groupId = apiMap.get(apiId)?.groupId || undefined;
+    }
+
     if (!groupId) {
       return;
     }
-    for (let group of project.root.groups) {
-      path = [];
-      if (groupDFS(group, groupId, path)) {
-        break;
-      }
+
+    while (groupId) {
+      path.push(groupId);
+      groupId = groupMap.get(groupId)?.parentId || undefined;
     }
+
     onAdd(path);
   }, [groupId]);
 
@@ -446,17 +551,17 @@ const Folder = ({
               : undefined
           }
         />
-        <Flex flexGrow={1}>
-          <Box
-            as={RemixLink}
-            flexGrow={1}
-            to={`/projects/${projectId}/apis/groups/${group.id}`}
-          >
-            <Text py={1} userSelect={"none"}>
-              {group.name}
-            </Text>
-          </Box>
-        </Flex>
+        <Icon as={FiFolder} fontWeight="100" color="blackAlpha.400" />
+        <Box
+          as={RemixLink}
+          flexGrow={1}
+          to={`/projects/${projectId}/apis/groups/${group.id}`}
+          pl={2}
+        >
+          <Text py={1} userSelect={"none"}>
+            {group.name}
+          </Text>
+        </Box>
       </HStack>
       <Flex
         display={isOpen ? "flex" : "none"}
@@ -474,20 +579,77 @@ const Folder = ({
             depth={depth + 1}
           />
         ))}
+        {group.apis.map((api) => (
+          <File key={api.id} api={api} depth={0} />
+        ))}
       </Flex>
     </Flex>
   );
 };
 
+const MethodTag = ({ method }: { method: RequestMethod }) => {
+  let color = "";
+  let text: string = method;
+
+  switch (method) {
+    case RequestMethod.GET:
+      color = "green.400";
+      break;
+    case RequestMethod.POST:
+      color = "orange.400";
+      break;
+    case RequestMethod.PUT:
+      color = "blue.400";
+      break;
+    case RequestMethod.PATCH:
+      color = "teal.400";
+      text = "PAT";
+      break;
+    case RequestMethod.DELETE:
+      color = "red.400";
+      text = "DEL";
+      break;
+    case RequestMethod.HEAD:
+      color = "purple.400";
+      break;
+    case RequestMethod.OPTION:
+      color = "cyan.400";
+  }
+
+  return (
+    <Text
+      fontWeight={700}
+      fontSize="sm"
+      mt={0.25}
+      color={color}
+      flexBasis="2.5em"
+      flexShrink={0}
+      flexGrow={0}
+    >
+      {text}
+    </Text>
+  );
+};
+
 const File = ({ api, depth }: { api: Api; depth: number }) => {
+  const { projectId, apiId } = useParams();
+  const bg = useColorModeValue("blue.100", "blue.800");
+  const isActive = api.id === apiId;
+  invariant(projectId);
   return (
     <Flex
-      pl={`${24 + depth * 12}px`}
+      as={RemixLink}
+      to={`/projects/${projectId}/apis/details/${api.id}`}
+      pl={`${36 + depth * 12}px`}
       h="8"
-      _hover={{ background: "blackAlpha.50" }}
+      _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
+      bg={isActive ? bg : undefined}
       cursor="pointer"
     >
-      <Center>{api.name}</Center>
+      <HStack w="full" spacing={1}>
+        <MethodTag method={api.data.method} />
+        <Text noOfLines={1}>{api.data.name}</Text>
+      </HStack>
     </Flex>
   );
 };
