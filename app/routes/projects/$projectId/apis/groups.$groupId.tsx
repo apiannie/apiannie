@@ -13,7 +13,7 @@ import {
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React from "react";
+import React, { Ref, useEffect, useRef } from "react";
 import { useField, ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
@@ -107,22 +107,28 @@ const validator = withZod(
 
 export default function ApiGroup() {
   let { group } = useLoaderData<typeof loader>();
+  let defaultValue = {
+    name: group.name,
+    description: group.description,
+  };
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    formRef.current?.reset();
+  }, [group.id]);
 
   return (
     <Box p={5} pr={20} mx="auto" maxW={"64rem"}>
       <ValidatedForm
         validator={validator}
         method="patch"
-        defaultValues={{
-          name: group.name,
-          description: group.description,
-        }}
+        defaultValues={defaultValue}
+        formRef={formRef}
       >
         <VStack spacing={6}>
           <FormHInput
             labelWidth="200px"
             name="name"
-            label="Name"
+            label="Group name"
             isRequired
             input={Input}
           />
@@ -130,7 +136,7 @@ export default function ApiGroup() {
             labelWidth="200px"
             name="description"
             label="Description"
-            input={Textarea}
+            input={Input}
           />
           <Center>
             <FormSubmitButton colorScheme="blue" px={12}>

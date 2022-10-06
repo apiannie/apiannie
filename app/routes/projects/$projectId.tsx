@@ -316,17 +316,15 @@ interface SubMenuItemProps extends BoxProps {
 }
 
 const SubMenuItem = ({ to, icon, name, ...rest }: SubMenuItemProps) => {
+  const color = useColorModeValue("gray.400", "gray.600");
+  const activeColor = useColorModeValue("blue.600", "blue.300");
   return (
     <NavLink to={to}>
       {({ isActive }) => (
         <Box
           py={3}
           textAlign={"center"}
-          color={
-            isActive
-              ? useColorModeValue("blue.600", "blue.300")
-              : useColorModeValue("gray.400", "gray.600")
-          }
+          color={isActive ? activeColor : color}
           _hover={{
             bg: "cyan.200",
             color: "white",

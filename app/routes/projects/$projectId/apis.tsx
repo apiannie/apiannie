@@ -264,6 +264,8 @@ const NewApiModal = ({
 
 const SideNavContent = () => {
   const { projectId } = useParams<{ projectId: string }>();
+  const color = useColorModeValue("teal.800", "teal.100");
+  const bg = useColorModeValue("blue.100", "blue.800");
   return (
     <Box>
       <NavLink to={`/projects/${projectId}/apis`} end>
@@ -271,10 +273,8 @@ const SideNavContent = () => {
           <HStack
             h={8}
             pl={2}
-            color={useColorModeValue("teal.800", "teal.100")}
-            bg={
-              isActive ? useColorModeValue("blue.100", "blue.800") : undefined
-            }
+            color={color}
+            bg={isActive ? bg : undefined}
             _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
           >
             <Icon as={FiAirplay} mt={0.5} />
@@ -385,7 +385,7 @@ const FolderIcon = ({
   onClick,
 }: {
   isExpanded: boolean;
-  onClick: () => void;
+  onClick: (e: any) => void;
 }) => {
   return (
     <Center
