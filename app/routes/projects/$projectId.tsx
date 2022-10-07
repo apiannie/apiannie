@@ -1,9 +1,4 @@
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   BoxProps,
   Button,
@@ -33,7 +28,6 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { User } from "@prisma/client";
 import { json, LoaderArgs } from "@remix-run/node";
 import {
   Link as RemixLink,
@@ -42,9 +36,9 @@ import {
   useFetcher,
   useLoaderData,
   useMatches,
-  useTransition,
 } from "@remix-run/react";
-import { ReactNode, useState } from "react";
+import { UseDataFunctionReturn } from "@remix-run/react/dist/components";
+import { ReactNode } from "react";
 import { IconType } from "react-icons";
 import {
   FiActivity,
@@ -56,17 +50,13 @@ import {
   FiMenu,
   FiSettings,
 } from "react-icons/fi";
-import invariant from "tiny-invariant";
 import logo from "~/images/logo_128.png";
-import {
-  getProjectById,
-  getProjectsByWorkspaceIds,
-} from "~/models/project.server";
-import { getWorkspaceById } from "~/models/workspace.server";
+import { getProjectById } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import { httpResponse, useUser } from "~/utils";
 import ColorModeButton from "../home/..lib/ColorModeButton";
 import UserMenuButton from "../home/..lib/UserMenuButton";
+import { loader as loadProjects } from "./index";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   let user = await requireUser(request);
@@ -88,35 +78,6 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   }
 
   return json({ user: user, project: project });
-};
-
-export const action = async ({ request, params }: LoaderArgs) => {
-  let formData = await request.formData();
-
-  switch (formData.get("_action")) {
-    case "LOAD_WORKSPACE_PROJECTS":
-      const user = await requireUser(request);
-      return json(await loadProjects(user));
-    default:
-      throw httpResponse.NotFound;
-  }
-};
-
-const loadProjects = async (user: User) => {
-  const workspaceIds = user.workspaces.map((workspace) => workspace.id);
-  let projects = await getProjectsByWorkspaceIds(workspaceIds);
-  let projectsMap: Record<string, typeof projects> = {};
-
-  projects.forEach((project) => {
-    projectsMap[project.workspaceId] ||= [];
-    projectsMap[project.workspaceId].push(project);
-  });
-
-  let workspaces = user.workspaces.map((workspace) => ({
-    projects: projectsMap[workspace.id] || [],
-    ...workspace,
-  }));
-  return { workspaces };
 };
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -146,7 +107,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
         borderRightColor={useColorModeValue("gray.200", "gray.600")}
         display={"flex"}
       >
-        <RemixLink to={"/workspaces"}>
+        <RemixLink to={"/projects"}>
           <Image src={logo} p={5} _hover={{ opacity: 0.8 }} />
         </RemixLink>
         <Divider mb={2} />
@@ -160,12 +121,13 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
           icon={FiActivity}
           name="Activities"
         />
-        <Spacer />
         <SubMenuItem
           to={`/projects/${project.id}/settings`}
           icon={FiSettings}
           name="Settings"
         />
+
+        <Spacer />
       </GridItem>
       <Grid
         bg={useColorModeValue("teal.50", "gray.800")}
@@ -208,27 +170,14 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
 };
 
 const ProjecChangeButton = (props: BoxProps) => {
-  const fetcher = useFetcher<Awaited<ReturnType<typeof loadProjects>>>();
+  const fetcher = useFetcher<UseDataFunctionReturn<typeof loadProjects>>();
   const { project } = useLoaderData<typeof loader>();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const transition = useTransition();
-
-  let workspaces = fetcher.data?.workspaces || [];
-  let defaultIndex = workspaces.findIndex(
-    (workspace) => workspace.id === project.workspaceId
-  );
 
   return (
     <Box {...props}>
       <fetcher.Form method="post">
-        <Button
-          name="_action"
-          value="LOAD_WORKSPACE_PROJECTS"
-          w="full"
-          variant="ghost"
-          onClick={onOpen}
-          type="submit"
-        >
+        <Button w="full" variant="ghost" onClick={onOpen} type="submit">
           <Heading whiteSpace={"normal"} maxW={64} size={"md"} noOfLines={1}>
             {project.name}
           </Heading>
@@ -244,52 +193,26 @@ const ProjecChangeButton = (props: BoxProps) => {
           <ModalHeader textAlign={"center"}>Switch project</ModalHeader>
           <ModalBody>
             {fetcher.data ? (
-              <Accordion
-                defaultIndex={[defaultIndex]}
-                allowMultiple
-                maxH={"calc(100vh - 280px)"}
-                overflowY="auto"
-              >
-                {workspaces.map((workspace) => (
-                  <AccordionItem key={workspace.id}>
-                    <AccordionButton>
-                      <Box flex="1" textAlign="left">
-                        <strong>{workspace.name}</strong>
+              fetcher.data.projects.map((project) => (
+                <List spacing={3} key={project.id}>
+                  <ListItem>
+                    <RemixLink to={`/projects/${project.id}/apis`}>
+                      <Box
+                        h="full"
+                        _hover={{
+                          bg: "cyan.200",
+                          color: "white",
+                        }}
+                        onClick={onClose}
+                        py={1}
+                      >
+                        <ListIcon as={FiList} color="green.500" />
+                        {project.name}
                       </Box>
-                      {workspace.projects.length === 0 && (
-                        <Text fontSize="sm" color="gray.400">
-                          NO PROJECT
-                        </Text>
-                      )}
-                      <AccordionIcon />
-                    </AccordionButton>
-                    {workspace.projects.length > 0 && (
-                      <AccordionPanel pb={4}>
-                        {workspace.projects.map((pro) => (
-                          <List spacing={3} key={pro.id}>
-                            <ListItem>
-                              <RemixLink to={`/projects/${pro.id}/apis`}>
-                                <Box
-                                  h="full"
-                                  _hover={{
-                                    bg: "cyan.200",
-                                    color: "white",
-                                  }}
-                                  onClick={onClose}
-                                  py={1}
-                                >
-                                  <ListIcon as={FiList} color="green.500" />
-                                  {pro.name}
-                                </Box>
-                              </RemixLink>
-                            </ListItem>
-                          </List>
-                        ))}
-                      </AccordionPanel>
-                    )}
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                    </RemixLink>
+                  </ListItem>
+                </List>
+              ))
             ) : (
               <Stack>
                 <Skeleton height="20px" />
@@ -336,47 +259,6 @@ const SubMenuItem = ({ to, icon, name, ...rest }: SubMenuItemProps) => {
         </Box>
       )}
     </NavLink>
-  );
-};
-
-interface NavItemProps extends FlexProps {
-  icon: IconType;
-  children: ReactNode;
-  active?: boolean;
-}
-const NavItem = ({ icon, children, active, ...rest }: NavItemProps) => {
-  return (
-    <Flex
-      align="center"
-      p="3"
-      mx="4"
-      borderRadius="lg"
-      role="group"
-      cursor="pointer"
-      _hover={
-        active
-          ? undefined
-          : {
-              bg: "cyan.200",
-              color: "white",
-            }
-      }
-      bg={active ? "cyan.400" : undefined}
-      color={active ? "white" : undefined}
-      {...rest}
-    >
-      {icon && (
-        <Icon
-          mr="4"
-          fontSize="16"
-          _groupHover={{
-            color: "white",
-          }}
-          as={icon}
-        />
-      )}
-      {children}
-    </Flex>
   );
 };
 

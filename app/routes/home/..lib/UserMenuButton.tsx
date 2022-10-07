@@ -1,6 +1,7 @@
 import {
   Avatar,
   AvatarProps,
+  BoxProps,
   Button,
   Flex,
   Menu,
@@ -11,11 +12,14 @@ import {
 } from "@chakra-ui/react";
 import { useSubmit } from "@remix-run/react";
 
-export default function UserMenuButton(props: { avatar: AvatarProps["src"] }) {
+export default function UserMenuButton({
+  avatar,
+  ...rest
+}: BoxProps & { avatar: AvatarProps["src"] }) {
   const submit = useSubmit();
 
   return (
-    <Flex alignItems={"center"}>
+    <Flex alignItems={"center"} {...rest}>
       <Menu>
         <MenuButton
           as={Button}
@@ -24,7 +28,7 @@ export default function UserMenuButton(props: { avatar: AvatarProps["src"] }) {
           cursor={"pointer"}
           minW={0}
         >
-          <Avatar src={props.avatar} size={"sm"}></Avatar>
+          <Avatar src={avatar} size={"sm"}></Avatar>
         </MenuButton>
         <MenuList>
           <MenuItem>Link 1</MenuItem>

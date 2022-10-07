@@ -21,44 +21,24 @@ type KeyValueEnabled {
   enabled Boolean @default(true)
 }
 
-enum WorkspaceUserRole {
+enum ProjectUserRole {
   ADMIN
-  MEMBER
-  VISITOR
+  WRITE
+  READ
 }
 
-type WorkspaceUser {
-  id   String            @db.ObjectId
+type ProjectUser {
+  id   String          @db.ObjectId
   name String
-  role WorkspaceUserRole
-}
-
-model Workspace {
-  id        String          @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  owner     String          @db.ObjectId
-  users     WorkspaceUser[]
-  projects  Project[]
+  role ProjectUserRole
 }
 
 model Project {
   id             String          @id @default(auto()) @map("_id") @db.ObjectId
   name           String
-  // token         String
-  // basepath      String
-  // switchNotice  Boolean
-  // desc          String
-  // projectType   String
   envs           ProjectEnv[]
-  // icon              String
-  // color             String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  // preScript         String
-  // afterScript       String
-  // projectMockScript String
   isMockOpen     Boolean         @default(false)
   strice         Boolean         @default(false)
   isJson5        Boolean         @default(true)
@@ -67,11 +47,12 @@ model Project {
   interfaceCols  InterfaceCol[]
   interfaceCats  InterfaceCat[]
   interfaceCases InterfaceCase[]
-  workspaceId    String
+  members        ProjectUser[]
+  ownerId        String          @db.ObjectId
+  apiIds         String[]        @db.ObjectId
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id])
-  groups    Group[]
-  apis      Api[]
+  groups Group[]
+  apis   Api[]
 }
 
 type ProjectTag {
@@ -91,33 +72,16 @@ type ProjectGlobal {
   value String
 }
 
-type UserWorkspace {
-  id   String @db.ObjectId
-  name String
-}
-
 model User {
-  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   name       String
   password   String
-  email      String          @unique
+  email      String   @unique
   avatar     String?
-  study      Boolean         @default(false)
-  role       UserRole        @default(DEV)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  type       UserType        @default(SITE)
-  workspaces UserWorkspace[]
-}
-
-enum UserRole {
-  ADMIN
-  DEV
-}
-
-enum UserType {
-  SITE
-  THIRD
+  study      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  projectIds String[] @db.ObjectId
 }
 
 model Storage {

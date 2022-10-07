@@ -2,42 +2,39 @@ import invariant from 'tiny-invariant';
 import { User, Group as PrismaGroup, Api as PrismaApi } from '@prisma/client';
 import { prisma } from './prisma.server';
 
-export const createProject = async (user: User, workspaceId: string, name: string) => {
+export const createProject = async (user: User, name: string) => {
     let project = await prisma.project.create({
         data: {
             name: name,
-            workspaceId: workspaceId,
+            ownerId: user.id,
         }
     })
-
+    await prisma.user.update({
+        where: {
+            id: user.id,
+        },
+        data: {
+            projectIds: {
+                push: project.id,
+            }
+        }
+    })
     return project
 }
 
-export const getProjectsByWorkspaceId = async (workspaceId: string) => {
+export const getProjectByIds = async (ids: string[]) => {
     let projects = await prisma.project.findMany({
+        where: {
+            id: {
+                in: ids,
+            }
+        },
         select: {
             id: true,
             name: true,
-        },
-        where: {
-            workspaceId: workspaceId,
+            members: true,
+            apiIds: true,
         }
-    })
-    return projects;
-}
-
-export const getProjectsByWorkspaceIds = async (workspaceIds: string[]) => {
-    let projects = await prisma.project.findMany({
-        select: {
-            id: true,
-            name: true,
-            workspaceId: true,
-        },
-        where: {
-            workspaceId: {
-                in: workspaceIds
-            },
-        },
     })
     return projects;
 }

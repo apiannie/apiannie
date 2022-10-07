@@ -19,7 +19,7 @@ export function links() {
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
-  if (userId) return redirect("/workspaces");
+  if (userId) return redirect("/projects");
   return json({});
 }
 

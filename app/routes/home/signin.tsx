@@ -32,7 +32,7 @@ import Layout from "./..lib/Layout";
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
-  if (userId) return redirect("/workspaces");
+  if (userId) return redirect("/projects");
   return json({});
 }
 
@@ -45,7 +45,7 @@ export async function action({ request }: ActionArgs) {
   }
 
   const { email, password, remember } = result.data;
-  const redirectTo = safeRedirect(formData.get("redirectTo"), "/workspaces");
+  const redirectTo = safeRedirect(formData.get("redirectTo"), "/projects");
   const user = await verifyLogin(email, password);
 
   if (!user) {

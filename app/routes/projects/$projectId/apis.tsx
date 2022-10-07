@@ -22,7 +22,6 @@ import {
   ModalProps,
   Select,
   Spacer,
-  Spacer,
   Text,
   Tooltip,
   useColorModeValue,
@@ -551,13 +550,14 @@ const Folder = ({
               : undefined
           }
         />
-        <Icon as={FiFolder} fontWeight="100" color="blackAlpha.400" />
         <Box
           as={RemixLink}
           flexGrow={1}
+          display="flex"
+          alignItems={"center"}
           to={`/projects/${projectId}/apis/groups/${group.id}`}
-          pl={2}
         >
+          <Icon as={FiFolder} fontWeight="100" color="blackAlpha.400" mr={2} />
           <Text py={1} userSelect={"none"}>
             {group.name}
           </Text>
