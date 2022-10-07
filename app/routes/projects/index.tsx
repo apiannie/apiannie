@@ -63,6 +63,7 @@ import logo from "~/images/logo.png";
 export const loader = async ({ request }: LoaderArgs) => {
   let user = await requireUser(request);
   let projects = await getProjectByIds(user.projectIds);
+
   return json({ user, projects });
 };
 
@@ -99,7 +100,7 @@ export default function () {
     >
       <Container pt={"4rem"}>
         <HStack py={5} spacing={4}>
-          <Image src={logo} h={12} />
+          <Image src={logo} h={10} />
           <Spacer />
           <ColorModeButton />
           <IconButton size="md" aria-label="open menu" icon={<FiBell />} />
@@ -181,7 +182,7 @@ const ProjectItem = ({
 }) => {
   return (
     <Box px={8} py={5}>
-      <Link as={RemixLink} to={`/projects/${id}/apis`}>
+      <Link isExternal href={`/projects/${id}/apis`}>
         <Text
           fontWeight={"600"}
           color={useColorModeValue("blue.700", "blue.200")}
@@ -193,7 +194,7 @@ const ProjectItem = ({
       </Link>
       <HStack spacing={8}>
         <HStack>
-          <Box w={4} h={4} bg="blue.500" borderRadius={"full"} />
+          <Box w={3} h={3} bg="blue.500" borderRadius={"full"} />
           <Text>OpenAPI</Text>
         </HStack>
         <HStack>

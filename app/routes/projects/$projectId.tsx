@@ -28,7 +28,7 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { json, LoaderArgs } from "@remix-run/node";
+import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import {
   Link as RemixLink,
   NavLink,
@@ -51,7 +51,7 @@ import {
   FiSettings,
 } from "react-icons/fi";
 import logo from "~/images/logo_128.png";
-import { getProjectById } from "~/models/project.server";
+import { getProjectById, getProjectByIds } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import { httpResponse, useUser } from "~/utils";
 import ColorModeButton from "../home/..lib/ColorModeButton";
@@ -78,6 +78,14 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   }
 
   return json({ user: user, project: project });
+};
+
+export const action = async ({ request }: ActionArgs) => {
+  let formData = await request.formData();
+  let user = await requireUser(request);
+  let projects = await getProjectByIds(user.projectIds);
+
+  return json({ projects });
 };
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -173,7 +181,6 @@ const ProjecChangeButton = (props: BoxProps) => {
   const fetcher = useFetcher<UseDataFunctionReturn<typeof loadProjects>>();
   const { project } = useLoaderData<typeof loader>();
   const { isOpen, onOpen, onClose } = useDisclosure();
-
   return (
     <Box {...props}>
       <fetcher.Form method="post">
@@ -191,6 +198,7 @@ const ProjecChangeButton = (props: BoxProps) => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader textAlign={"center"}>Switch project</ModalHeader>
+          <Divider />
           <ModalBody>
             {fetcher.data ? (
               fetcher.data.projects.map((project) => (
@@ -221,6 +229,7 @@ const ProjecChangeButton = (props: BoxProps) => {
               </Stack>
             )}
           </ModalBody>
+          <Divider />
           <ModalFooter>
             <Button w={36} mx="auto" onClick={onClose}>
               Cancel
