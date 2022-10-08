@@ -74,7 +74,6 @@ export const getProjectById = async (id: string) => {
     }
 
     let groupMap = new Map<string, Group>();
-    let apiMap = new Map<string, Api>();
     let groups = project.groups.map(group => ({
         ...group,
         apis: new Array(),

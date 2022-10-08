@@ -93,11 +93,7 @@ export default function () {
   const transition = useTransition();
 
   return (
-    <Box
-      minW="100vw"
-      minH="100vh"
-      bg={useColorModeValue("gray.600", "gray.700")}
-    >
+    <Box minH="100vh" bg={useColorModeValue("gray.600", "gray.700")}>
       <Container pt={"4rem"}>
         <HStack py={5} spacing={4}>
           <Image src={logo} h={10} />

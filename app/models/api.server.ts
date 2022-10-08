@@ -13,6 +13,9 @@ export const createGroup = async ({ parentId, projectId, name }: {
     projectId: string,
     name: string,
 }) => {
+    if (parentId === "") {
+        parentId = undefined;
+    }
     return prisma.group.create({
         data: {
             projectId: projectId,
@@ -54,6 +57,9 @@ export const createApi = async(
     projectId: string,
     groupId: string | undefined,
     data: {name: string, path: string, method: RequestMethod}) => {
+    if (groupId === "") {
+        groupId = undefined;
+    }
     let api = await prisma.api.create({
         data: {
             projectId: projectId,

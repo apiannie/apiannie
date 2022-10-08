@@ -89,6 +89,8 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
     return validationError(result.error);
   }
 
+  console.log(result.submittedData);
+
   const { parentId, name } = result.data;
   let group = await createGroup({
     parentId: parentId,
@@ -217,7 +219,11 @@ const NewGroupModal = ({
             placeholder="Group name"
             autoComplete="off"
           />
-          <input name="parentId" value={params.groupId} type="hidden" />
+          <input
+            name="parentId"
+            value={params.groupId || undefined}
+            type="hidden"
+          />
         </ModalBody>
 
         <ModalFooter>
@@ -530,7 +536,7 @@ const Folder = ({
       <HStack
         spacing={0}
         w="full"
-        pl={`${8 + depth * 12}px`}
+        pl={`${8 + depth * 16}px`}
         _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
         cursor="pointer"
         role="group"
@@ -580,7 +586,7 @@ const Folder = ({
           />
         ))}
         {group.apis.map((api) => (
-          <File key={api.id} api={api} depth={0} />
+          <File key={api.id} api={api} depth={depth + 1} />
         ))}
       </Flex>
     </Flex>
@@ -622,7 +628,7 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
       fontSize="sm"
       mt={0.25}
       color={color}
-      flexBasis="2.5em"
+      flexBasis="40px"
       flexShrink={0}
       flexGrow={0}
     >
@@ -640,7 +646,7 @@ const File = ({ api, depth }: { api: Api; depth: number }) => {
     <Flex
       as={RemixLink}
       to={`/projects/${projectId}/apis/details/${api.id}`}
-      pl={`${36 + depth * 12}px`}
+      pl={`${12 + depth * 16}px`}
       h="8"
       _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
       bg={isActive ? bg : undefined}
