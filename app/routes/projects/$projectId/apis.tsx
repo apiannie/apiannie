@@ -652,7 +652,7 @@ const File = ({ api, depth }: { api: Api; depth: number }) => {
       bg={isActive ? bg : undefined}
       cursor="pointer"
     >
-      <HStack w="full" spacing={1}>
+      <HStack w="full" spacing={0}>
         <MethodTag method={api.data.method} />
         <Text noOfLines={1}>{api.data.name}</Text>
       </HStack>
