@@ -110,7 +110,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
     <Grid h="100vh" templateColumns={"80px 304px 1fr"} {...rest}>
       <GridItem
         flexDirection={"column"}
-        bg={useColorModeValue("cyan.50", "gray.700")}
+        bg={useColorModeValue("gray.100", "gray.700")}
         borderRight="1px"
         borderRightColor={useColorModeValue("gray.200", "gray.600")}
         display={"flex"}
@@ -138,7 +138,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
         <Spacer />
       </GridItem>
       <Grid
-        bg={useColorModeValue("teal.50", "gray.800")}
+        bg={useColorModeValue("gray.50", "gray.800")}
         borderRightWidth="1px"
         borderRightColor={useColorModeValue("gray.200", "gray.700")}
         templateRows="56px minmax(0, 1fr)"
@@ -148,12 +148,12 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
         {sideNav}
       </Grid>
       <GridItem>
-        <Grid h="100vh" templateRows={"56px minmax(0, 1fr)"}>
+        <Grid h="100vh" templateRows={"52px minmax(0, 1fr)"} bg={useColorModeValue("white", "gray.800")}>
           <HStack
             px={{ base: 4, md: 4 }}
             height="full"
             alignItems="center"
-            bg={useColorModeValue("teal.50", "gray.800")}
+            bg={useColorModeValue("gray.50", "gray.800")}
             borderBottomWidth="1px"
             borderBottomColor={useColorModeValue("gray.200", "gray.700")}
             justifyContent={{ base: "space-between", md: "flex-end" }}
