@@ -68,7 +68,6 @@ enum Action {
 export const action = async ({ request, params }: ActionArgs) => {
   let formData = await request.formData();
   let { projectId, groupId } = params;
-  console.log("action");
   invariant(projectId);
 
   switch (formData.get("_action")) {
@@ -306,6 +305,7 @@ const NewApiModal = ({
               label="Path"
               input={PathInput}
               autoComplete="off"
+              size="sm"
             />
           </VStack>
 
@@ -330,10 +330,11 @@ const NewApiModal = ({
   );
 };
 
-const PathInput = (props: InputProps) => {
+export const PathInput = ({ size, bg, ...rest }: InputProps) => {
   return (
-    <InputGroup size={"sm"}>
+    <InputGroup size={size} bg={bg}>
       <InputLeftAddon
+        bg={bg}
         children={
           <Select name="method" variant="unstyled">
             {RequestMethods.map((method) => (
@@ -344,7 +345,7 @@ const PathInput = (props: InputProps) => {
           </Select>
         }
       />
-      <Input {...props} />
+      <Input {...rest} />
     </InputGroup>
   );
 };

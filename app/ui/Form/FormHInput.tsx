@@ -1,6 +1,7 @@
 import {
   Alert,
   AlertIcon,
+  BackgroundProps,
   Box,
   ChakraProps,
   Flex,
@@ -20,6 +21,7 @@ const FormHInput = <T extends React.FunctionComponent>({
   labelWidth,
   input,
   isRequired,
+  bg,
   ...rest
 }: {
   name: string;
@@ -28,6 +30,7 @@ const FormHInput = <T extends React.FunctionComponent>({
   isRequired?: boolean;
   input: T;
 } & ThemingProps &
+  BackgroundProps &
   MinimalInputProps &
   Omit<React.HTMLProps<HTMLInputElement>, "size" | "autoCompolete">) => {
   const { error, getInputProps } = useField(name);
@@ -48,6 +51,7 @@ const FormHInput = <T extends React.FunctionComponent>({
         {React.createElement(input, {
           id: name,
           flexGrow: 1,
+          bg: bg,
           ...getInputProps(rest),
         })}
       </Flex>
