@@ -40,8 +40,9 @@ import {
   FiCopy,
   FiFilePlus,
   FiFolder,
-  FiFolderPlus,
+  FiFolderPlus
 } from "react-icons/fi";
+import { BsFolder2Open, BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
@@ -355,13 +356,14 @@ const SideNavContent = () => {
   const color = useColorModeValue("teal.800", "teal.100");
   const bg = useColorModeValue("blue.100", "blue.800");
   return (
-    <Box>
+    <Box pl={2} pt={2} pr={2}>
       <NavLink to={`/projects/${projectId}/apis`} end>
         {({ isActive }) => (
           <HStack
             h={8}
             pl={2}
             color={color}
+            borderRadius={2}
             bg={isActive ? bg : undefined}
             _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
           >
@@ -498,6 +500,7 @@ const FolderIcon = ({
   isExpanded: boolean;
   onClick: (e: any) => void;
 }) => {
+  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
   return (
     <Center
       mr={1}
@@ -507,7 +510,7 @@ const FolderIcon = ({
       _groupHover={{ background: "blackAlpha.50" }}
       onClick={onClick}
     >
-      <Icon as={isExpanded ? FiChevronDown : FiChevronRight} fontSize="12px" />
+      <Icon as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill} color={iconColor} fontSize={10} />
     </Center>
   );
 };
@@ -530,15 +533,18 @@ const Folder = ({
     groupId: string;
   }>();
   const isActive = groupId === group.id;
-  const bg = useColorModeValue("blue.100", "blue.800");
+  const bg = useColorModeValue("blue.200", "blue.800");
   const isOpen = accordionMap[group.id];
+  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
+  const hoverColor = useColorModeValue("blue.100", "blue.600");
   return (
     <Flex border={"none"} flexDir="column">
       <HStack
         spacing={0}
         w="full"
+        borderRadius={2}
         pl={`${8 + depth * 16}px`}
-        _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
+        _hover={{ background: isActive ? undefined : hoverColor }}
         cursor="pointer"
         role="group"
         h={8}
@@ -564,7 +570,7 @@ const Folder = ({
           alignItems={"center"}
           to={`/projects/${projectId}/apis/groups/${group.id}`}
         >
-          <Icon as={FiFolder} fontWeight="100" color="blackAlpha.400" mr={2} />
+          <Icon as={isOpen ? BsFolder2Open : FiFolder} fontWeight="100" color={iconColor} mr={2} />
           <Text py={1} userSelect={"none"}>
             {group.name}
           </Text>
@@ -640,20 +646,21 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
 
 const File = ({ api, depth }: { api: Api; depth: number }) => {
   const { projectId, apiId } = useParams();
-  const bg = useColorModeValue("blue.100", "blue.800");
+  const bg = useColorModeValue("blue.200", "blue.800");
   const isActive = api.id === apiId;
   invariant(projectId);
+  const hoverColor = useColorModeValue("blue.100", "blue.600");
   return (
     <Flex
       as={RemixLink}
       to={`/projects/${projectId}/apis/details/${api.id}`}
       pl={`${12 + depth * 16}px`}
       h="8"
-      _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
+      _hover={{ background: isActive ? undefined : hoverColor }}
       bg={isActive ? bg : undefined}
       cursor="pointer"
     >
-      <HStack w="full" spacing={0}>
+      <HStack w="full" spacing={0}  borderRadius={2}>
         <MethodTag method={api.data.method} />
         <Text noOfLines={1}>{api.data.name}</Text>
       </HStack>
