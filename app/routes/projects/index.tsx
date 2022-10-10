@@ -94,7 +94,7 @@ export default function () {
 
   return (
     <Box minH="100vh" bg={useColorModeValue("gray.600", "gray.700")}>
-      <Container pt={"4rem"}>
+      <Container py={"4rem"}>
         <HStack py={5} spacing={4}>
           <Image src={logo} h={10} />
           <Spacer />

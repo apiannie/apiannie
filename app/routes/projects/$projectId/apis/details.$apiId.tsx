@@ -1,5 +1,7 @@
 import {
   Box,
+  Button,
+  Checkbox,
   Container,
   Divider,
   Heading,
@@ -21,11 +23,22 @@ import {
   Tr,
   useColorModeValue,
 } from "@chakra-ui/react";
+import { ActionArgs, json } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
 import { ValidatedForm } from "remix-validated-form";
 import { z } from "zod";
 import { FormHInput } from "~/ui";
 import { PathInput } from "../apis";
+
+export const action = async ({ request }: ActionArgs) => {
+  let formData = await request.formData();
+  let result = await validator.validate(formData);
+
+  console.log(result.error);
+  console.log(result.data);
+
+  return json({});
+};
 
 export default function ApiInfo() {
   return (
@@ -54,7 +67,19 @@ export default function ApiInfo() {
   );
 }
 
-const validator = withZod(z.object({}));
+const validator = withZod(
+  z.object({
+    name: z.string().trim(),
+    path: z.string().trim(),
+    pathParams: z
+      .object({
+        name: z.string().trim(),
+        example: z.string().trim(),
+        description: z.string().trim(),
+      })
+      .array(),
+  })
+);
 
 const Header = (props: HeadingProps) => {
   return (
@@ -69,12 +94,12 @@ const Header = (props: HeadingProps) => {
 };
 
 const Edit = () => {
-  const bg = useColorModeValue("gray.100", "gray.800");
+  const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
   const gray = useColorModeValue("gray.300", "gray.600");
   const labelWidth = "80px";
   return (
-    <Box as={ValidatedForm} p={2} validator={validator}>
+    <Box as={ValidatedForm} method="patch" p={2} validator={validator}>
       <Header>General</Header>
       <Box bg={bg} p={4}>
         <Container maxW="container.lg">
@@ -117,12 +142,12 @@ const Edit = () => {
           <Divider my={2} borderColor={gray} />
           <TabPanels>
             <TabPanel>
-              <Container maxW="container.lg">
-                <PathTable />
-              </Container>
+              <Container maxW="container.lg"></Container>
             </TabPanel>
             <TabPanel>
-              <p>two!</p>
+              <Container maxW="container.lg">
+                <QueryTable />
+              </Container>
             </TabPanel>
             <TabPanel>
               <p>3!</p>
@@ -133,46 +158,58 @@ const Edit = () => {
           </TabPanels>
         </Tabs>
       </Box>
+
+      <Button type="submit" colorScheme="blue">
+        Save
+      </Button>
     </Box>
   );
 };
 
-const PathTable = () => {
+const QueryTable = () => {
+  const bgBW = useColorModeValue("white", "gray.900");
+
   return (
     <TableContainer>
-      <Table variant="simple">
-        <TableCaption>Imperial to metric conversion factors</TableCaption>
+      <Table colorScheme="teal">
         <Thead>
           <Tr>
-            <Th>To convert</Th>
-            <Th>into</Th>
-            <Th isNumeric>multiply by</Th>
+            <Th>Name</Th>
+            <Th>Required</Th>
+            <Th>Example</Th>
+            <Th>Description</Th>
           </Tr>
         </Thead>
-        <Tbody>
+        <Tbody bg={bgBW}>
           <Tr>
-            <Td>inches</Td>
-            <Td>millimetres (mm)</Td>
-            <Td isNumeric>25.4</Td>
+            <Td>
+              <Input name="pathParams[0].name" />
+            </Td>
+            <Td>
+              <Checkbox name="pathParams[0].isRequired" />{" "}
+            </Td>
+            <Td>
+              <Input name="pathParams[0].example" />
+            </Td>
+            <Td>
+              <Input name="pathParams[0].description" />
+            </Td>
           </Tr>
           <Tr>
-            <Td>feet</Td>
-            <Td>centimetres (cm)</Td>
-            <Td isNumeric>30.48</Td>
-          </Tr>
-          <Tr>
-            <Td>yards</Td>
-            <Td>metres (m)</Td>
-            <Td isNumeric>0.91444</Td>
+            <Td>
+              <Input name="pathParams[1].name" />
+            </Td>
+            <Td>
+              <Checkbox name="pathParams[1].isRequired" />{" "}
+            </Td>
+            <Td>
+              <Input name="pathParams[1].example" />
+            </Td>
+            <Td>
+              <Input name="pathParams[1].description" />
+            </Td>
           </Tr>
         </Tbody>
-        <Tfoot>
-          <Tr>
-            <Th>To convert</Th>
-            <Th>into</Th>
-            <Th isNumeric>multiply by</Th>
-          </Tr>
-        </Tfoot>
       </Table>
     </TableContainer>
   );

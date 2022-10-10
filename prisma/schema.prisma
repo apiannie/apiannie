@@ -10,17 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-type KeyValue {
-  name  String
-  value String
-}
-
-type KeyValueEnabled {
-  name    String
-  value   String
-  enabled Boolean @default(true)
-}
-
 enum ProjectUserRole {
   ADMIN
   WRITE
@@ -29,27 +18,22 @@ enum ProjectUserRole {
 
 type ProjectUser {
   id   String          @db.ObjectId
-  name String
   role ProjectUserRole
 }
 
 model Project {
-  id             String          @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  envs           ProjectEnv[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  isMockOpen     Boolean         @default(false)
-  strice         Boolean         @default(false)
-  isJson5        Boolean         @default(true)
-  tags           ProjectTag[]
-  interface      Interface[]
-  interfaceCols  InterfaceCol[]
-  interfaceCats  InterfaceCat[]
-  interfaceCases InterfaceCase[]
-  members        ProjectUser[]
-  ownerId        String          @db.ObjectId
-  apiIds         String[]        @db.ObjectId
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  envs       ProjectEnv[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  isMockOpen Boolean       @default(false)
+  strice     Boolean       @default(false)
+  isJson5    Boolean       @default(true)
+  tags       ProjectTag[]
+  members    ProjectUser[]
+  ownerId    String        @db.ObjectId
+  apiIds     String[]      @db.ObjectId
 
   groups Group[]
   apis   Api[]
@@ -107,115 +91,6 @@ enum LogType {
   INTERFACE_COL
 }
 
-model InterfaceCol {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  index       Int
-  description String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  project   Project @relation(fields: [projectId], references: [id])
-  projectId String  @db.ObjectId
-
-  checkHttpCodeIs200  Boolean                        @default(false)
-  checkResponseSchema Boolean                        @default(false)
-  checkResponseField  InterfaceColCheckResponseField
-  checkScript         InterfaceColCheckScript
-  InterfaceCase       InterfaceCase[]
-}
-
-type InterfaceColCheckResponseField {
-  name    String  @default("code")
-  value   String  @default("0")
-  enabled Boolean @default(false)
-}
-
-type InterfaceColCheckScript {
-  content String
-  enabled Boolean @default(false)
-}
-
-model InterfaceCat {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String
-  index       Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  project   Project @relation(fields: [projectId], references: [id])
-  projectId String  @db.ObjectId
-}
-
-model InterfaceCase {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  name  String
-  index Int
-  env   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  project   Project @relation(fields: [projectId], references: [id])
-  projectId String  @db.ObjectId
-
-  col   InterfaceCol @relation(fields: [colId], references: [id])
-  colId String       @db.ObjectId
-
-  reqParams    KeyValue[]
-  reqHeaders   KeyValue[]
-  reqQuery     KeyValueEnabled[]
-  reqBodyForm  KeyValueEnabled[]
-  reqBodyOther String
-
-  testResBody   String
-  testStatus    InterfaceCaseStatus
-  testResHeader String
-  mockVerify    Boolean             @default(false)
-  scriptEnabled Boolean             @default(false)
-  testScript    String
-}
-
-enum InterfaceCaseStatus {
-  OK
-  INVALID
-  ERROR
-}
-
-model Interface {
-  id          String          @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  path        String
-  method      String
-  catId       String
-  editId      String
-  status      InterfaceStatus
-  descripiton String
-  markdown    String
-  static      Boolean         @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  project   Project @relation(fields: [projectId], references: [id])
-  projectId String  @db.ObjectId
-
-  query InterfaceQuery
-}
-
-enum InterfaceStatus {
-  UNFINISHED
-  FINISHED
-}
-
-type InterfaceQuery {
-  path   String
-  params KeyValue[]
-}
-
 model Avatar {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
   basecode String
@@ -254,7 +129,8 @@ type ApiData {
   path        String
   method      RequestMethod       @default(GET)
   descripiton String?
-  params      RequestQueryParam[]
+  pathParams  RequestPathParam[]
+  queryParams RequestQueryParam[]
   headers     RequestHeader[]
   reqeustBody RequestBody?
 }
@@ -284,15 +160,20 @@ type RequestHeader {
   name        String
   description String?
   example     String?
-  isOptional  Boolean
+  isRequired  Boolean @default(false)
 }
 
 type RequestQueryParam {
   name        String
   example     String?
   description String?
-  isOptional  Boolean
-  isArray     Boolean
+  isRequired  Boolean @default(false)
+}
+
+type RequestPathParam {
+  name        String
+  example     String?
+  description String?
 }
 
 enum ParamType {
