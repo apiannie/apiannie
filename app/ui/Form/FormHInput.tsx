@@ -19,7 +19,7 @@ const FormHInput = <T extends React.FunctionComponent>({
   name,
   label,
   labelWidth,
-  input,
+  as,
   isRequired,
   bg,
   ...rest
@@ -28,11 +28,11 @@ const FormHInput = <T extends React.FunctionComponent>({
   label: string;
   labelWidth: string;
   isRequired?: boolean;
-  input: T;
+  as: T;
 } & ThemingProps &
   BackgroundProps &
   MinimalInputProps &
-  Omit<React.HTMLProps<HTMLInputElement>, "size" | "autoCompolete">) => {
+  Omit<React.HTMLProps<HTMLInputElement>, "size" | "autoCompolete" | "as">) => {
   const { error, getInputProps } = useField(name);
   return (
     <FormControl
@@ -48,7 +48,7 @@ const FormHInput = <T extends React.FunctionComponent>({
             {label}
           </FormLabel>
         </Box>
-        {React.createElement(input, {
+        {React.createElement(as, {
           id: name,
           flexGrow: 1,
           bg: bg,

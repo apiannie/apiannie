@@ -1,26 +1,14 @@
-import {
-  Alert,
-  AlertIcon,
-  Box,
-  Center,
-  Flex,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, Center, Input, Textarea, VStack } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { useEffect, useRef } from "react";
-import { useField, ValidatedForm, validationError } from "remix-validated-form";
+import { useEffect, useRef } from "react";
+import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { getGroupById, updateGroup } from "~/models/api.server";
 import FormHInput from "~/ui/Form/FormHInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
-import { MinimalInputProps } from "~/ui/Form/type";
 import { httpResponse } from "~/utils";
 
 export const loader = async ({ params }: LoaderArgs) => {
@@ -89,13 +77,13 @@ export default function ApiGroup() {
             name="name"
             label="Group name"
             isRequired
-            input={Input}
+            as={Input}
           />
           <FormHInput
             labelWidth="200px"
             name="description"
             label="Description"
-            input={Textarea}
+            as={Textarea}
           />
           <Center>
             <FormSubmitButton colorScheme="blue" px={12}>

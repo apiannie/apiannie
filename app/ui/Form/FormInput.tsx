@@ -2,6 +2,7 @@ import {
   Alert,
   AlertIcon,
   FormControl,
+  FormControlProps,
   FormLabel,
   Input,
   InputGroup,
@@ -19,13 +20,24 @@ export interface FormInputProps
 
 export default React.forwardRef<HTMLInputElement, FormInputProps>(
   (props, ref) => {
-    const { name, label, children, ...rest } = props;
+    const { id, name, label, type, children, as, size, placeholder, ...rest } =
+      props;
     const { error, getInputProps } = useField(name);
+
+    console.log(rest);
+
     return (
-      <FormControl>
+      <FormControl {...rest}>
         {label && <FormLabel>{label}</FormLabel>}
         <InputGroup>
-          <Input ref={ref} {...getInputProps({ id: name, ...rest })} />
+          <Input
+            id={id || name}
+            ref={ref}
+            as={as}
+            size={size}
+            placeholder={placeholder}
+            {...getInputProps({ type })}
+          />
           {children}
         </InputGroup>
         {error && (

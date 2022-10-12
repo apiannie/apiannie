@@ -71,6 +71,12 @@ export const createApi = async (
     return api;
 };
 
+export const getApiById = async (id : string) => {
+    return prisma.api.findFirst({
+        where: {id}
+    });
+}
+
 export const updateApi = async (id: string, data: {
     groupId?: string | undefined,
     data?: { name: string, path: string, method: RequestMethod }
