@@ -56,7 +56,6 @@ import { getApiById } from "~/models/api.server";
 import { FormHInput, FormInput } from "~/ui";
 import { httpResponse } from "~/utils";
 import { PathInput } from "../apis";
-import { v4 as uuidv4 } from "uuid";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   let { apiId } = params;

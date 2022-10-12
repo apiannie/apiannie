@@ -32,12 +32,7 @@ import { RequestMethod } from "@prisma/client";
 import { ActionArgs, redirect } from "@remix-run/node";
 import { Link as RemixLink, useMatches } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { useEffect, useState } from "react";
-import {
-  BsFillCaretDownFill,
-  BsFillCaretRightFill,
-  BsFolder2Open,
-} from "react-icons/bs";
+import { useEffect, useMemo, useState } from "react";
 import {
   FiAirplay,
   FiCopy,
@@ -45,6 +40,11 @@ import {
   FiFolder,
   FiFolderPlus,
 } from "react-icons/fi";
+import {
+  BsFolder2Open,
+  BsFillCaretRightFill,
+  BsFillCaretDownFill,
+} from "react-icons/bs";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
@@ -58,6 +58,18 @@ import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
+import Tree, {
+  mutateTree,
+  moveItemOnTree,
+  RenderItemParams,
+  TreeItem,
+  TreeData,
+  ItemId,
+  TreeSourcePosition,
+  TreeDestinationPosition,
+} from "@atlaskit/tree";
+import { resetServerContext } from "react-beautiful-dnd";
+import TreeBuilder from "~/utils/treeBuilder";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -80,6 +92,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     case Action.NEW_API:
       return await newApiAction(formData, projectId);
     default:
+      console.log("_action:", formData.get("_action"));
       throw httpResponse.NotFound;
   }
 };
@@ -89,6 +102,8 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
   if (result.error) {
     return validationError(result.error);
   }
+
+  console.log(result.submittedData);
 
   const { parentId, name } = result.data;
   let group = await createGroup({
@@ -330,20 +345,13 @@ const NewApiModal = ({
   );
 };
 
-export const PathInput = ({
-  size,
-  bg,
-  onMethodChange,
-  ...rest
-}: InputProps & {
-  onMethodChange?: React.ChangeEventHandler<HTMLSelectElement>;
-}) => {
+export const PathInput = ({ size, bg, ...rest }: InputProps) => {
   return (
     <InputGroup size={size} bg={bg}>
       <InputLeftAddon
         bg={bg}
         children={
-          <Select name="method" variant="unstyled" onChange={onMethodChange}>
+          <Select name="method" variant="unstyled">
             {RequestMethods.map((method) => (
               <option key={method} value={method}>
                 {method}
@@ -361,6 +369,9 @@ const SideNavContent = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const color = useColorModeValue("teal.800", "teal.100");
   const bg = useColorModeValue("blue.100", "blue.800");
+  const fileNavBar = useMemo(() => {
+    return <FileNavbar />;
+  }, []);
   return (
     <Box pl={2} pt={2} pr={2}>
       <NavLink to={`/projects/${projectId}/apis`} end>
@@ -378,45 +389,9 @@ const SideNavContent = () => {
           </HStack>
         )}
       </NavLink>
-      <FileNavbar />
+      {fileNavBar}
     </Box>
   );
-};
-
-const useAccordion = (initialValue?: string[] | null | undefined) => {
-  let initial: { [key: string]: boolean } = {};
-  if (initialValue instanceof Array) {
-    for (let value of initialValue) {
-      initial[value] = true;
-    }
-  }
-  const [accordionMap, setAccordionMap] = useState(initial);
-
-  const onAdd = (value: string | string[]) => {
-    let newValues: { [key: string]: boolean } = {};
-    if (!(value instanceof Array)) {
-      value = [value];
-    }
-    for (let v of value) {
-      newValues[v] = true;
-    }
-    setAccordionMap({
-      ...accordionMap,
-      ...newValues,
-    });
-  };
-
-  const onDelete = (value: string) => {
-    let clone = Object.assign({}, accordionMap);
-    delete clone[value];
-    setAccordionMap(clone);
-  };
-
-  return {
-    accordionMap,
-    onAdd,
-    onDelete,
-  };
 };
 
 const groupDFS = (group: Group, id: string, path: string[]) => {
@@ -437,106 +412,105 @@ const groupDFS = (group: Group, id: string, path: string[]) => {
 const FileNavbar = () => {
   const matches = useMatches();
   const project: Project = matches[1].data.project;
-  let { groupId, apiId } = useParams();
-  const { accordionMap, onAdd, onDelete } = useAccordion();
-
+  const [treeData, setTreeData] = useState<TreeData>(
+    new TreeBuilder("1", null)
+  );
   invariant(project);
-
   useEffect(() => {
-    let path: string[] = [];
-    if (!groupId && !apiId) {
-      return;
-    }
-    let groupMap = new Map<string, Group>();
-    let apiMap = new Map<string, Api>();
-    let stack = new Array<Group>(project.root);
-
-    while (stack.length > 0) {
-      let group = stack.pop();
-      invariant(group);
+    const complexTree = new TreeBuilder(1, null);
+    const generateTreeData = (group: Group, builder: TreeBuilder) => {
       for (let g of group.groups) {
-        groupMap.set(g.id, g);
-        stack.push(g);
+        const childTree = new TreeBuilder(g.id, g);
+        generateTreeData(g, childTree);
+        builder.withSubTree(childTree);
       }
       for (let api of group.apis) {
-        apiMap.set(api.id, api);
+        builder.withLeaf(api.id, api);
       }
-    }
-
-    if (apiId) {
-      groupId = apiMap.get(apiId)?.groupId || undefined;
-    }
-
-    if (!groupId) {
-      return;
-    }
-
-    while (groupId) {
-      path.push(groupId);
-      groupId = groupMap.get(groupId)?.parentId || undefined;
-    }
-
-    onAdd(path);
-  }, [groupId]);
+    };
+    generateTreeData(project.root, complexTree);
+    setTreeData(complexTree.build());
+  }, []);
 
   invariant(project);
+  const renderItem = ({
+    item,
+    onExpand,
+    onCollapse,
+    provided,
+  }: RenderItemParams) => {
+    return (
+      <div
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+      >
+        {item.data.data ? (
+          <File key={item.id} api={item.data} />
+        ) : (
+          <Folder
+            key={item.id}
+            group={item.data}
+            isExpanded={item.isExpanded}
+            itemId={item.id}
+            onExpand={onExpand}
+            onCollapse={onCollapse}
+            onAdd={() => {}}
+            onDelete={() => {}}
+          />
+        )}
+      </div>
+    );
+  };
+
+  const onExpand = (itemId: ItemId) => {
+    console.info(itemId);
+    setTreeData(mutateTree(treeData, itemId, { isExpanded: true }));
+  };
+
+  const onCollapse = (itemId: ItemId) => {
+    setTreeData(mutateTree(treeData, itemId, { isExpanded: false }));
+  };
+  const onDragEnd = (
+    source: TreeSourcePosition,
+    destination?: TreeDestinationPosition
+  ) => {
+    if (!destination) {
+      return;
+    }
+    setTreeData(moveItemOnTree(treeData, source, destination));
+  };
+  resetServerContext();
   return (
     <Flex flexDir={"column"}>
-      {project.root.groups.map((group) => (
-        <Folder
-          accordionMap={accordionMap}
-          onAdd={onAdd}
-          onDelete={onDelete}
-          key={group.id}
-          group={group}
-          depth={0}
-        />
-      ))}
-      {project.root.apis.map((api) => (
-        <File key={api.id} api={api} depth={0} />
-      ))}
+      <Tree
+        tree={treeData}
+        renderItem={renderItem}
+        onExpand={onExpand}
+        onCollapse={onCollapse}
+        onDragEnd={onDragEnd}
+        isDragEnabled
+      />
     </Flex>
   );
 };
 
-const FolderIcon = ({
-  isExpanded,
-  onClick,
-}: {
-  isExpanded: boolean;
-  onClick: (e: any) => void;
-}) => {
-  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
-  return (
-    <Center
-      mr={1}
-      w="4"
-      h="4"
-      borderRadius={"full"}
-      _groupHover={{ background: "blackAlpha.50" }}
-      onClick={onClick}
-    >
-      <Icon
-        as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
-        color={iconColor}
-        fontSize={10}
-      />
-    </Center>
-  );
-};
-
 const Folder = ({
-  depth,
   group,
-  accordionMap,
-  onAdd,
+  itemId,
+  isExpanded,
+  onExpand,
+  onCollapse,
   onDelete,
+  onAdd,
 }: {
   group: Group;
-  depth: number;
-  accordionMap: { [key: string]: boolean };
-  onAdd: (value: string) => void;
+  itemId: ItemId;
+  isExpanded?: boolean;
+  onExpand: (itemId: ItemId) => void;
+  onCollapse: (itemId: ItemId) => void;
   onDelete: (value: string) => void;
+  onAdd: (value: string) => void;
 }) => {
   const { projectId, groupId } = useParams<{
     projectId: string;
@@ -544,7 +518,6 @@ const Folder = ({
   }>();
   const isActive = groupId === group.id;
   const bg = useColorModeValue("blue.200", "blue.800");
-  const isOpen = accordionMap[group.id];
   const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
   const hoverColor = useColorModeValue("blue.100", "blue.600");
   return (
@@ -553,26 +526,33 @@ const Folder = ({
         spacing={0}
         w="full"
         borderRadius={2}
-        pl={`${8 + depth * 16}px`}
         _hover={{ background: isActive ? undefined : hoverColor }}
         cursor="pointer"
         role="group"
         h={8}
         bg={isActive ? bg : undefined}
         onClick={(_e) =>
-          isActive ? (isOpen ? onDelete(group.id) : onAdd(group.id)) : undefined
+          isActive
+            ? isExpanded
+              ? onDelete(group.id)
+              : onAdd(group.id)
+            : undefined
         }
       >
-        <FolderIcon
-          isExpanded={isOpen}
-          onClick={(e) =>
-            !isActive
-              ? isOpen
-                ? onDelete(group.id)
-                : onAdd(group.id)
-              : undefined
-          }
-        />
+        <Center
+          mr={1}
+          w="4"
+          h="4"
+          borderRadius={"full"}
+          _groupHover={{ background: "blackAlpha.50" }}
+          onClick={() => (isExpanded ? onCollapse(itemId) : onExpand(itemId))}
+        >
+          <Icon
+            as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
+            color={iconColor}
+            fontSize={10}
+          />
+        </Center>
         <Box
           as={RemixLink}
           flexGrow={1}
@@ -581,7 +561,7 @@ const Folder = ({
           to={`/projects/${projectId}/apis/groups/${group.id}`}
         >
           <Icon
-            as={isOpen ? BsFolder2Open : FiFolder}
+            as={isExpanded ? BsFolder2Open : FiFolder}
             fontWeight="100"
             color={iconColor}
             mr={2}
@@ -591,26 +571,6 @@ const Folder = ({
           </Text>
         </Box>
       </HStack>
-      <Flex
-        display={isOpen ? "flex" : "none"}
-        flexDir={"column"}
-        w="full"
-        p={0}
-      >
-        {group.groups.map((g) => (
-          <Folder
-            key={g.id}
-            accordionMap={accordionMap}
-            onAdd={onAdd}
-            onDelete={onDelete}
-            group={g}
-            depth={depth + 1}
-          />
-        ))}
-        {group.apis.map((api) => (
-          <File key={api.id} api={api} depth={depth + 1} />
-        ))}
-      </Flex>
     </Flex>
   );
 };
@@ -659,7 +619,7 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
   );
 };
 
-const File = ({ api, depth }: { api: Api; depth: number }) => {
+const File = ({ api }: { api: Api }) => {
   const { projectId, apiId } = useParams();
   const bg = useColorModeValue("blue.200", "blue.800");
   const isActive = api.id === apiId;
@@ -669,7 +629,6 @@ const File = ({ api, depth }: { api: Api; depth: number }) => {
     <Flex
       as={RemixLink}
       to={`/projects/${projectId}/apis/details/${api.id}`}
-      pl={`${12 + depth * 16}px`}
       h="8"
       _hover={{ background: isActive ? undefined : hoverColor }}
       bg={isActive ? bg : undefined}

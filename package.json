@@ -10,6 +10,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} ./prisma/seed.ts"
   },
   "dependencies": {
+    "@atlaskit/tree": "^8.6.3",
     "@chakra-ui/icons": "^2.0.6",
     "@chakra-ui/react": "^2.2.6",
     "@chakra-ui/styled-system": "^2.2.5",
@@ -27,6 +28,7 @@
     "framer-motion": "^6.5.1",
     "marked": "^4.0.18",
     "react": "^18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
     "react-icons": "^4.4.0",
     "remix-validated-form": "^4.5.5",
@@ -41,6 +43,7 @@
     "@types/marked": "^4.0.3",
     "@types/node": "^18.7.2",
     "@types/react": "^18.0.17",
+    "@types/react-beautiful-dnd": "^13.1.2",
     "@types/react-dom": "^18.0.6",
     "@types/validatorjs": "^3.15.0",
     "eslint": "^8.20.0",
