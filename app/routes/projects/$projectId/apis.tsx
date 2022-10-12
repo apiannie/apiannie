@@ -34,15 +34,17 @@ import { Link as RemixLink, useMatches } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { useEffect, useState } from "react";
 import {
+  BsFillCaretDownFill,
+  BsFillCaretRightFill,
+  BsFolder2Open,
+} from "react-icons/bs";
+import {
   FiAirplay,
-  FiChevronDown,
-  FiChevronRight,
   FiCopy,
   FiFilePlus,
   FiFolder,
-  FiFolderPlus
+  FiFolderPlus,
 } from "react-icons/fi";
-import { BsFolder2Open, BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
@@ -78,7 +80,6 @@ export const action = async ({ request, params }: ActionArgs) => {
     case Action.NEW_API:
       return await newApiAction(formData, projectId);
     default:
-      console.log("_action:", formData.get("_action"));
       throw httpResponse.NotFound;
   }
 };
@@ -88,8 +89,6 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
   if (result.error) {
     return validationError(result.error);
   }
-
-  console.log(result.submittedData);
 
   const { parentId, name } = result.data;
   let group = await createGroup({
@@ -331,13 +330,20 @@ const NewApiModal = ({
   );
 };
 
-export const PathInput = ({ size, bg, ...rest }: InputProps) => {
+export const PathInput = ({
+  size,
+  bg,
+  onMethodChange,
+  ...rest
+}: InputProps & {
+  onMethodChange?: React.ChangeEventHandler<HTMLSelectElement>;
+}) => {
   return (
     <InputGroup size={size} bg={bg}>
       <InputLeftAddon
         bg={bg}
         children={
-          <Select name="method" variant="unstyled">
+          <Select name="method" variant="unstyled" onChange={onMethodChange}>
             {RequestMethods.map((method) => (
               <option key={method} value={method}>
                 {method}
@@ -510,7 +516,11 @@ const FolderIcon = ({
       _groupHover={{ background: "blackAlpha.50" }}
       onClick={onClick}
     >
-      <Icon as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill} color={iconColor} fontSize={10} />
+      <Icon
+        as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
+        color={iconColor}
+        fontSize={10}
+      />
     </Center>
   );
 };
@@ -570,7 +580,12 @@ const Folder = ({
           alignItems={"center"}
           to={`/projects/${projectId}/apis/groups/${group.id}`}
         >
-          <Icon as={isOpen ? BsFolder2Open : FiFolder} fontWeight="100" color={iconColor} mr={2} />
+          <Icon
+            as={isOpen ? BsFolder2Open : FiFolder}
+            fontWeight="100"
+            color={iconColor}
+            mr={2}
+          />
           <Text py={1} userSelect={"none"}>
             {group.name}
           </Text>
@@ -660,7 +675,7 @@ const File = ({ api, depth }: { api: Api; depth: number }) => {
       bg={isActive ? bg : undefined}
       cursor="pointer"
     >
-      <HStack w="full" spacing={0}  borderRadius={2}>
+      <HStack w="full" spacing={0} borderRadius={2}>
         <MethodTag method={api.data.method} />
         <Text noOfLines={1}>{api.data.name}</Text>
       </HStack>

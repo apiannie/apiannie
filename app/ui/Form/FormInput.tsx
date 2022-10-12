@@ -19,13 +19,13 @@ export interface FormInputProps
 
 export default React.forwardRef<HTMLInputElement, FormInputProps>(
   (props, ref) => {
-    const { name, label, children, ...rest } = props;
+    const { id, name, label, children, ...rest } = props;
     const { error, getInputProps } = useField(name);
     return (
       <FormControl>
         {label && <FormLabel>{label}</FormLabel>}
         <InputGroup>
-          <Input ref={ref} {...getInputProps({ id: name, ...rest })} />
+          <Input id={id || name} ref={ref} {...getInputProps({ ...rest })} />
           {children}
         </InputGroup>
         {error && (

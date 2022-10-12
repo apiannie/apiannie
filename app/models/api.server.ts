@@ -69,3 +69,9 @@ export const createApi = async(
     })
     return api;
 }
+
+export const getApiById = async (id : string) => {
+    return prisma.api.findFirst({
+        where: {id}
+    });
+}

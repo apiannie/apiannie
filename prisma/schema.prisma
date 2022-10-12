@@ -127,12 +127,15 @@ model Api {
 type ApiData {
   name        String
   path        String
-  method      RequestMethod       @default(GET)
+  method      RequestMethod   @default(GET)
   descripiton String?
-  pathParams  RequestPathParam[]
-  queryParams RequestQueryParam[]
-  headers     RequestHeader[]
-  reqeustBody RequestBody?
+  pathParams  RequestParam[]
+  queryParams RequestParam[]
+  headers     RequestParam[]
+  bodyType    RequestBodyType @default(FORM)
+  bodyForm    RequestParam[]
+  bodyJson    Json?
+  bodyRaw     RequestBodyRaw?
 }
 
 enum RequestMethod {
@@ -145,35 +148,23 @@ enum RequestMethod {
   HEAD
 }
 
-type RequestBody {
-  type  RequestBodyType
-  param Json
-}
-
 enum RequestBodyType {
-  FORM_DATA
-  FORM_URLENCODED
+  FORM
   JSON
+  RAW
 }
 
-type RequestHeader {
-  name        String
-  description String?
+type RequestBodyRaw {
   example     String?
-  isRequired  Boolean @default(false)
+  descripiton String?
 }
 
-type RequestQueryParam {
-  name        String
-  example     String?
-  description String?
-  isRequired  Boolean @default(false)
-}
-
-type RequestPathParam {
+type RequestParam {
   name        String
   example     String?
   description String?
+  isRequired  Boolean   @default(false)
+  type        ParamType @default(STRING)
 }
 
 enum ParamType {
@@ -183,6 +174,16 @@ enum ParamType {
   STRING
   OBJECT
   ARRAY
+  FILE
+}
+
+type JsonData {
+  name        String
+  example     String?
+  description String?
+  isRequired  Boolean    @default(false)
+  type        ParamType  @default(STRING)
+  children    JsonData[]
 }
 
 type Response {
