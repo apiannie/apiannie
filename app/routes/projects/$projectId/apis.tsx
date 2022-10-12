@@ -30,7 +30,7 @@ import {
 } from "@chakra-ui/react";
 import {RequestMethod} from "@prisma/client";
 import {ActionArgs, redirect} from "@remix-run/node";
-import {Link as RemixLink, useMatches} from "@remix-run/react";
+import {Link as RemixLink, useFetcher, useMatches} from "@remix-run/react";
 import {withZod} from "@remix-validated-form/with-zod";
 import {useEffect, useMemo, useState} from "react";
 import {
@@ -45,7 +45,7 @@ import {NavLink, Outlet, useParams} from "react-router-dom";
 import {validationError} from "remix-validated-form";
 import invariant from "tiny-invariant";
 import {z} from "zod";
-import {createApi, createGroup} from "~/models/api.server";
+import {createApi, createGroup, updateApi, updateGroup} from "~/models/api.server";
 import {Api, Group, Project} from "~/models/project.server";
 import {requireUser} from "~/session.server";
 import FormCancelButton from "~/ui/Form/FormCancelButton";
@@ -58,13 +58,13 @@ import Tree, {
     mutateTree,
     moveItemOnTree,
     RenderItemParams,
-    TreeItem,
     TreeData,
     ItemId,
     TreeSourcePosition,
     TreeDestinationPosition,
 } from "@atlaskit/tree";
-import {resetServerContext} from "react-beautiful-dnd";
+// @ts-ignore
+import {resetServerContext} from "react-beautiful-dnd-next";
 import TreeBuilder from "~/utils/treeBuilder";
 
 export const handle = {
@@ -74,23 +74,42 @@ export const handle = {
 enum Action {
     NEW_GROUP = "NEW_GROUP",
     NEW_API = "NEW_API",
+    UPDATE_API = "UPDATE_API",
+    UPDATE_GROUP = "UPDATE_GROUP"
 }
 
 export const action = async ({request, params}: ActionArgs) => {
     let formData = await request.formData();
-    let {projectId, groupId} = params;
+    let {projectId} = params;
     invariant(projectId);
-
+    await requireUser(request);
     switch (formData.get("_action")) {
         case Action.NEW_GROUP:
-            const user = await requireUser(request);
             return await newGroupAction(formData, projectId);
+        case Action.UPDATE_GROUP:
+            return await updateGroupAction(formData);
         case Action.NEW_API:
             return await newApiAction(formData, projectId);
+        case Action.UPDATE_API:
+            return await updateApiAction(formData);
         default:
             console.log("_action:", formData.get("_action"));
             throw httpResponse.NotFound;
     }
+};
+
+const updateApiAction = async (formData: FormData) => {
+    const result = await withZod(
+        z.object({
+            id: z.string().min(1, "id is required"),
+            groupId: z.string(),
+            data: z.any()
+        }),
+    ).validate(formData);
+    if (result.error) {
+        return validationError(result.error);
+    }
+    return await updateApi(result.data.id, {groupId: result.data.groupId, data: result.data.data});
 };
 
 const newGroupAction = async (formData: FormData, projectId: string) => {
@@ -109,6 +128,22 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
     });
 
     return redirect(`/projects/${group.projectId}/apis/groups/${group.id}`);
+};
+
+const updateGroupAction = async (formData: FormData) => {
+    const result = await withZod(
+        z.object({
+            id: z.string().min(1, "id is required"),
+            parentId: z.string(),
+            name: z.string(),
+            description: z.string()
+        }),
+    ).validate(formData);
+    if (result.error) {
+        return validationError(result.error);
+    }
+    const {id, name, description, parentId} = result.data;
+    return await updateGroup({id, name, description, parentId});
 };
 
 const newApiAction = async (formData: FormData, projectId: string) => {
@@ -408,8 +443,11 @@ const groupDFS = (group: Group, id: string, path: string[]) => {
 
 const FileNavbar = () => {
     const matches = useMatches();
+    const params = useParams();
+    console.info(params)
     const project: Project = matches[1].data.project;
     const [treeData, setTreeData] = useState<TreeData>(new TreeBuilder("1", null));
+    const fetcher = useFetcher();
     invariant(project);
     useEffect(() => {
         const complexTree = new TreeBuilder(1, null);
@@ -425,7 +463,7 @@ const FileNavbar = () => {
         };
         generateTreeData(project.root, complexTree);
         setTreeData(complexTree.build());
-    }, []);
+    }, [params.groupId, params.apiId]);
 
     invariant(project);
     const renderItem = ({
@@ -442,15 +480,16 @@ const FileNavbar = () => {
                             itemId={item.id}
                             onExpand={onExpand}
                             onCollapse={onCollapse}
-                            onAdd={() => {}}
-                            onDelete={() => {}}
+                            onAdd={() => {
+                            }}
+                            onDelete={() => {
+                            }}
                     />}
             </div>
         );
     };
 
     const onExpand = (itemId: ItemId) => {
-        console.info(itemId);
         setTreeData(mutateTree(treeData, itemId, {isExpanded: true}));
     };
 
@@ -464,6 +503,16 @@ const FileNavbar = () => {
         if (!destination) {
             return;
         }
+        const itemData = treeData.items[treeData.items[source.parentId].children[source.index]].data;
+        const destParentId = treeData.items[destination.parentId].data.id;
+        itemData.data ?
+            fetcher.submit({id: itemData.id, groupId: destParentId, _action: Action.UPDATE_API}, {
+                method: "patch",
+                action: `/projects/${params.projectId}/apis`,
+            }) : fetcher.submit({id: itemData.id, name: itemData.name, description: itemData.description, parentId: destParentId, _action: Action.UPDATE_GROUP}, {
+                method: "patch",
+                action: `/projects/${params.projectId}/apis`,
+            });
         setTreeData(moveItemOnTree(treeData, source, destination));
     };
     resetServerContext();
@@ -488,7 +537,7 @@ const Folder = ({
                     onExpand,
                     onCollapse,
                     onDelete,
-                    onAdd
+                    onAdd,
                 }: {
     group: Group;
     itemId: ItemId,
@@ -518,7 +567,7 @@ const Folder = ({
                 h={8}
                 bg={isActive ? bg : undefined}
                 onClick={(_e) =>
-                   isActive ? (isExpanded ? onDelete(group.id) : onAdd(group.id)) : undefined
+                    isActive ? (isExpanded ? onDelete(group.id) : onAdd(group.id)) : undefined
                 }
             >
                 <Center
