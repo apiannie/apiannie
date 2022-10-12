@@ -77,13 +77,13 @@ export default function ApiGroup() {
             name="name"
             label="Group name"
             isRequired
-            input={Input}
+            as={Input}
           />
           <FormHInput
             labelWidth="200px"
             name="description"
             label="Description"
-            input={Textarea}
+            as={Textarea}
           />
           <Center>
             <FormSubmitButton colorScheme="blue" px={12}>

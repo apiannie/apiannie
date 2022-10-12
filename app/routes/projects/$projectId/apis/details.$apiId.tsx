@@ -235,7 +235,7 @@ const Edit = () => {
               name="name"
               label="Name"
               size="sm"
-              input={Input}
+              as={Input}
               autoComplete="off"
             />
           </Box>
@@ -246,7 +246,7 @@ const Edit = () => {
               labelWidth={labelWidth}
               name="path"
               label="Path"
-              input={PathInput}
+              as={PathInput}
               autoComplete="off"
               size="sm"
             />
@@ -283,9 +283,11 @@ const Edit = () => {
                       types={[ParamType.STRING, ParamType.FILE]}
                     />
                   </TabPanel>
-                  <TabPanel p={0}>3</TabPanel>
-                  <TabPanel p={0}>
-                    <Box px={4}>
+                  <TabPanel>
+                    <JsonEditor />
+                  </TabPanel>
+                  <TabPanel>
+                    <Box>
                       <FormInput
                         bg={bgBW}
                         as={Textarea}
@@ -516,5 +518,41 @@ const DiscriptionModal = ({
 };
 
 const JsonEditor = () => {
-  <Box>JsonEditor</Box>;
+  return (
+    <Box>
+      <JsonRow />
+    </Box>
+  );
+};
+
+const JsonRow = () => {
+  const types = [
+    ParamType.OBJECT,
+    ParamType.ARRAY,
+    ParamType.STRING,
+    ParamType.INT,
+    ParamType.FLOAT,
+    ParamType.BOOLEAN,
+  ];
+  return (
+    <HStack>
+      <FormInput flex="1.25 0.8 auto" size="sm" name="" placeholder="Name" />
+      <Box height={4}>
+        <Tooltip label="Required">
+          <Box>
+            <Checkbox />
+          </Box>
+        </Tooltip>
+      </Box>
+      <Select size="sm" flex="0 0 100px">
+        {types.map((type) => (
+          <option key={type} value={type}>
+            {type.toLowerCase()}
+          </option>
+        ))}
+      </Select>
+      <FormInput size="sm" name="" placeholder="Example" />
+      <FormInput flexGrow={30} size="sm" name="" placeholder="Description" />
+    </HStack>
+  );
 };

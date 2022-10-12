@@ -103,8 +103,6 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
     return validationError(result.error);
   }
 
-  console.log(result.submittedData);
-
   const { parentId, name } = result.data;
   let group = await createGroup({
     parentId: parentId,
@@ -311,14 +309,14 @@ const NewApiModal = ({
               name="name"
               label="Name"
               size="sm"
-              input={Input}
+              as={Input}
               autoComplete="off"
             />
             <FormHInput
               labelWidth="60px"
               name="path"
               label="Path"
-              input={PathInput}
+              as={PathInput}
               autoComplete="off"
               size="sm"
             />
