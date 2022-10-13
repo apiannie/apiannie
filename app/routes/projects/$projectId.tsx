@@ -175,10 +175,11 @@ const SidebarContent = ({...rest}: SidebarProps) => {
                     <ProjecChangeButton p={2}/>
                     <Box ref={sideNavDrag as RefObject<HTMLDivElement>} position={"absolute"} right={0} top={0}
                          bottom={0}
-                         _hover={{borderColor: "blue.500"}}
+                         _hover={{borderColor: "blue.500", borderRightWidth: '5px'}}
                          cursor={"col-resize"}
                          borderRightWidth={"3px"}
-                         borderRightColor={"gray.200"}></Box>
+                         zIndex={100}
+                         borderRightColor={"whiteAlpha.100"}></Box>
                     {sideNav}
                 </Grid>
                 <GridItem>
