@@ -1,9 +1,11 @@
 import {
   Alert,
   AlertIcon,
+  ComponentWithAs,
   FormControl,
   FormControlProps,
   FormLabel,
+  forwardRef,
   Input,
   InputGroup,
   InputProps,
@@ -16,37 +18,33 @@ export interface FormInputProps
     Pick<React.HTMLProps<HTMLButtonElement>, "autoComplete"> {
   name: string;
   label?: string;
+  container?: FormControlProps;
 }
 
-export default React.forwardRef<HTMLInputElement, FormInputProps>(
-  (props, ref) => {
-    const { id, name, label, type, children, as, size, placeholder, ...rest } =
-      props;
-    const { error, getInputProps } = useField(name);
+const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
+  const { id, name, label, children, as, container, ...rest } = props;
+  const { error, getInputProps } = useField(name);
 
-    console.log(rest);
+  return (
+    <FormControl {...container}>
+      {label && <FormLabel>{label}</FormLabel>}
+      <InputGroup>
+        <Input
+          id={id || name}
+          ref={ref}
+          as={as}
+          {...getInputProps({ ...rest })}
+        />
+        {children}
+      </InputGroup>
+      {error && (
+        <Alert status="error">
+          <AlertIcon />
+          {error}
+        </Alert>
+      )}
+    </FormControl>
+  );
+});
 
-    return (
-      <FormControl {...rest}>
-        {label && <FormLabel>{label}</FormLabel>}
-        <InputGroup>
-          <Input
-            id={id || name}
-            ref={ref}
-            as={as}
-            size={size}
-            placeholder={placeholder}
-            {...getInputProps({ type })}
-          />
-          {children}
-        </InputGroup>
-        {error && (
-          <Alert status="error">
-            <AlertIcon />
-            {error}
-          </Alert>
-        )}
-      </FormControl>
-    );
-  }
-);
+export default FormInput;

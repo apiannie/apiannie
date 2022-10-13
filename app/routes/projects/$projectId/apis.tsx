@@ -28,11 +28,11 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import {RequestMethod} from "@prisma/client";
-import {ActionArgs, redirect} from "@remix-run/node";
-import {Link as RemixLink, useFetcher, useMatches} from "@remix-run/react";
-import {withZod} from "@remix-validated-form/with-zod";
-import {useEffect, useMemo, useState} from "react";
+import { RequestMethod } from "@prisma/client";
+import { ActionArgs, redirect } from "@remix-run/node";
+import { Link as RemixLink, useFetcher, useMatches } from "@remix-run/react";
+import { withZod } from "@remix-validated-form/with-zod";
+import { useEffect, useMemo, useState } from "react";
 import {
   FiAirplay,
   FiCopy,
@@ -49,7 +49,12 @@ import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
-import {createApi, createGroup, updateApi, updateGroup} from "~/models/api.server";
+import {
+  createApi,
+  createGroup,
+  updateApi,
+  updateGroup,
+} from "~/models/api.server";
 import { Api, Group, Project } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import FormCancelButton from "~/ui/Form/FormCancelButton";
@@ -59,16 +64,16 @@ import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
 import Tree, {
-    mutateTree,
-    moveItemOnTree,
-    RenderItemParams,
-    TreeData,
-    ItemId,
-    TreeSourcePosition,
-    TreeDestinationPosition,
+  mutateTree,
+  moveItemOnTree,
+  RenderItemParams,
+  TreeData,
+  ItemId,
+  TreeSourcePosition,
+  TreeDestinationPosition,
 } from "@atlaskit/tree";
 // @ts-ignore
-import {resetServerContext} from "react-beautiful-dnd-next";
+import { resetServerContext } from "react-beautiful-dnd-next";
 import TreeBuilder from "~/utils/treeBuilder";
 
 export const handle = {
@@ -76,94 +81,95 @@ export const handle = {
 };
 
 enum Action {
-    NEW_GROUP = "NEW_GROUP",
-    NEW_API = "NEW_API",
-    UPDATE_API = "UPDATE_API",
-    UPDATE_GROUP = "UPDATE_GROUP"
+  NEW_GROUP = "NEW_GROUP",
+  NEW_API = "NEW_API",
+  UPDATE_API = "UPDATE_API",
+  UPDATE_GROUP = "UPDATE_GROUP",
 }
 
-export const action = async ({request, params}: ActionArgs) => {
-    let formData = await request.formData();
-    let {projectId} = params;
-    invariant(projectId);
-    await requireUser(request);
-    switch (formData.get("_action")) {
-        case Action.NEW_GROUP:
-            return await newGroupAction(formData, projectId);
-        case Action.UPDATE_GROUP:
-            return await updateGroupAction(formData);
-        case Action.NEW_API:
-            return await newApiAction(formData, projectId);
-        case Action.UPDATE_API:
-            return await updateApiAction(formData);
-        default:
-            console.log("_action:", formData.get("_action"));
-            throw httpResponse.NotFound;
-    }
+export const action = async ({ request, params }: ActionArgs) => {
+  let formData = await request.formData();
+  let { projectId } = params;
+  invariant(projectId);
+  await requireUser(request);
+  switch (formData.get("_action")) {
+    case Action.NEW_GROUP:
+      return await newGroupAction(formData, projectId);
+    case Action.UPDATE_GROUP:
+      return await updateGroupAction(formData);
+    case Action.NEW_API:
+      return await newApiAction(formData, projectId);
+    case Action.UPDATE_API:
+      return await updateApiAction(formData);
+    default:
+      console.log("_action:", formData.get("_action"));
+      throw httpResponse.NotFound;
+  }
 };
 
 const updateApiAction = async (formData: FormData) => {
-    const result = await withZod(
-        z.object({
-            id: z.string().min(1, "id is required"),
-            groupId: z.string(),
-            data: z.any()
-        }),
-    ).validate(formData);
-    if (result.error) {
-        return validationError(result.error);
-    }
-    return await updateApi(result.data.id, {groupId: result.data.groupId, data: result.data.data});
+  const result = await withZod(
+    z.object({
+      id: z.string().min(1, "id is required"),
+      groupId: z.string(),
+      data: z.any(),
+    })
+  ).validate(formData);
+  if (result.error) {
+    return validationError(result.error);
+  }
+  return await updateApi(result.data.id, {
+    groupId: result.data.groupId,
+    data: result.data.data,
+  });
 };
 
 const newGroupAction = async (formData: FormData, projectId: string) => {
-    const result = await newGroupValidator.validate(formData);
-    if (result.error) {
-        return validationError(result.error);
-    }
+  const result = await newGroupValidator.validate(formData);
+  if (result.error) {
+    return validationError(result.error);
+  }
 
-    console.log(result.submittedData);
+  const { parentId, name } = result.data;
+  let group = await createGroup({
+    parentId: parentId,
+    projectId: projectId,
+    name,
+  });
 
-    const {parentId, name} = result.data;
-    let group = await createGroup({
-        parentId: parentId,
-        projectId: projectId,
-        name,
-    });
-
-    return redirect(`/projects/${group.projectId}/apis/groups/${group.id}`);
+  return redirect(`/projects/${group.projectId}/apis/groups/${group.id}`);
 };
 
 const updateGroupAction = async (formData: FormData) => {
-    const result = await withZod(
-        z.object({
-            id: z.string().min(1, "id is required"),
-            parentId: z.string(),
-            name: z.string(),
-            description: z.string()
-        }),
-    ).validate(formData);
-    if (result.error) {
-        return validationError(result.error);
-    }
-    const {id, name, description, parentId} = result.data;
-    return await updateGroup({id, name, description, parentId});
+  const result = await withZod(
+    z.object({
+      id: z.string().min(1, "id is required"),
+      parentId: z.string(),
+      name: z.string(),
+      description: z.string(),
+    })
+  ).validate(formData);
+  if (result.error) {
+    return validationError(result.error);
+  }
+  const { id, name, description, parentId } = result.data;
+  return await updateGroup({ id, name, description, parentId });
 };
 
 const newApiAction = async (formData: FormData, projectId: string) => {
-    const result = await newApiValidator.validate(formData);
-    if (result.error) {
-        return validationError(result.error);
-    }
+  const result = await newApiValidator.validate(formData);
+  if (result.error) {
+    return validationError(result.error);
+  }
 
-    const {name, path, method, groupId} = result.data;
-    let api = await createApi(projectId, groupId, {
-        name,
-        path,
-        method,
-    });
+  const { name, path, method, groupId } = result.data;
+  let api = await createApi(projectId, groupId, {
+    name,
+    path,
+    method,
+  });
 
-    return redirect(`/projects/${projectId}/apis/details/${api.id}`);
+  return redirect(`/projects/${projectId}/apis/details/${api.id}`);
 };
 
 function SideNav() {
@@ -171,7 +177,11 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid templateRows={"40px minmax(0, 1fr)"} userSelect={'none'}>
+    <Grid
+      templateRows={"40px minmax(0, 1fr)"}
+      userSelect={"none"}
+      pointerEvents={"none"}
+    >
       <GridItem>
         <HStack px={2}>
           <Heading ml="2" fontWeight={"500"} size={"sm"} color="gray.400">
@@ -444,161 +454,201 @@ const groupDFS = (group: Group, id: string, path: string[]) => {
   return false;
 };
 
-
 const FileNavbar = () => {
-    const matches = useMatches();
-    const params = useParams();
-    console.info(params)
-    const project: Project = matches[1].data.project;
-    const [treeData, setTreeData] = useState<TreeData>(new TreeBuilder("1", null));
-    const fetcher = useFetcher();
-    invariant(project);
-    useEffect(() => {
-        const complexTree = new TreeBuilder(1, null);
-        const generateTreeData = (group: Group, builder: TreeBuilder) => {
-            for (let g of group.groups) {
-                const childTree = new TreeBuilder(g.id, g);
-                generateTreeData(g, childTree);
-                builder.withSubTree(childTree);
-            }
-            for (let api of group.apis) {
-                builder.withLeaf(api.id, api);
-            }
-        };
-        generateTreeData(project.root, complexTree);
-        setTreeData(complexTree.build());
-    }, [params.groupId, params.apiId]);
+  const matches = useMatches();
+  const params = useParams();
+  console.info(params);
+  const project: Project = matches[1].data.project;
+  const [treeData, setTreeData] = useState<TreeData>(
+    new TreeBuilder("1", null)
+  );
+  const fetcher = useFetcher();
+  invariant(project);
+  useEffect(() => {
+    const complexTree = new TreeBuilder(1, null);
+    const generateTreeData = (group: Group, builder: TreeBuilder) => {
+      for (let g of group.groups) {
+        const childTree = new TreeBuilder(g.id, g);
+        generateTreeData(g, childTree);
+        builder.withSubTree(childTree);
+      }
+      for (let api of group.apis) {
+        builder.withLeaf(api.id, api);
+      }
+    };
+    generateTreeData(project.root, complexTree);
+    setTreeData(complexTree.build());
+  }, [params.groupId, params.apiId]);
 
-    invariant(project);
-    const renderItem = ({
-                            item,
-                            onExpand,
-                            onCollapse,
-                            provided,
-                        }: RenderItemParams) => {
-        return (
-            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                {item.data.data ? <File key={item.id} api={item.data}/> :
-                    <Folder key={item.id} group={item.data}
-                            isExpanded={item.isExpanded}
-                            itemId={item.id}
-                            onExpand={onExpand}
-                            onCollapse={onCollapse}
-                            onAdd={() => {
-                            }}
-                            onDelete={() => {
-                            }}
-                    />}
-            </div>
-        );
-    };
-
-    const onExpand = (itemId: ItemId) => {
-        setTreeData(mutateTree(treeData, itemId, {isExpanded: true}));
-    };
-
-    const onCollapse = (itemId: ItemId) => {
-        setTreeData(mutateTree(treeData, itemId, {isExpanded: false}));
-    };
-    const onDragEnd = (
-        source: TreeSourcePosition,
-        destination?: TreeDestinationPosition,
-    ) => {
-        if (!destination) {
-            return;
-        }
-        const itemData = treeData.items[treeData.items[source.parentId].children[source.index]].data;
-        const destParentId = treeData.items[destination.parentId].data.id;
-        itemData.data ?
-            fetcher.submit({id: itemData.id, groupId: destParentId, _action: Action.UPDATE_API}, {
-                method: "patch",
-                action: `/projects/${params.projectId}/apis`,
-            }) : fetcher.submit({id: itemData.id, name: itemData.name, description: itemData.description, parentId: destParentId, _action: Action.UPDATE_GROUP}, {
-                method: "patch",
-                action: `/projects/${params.projectId}/apis`,
-            });
-        setTreeData(moveItemOnTree(treeData, source, destination));
-    };
-    resetServerContext();
+  invariant(project);
+  const renderItem = ({
+    item,
+    onExpand,
+    onCollapse,
+    provided,
+  }: RenderItemParams) => {
     return (
-        <Flex flexDir={"column"}>
-            <Tree
-                tree={treeData}
-                renderItem={renderItem}
-                onExpand={onExpand}
-                onCollapse={onCollapse}
-                onDragEnd={onDragEnd}
-                isDragEnabled
-            />
-        </Flex>
+      <div
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+      >
+        {item.data.data ? (
+          <File key={item.id} api={item.data} />
+        ) : (
+          <Folder
+            key={item.id}
+            group={item.data}
+            isExpanded={item.isExpanded}
+            itemId={item.id}
+            onExpand={onExpand}
+            onCollapse={onCollapse}
+            onAdd={() => {}}
+            onDelete={() => {}}
+          />
+        )}
+      </div>
     );
+  };
+
+  const onExpand = (itemId: ItemId) => {
+    setTreeData(mutateTree(treeData, itemId, { isExpanded: true }));
+  };
+
+  const onCollapse = (itemId: ItemId) => {
+    setTreeData(mutateTree(treeData, itemId, { isExpanded: false }));
+  };
+  const onDragEnd = (
+    source: TreeSourcePosition,
+    destination?: TreeDestinationPosition
+  ) => {
+    if (!destination) {
+      return;
+    }
+    const itemData =
+      treeData.items[treeData.items[source.parentId].children[source.index]]
+        .data;
+    const destParentId = treeData.items[destination.parentId].data.id;
+    itemData.data
+      ? fetcher.submit(
+          {
+            id: itemData.id,
+            groupId: destParentId,
+            _action: Action.UPDATE_API,
+          },
+          {
+            method: "patch",
+            action: `/projects/${params.projectId}/apis`,
+          }
+        )
+      : fetcher.submit(
+          {
+            id: itemData.id,
+            name: itemData.name,
+            description: itemData.description,
+            parentId: destParentId,
+            _action: Action.UPDATE_GROUP,
+          },
+          {
+            method: "patch",
+            action: `/projects/${params.projectId}/apis`,
+          }
+        );
+    setTreeData(moveItemOnTree(treeData, source, destination));
+  };
+  resetServerContext();
+  return (
+    <Flex flexDir={"column"}>
+      <Tree
+        tree={treeData}
+        renderItem={renderItem}
+        onExpand={onExpand}
+        onCollapse={onCollapse}
+        onDragEnd={onDragEnd}
+        isDragEnabled
+      />
+    </Flex>
+  );
 };
 
 const Folder = ({
-                    group,
-                    itemId,
-                    isExpanded,
-                    onExpand,
-                    onCollapse,
-                    onDelete,
-                    onAdd,
-                }: {
-    group: Group;
-    itemId: ItemId,
-    isExpanded?: boolean,
-    onExpand: (itemId: ItemId) => void,
-    onCollapse: (itemId: ItemId) => void
-    onDelete: (value: string) => void;
-    onAdd: (value: string) => void;
+  group,
+  itemId,
+  isExpanded,
+  onExpand,
+  onCollapse,
+  onDelete,
+  onAdd,
+}: {
+  group: Group;
+  itemId: ItemId;
+  isExpanded?: boolean;
+  onExpand: (itemId: ItemId) => void;
+  onCollapse: (itemId: ItemId) => void;
+  onDelete: (value: string) => void;
+  onAdd: (value: string) => void;
 }) => {
-    const {projectId, groupId} = useParams<{
-        projectId: string;
-        groupId: string;
-    }>();
-    const isActive = groupId === group.id;
-    const bg = useColorModeValue("blue.200", "blue.800");
-    const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
-    const hoverColor = useColorModeValue("blue.100", "blue.600");
-    return (
-        <Flex border={"none"} flexDir='column'>
-            <HStack
-                spacing={0}
-                w='full'
-                borderRadius={2}
-                _hover={{background: isActive ? undefined : hoverColor}}
-                cursor='pointer'
-                role='group'
-                h={8}
-                bg={isActive ? bg : undefined}
-                onClick={(_e) =>
-                    isActive ? (isExpanded ? onDelete(group.id) : onAdd(group.id)) : undefined
-                }
-            >
-                <Center
-                    mr={1}
-                    w='4'
-                    h='4'
-                    borderRadius={"full"}
-                    _groupHover={{background: "blackAlpha.50"}}
-                    onClick={() => isExpanded ? onCollapse(itemId) : onExpand(itemId)}
-                >
-                    <Icon as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill} color={iconColor} fontSize={10}/>
-                </Center>
-                <Box
-                    as={RemixLink}
-                    flexGrow={1}
-                    display='flex'
-                    alignItems={"center"}
-                    to={`/projects/${projectId}/apis/groups/${group.id}`}
-                >
-                    <Icon as={isExpanded ? BsFolder2Open : FiFolder} fontWeight='100' color={iconColor} mr={2}/>
-                    <Text py={1} userSelect={"none"}>
-                        {group.name}
-                    </Text>
-                </Box>
-            </HStack>
-        </Flex>
-    );
+  const { projectId, groupId } = useParams<{
+    projectId: string;
+    groupId: string;
+  }>();
+  const isActive = groupId === group.id;
+  const bg = useColorModeValue("blue.200", "blue.800");
+  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
+  const hoverColor = useColorModeValue("blue.100", "blue.600");
+  return (
+    <Flex border={"none"} flexDir="column">
+      <HStack
+        spacing={0}
+        w="full"
+        borderRadius={2}
+        _hover={{ background: isActive ? undefined : hoverColor }}
+        cursor="pointer"
+        role="group"
+        h={8}
+        bg={isActive ? bg : undefined}
+        onClick={(_e) =>
+          isActive
+            ? isExpanded
+              ? onDelete(group.id)
+              : onAdd(group.id)
+            : undefined
+        }
+      >
+        <Center
+          mr={1}
+          w="4"
+          h="4"
+          borderRadius={"full"}
+          _groupHover={{ background: "blackAlpha.50" }}
+          onClick={() => (isExpanded ? onCollapse(itemId) : onExpand(itemId))}
+        >
+          <Icon
+            as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
+            color={iconColor}
+            fontSize={10}
+          />
+        </Center>
+        <Box
+          as={RemixLink}
+          flexGrow={1}
+          display="flex"
+          alignItems={"center"}
+          to={`/projects/${projectId}/apis/groups/${group.id}`}
+        >
+          <Icon
+            as={isExpanded ? BsFolder2Open : FiFolder}
+            fontWeight="100"
+            color={iconColor}
+            mr={2}
+          />
+          <Text py={1} userSelect={"none"}>
+            {group.name}
+          </Text>
+        </Box>
+      </HStack>
+    </Flex>
+  );
 };
 
 const MethodTag = ({ method }: { method: RequestMethod }) => {
