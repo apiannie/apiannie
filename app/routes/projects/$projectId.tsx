@@ -118,9 +118,9 @@ const SidebarContent = ({...rest}: SidebarProps) => {
             const handleMove = ({clientX}: { clientX: number }) => {
                 setSideNavWidth(prevState => {
                     const width = prevState + clientX - lastClientX.current;
+                    lastClientX.current = clientX;
                     return width < 200 ? 200 : width;
                 });
-                lastClientX.current = clientX;
             };
             document.addEventListener("mousemove", handleMove);
             document.addEventListener("mouseup", () => {
@@ -174,9 +174,11 @@ const SidebarContent = ({...rest}: SidebarProps) => {
                 >
                     <ProjecChangeButton p={2}/>
                     <Box ref={sideNavDrag as RefObject<HTMLDivElement>} position={"absolute"} right={0} top={0}
-                         bottom={0} width={"3px"}
+                         bottom={0}
+                         _hover={{left: 0, borderColor: "blue.500"}}
                          cursor={"col-resize"}
-                         bg={"gray.200"}></Box>
+                         borderRightWidth={"3px"}
+                         borderRightColor={"gray.200"}></Box>
                     {sideNav}
                 </Grid>
                 <GridItem>
