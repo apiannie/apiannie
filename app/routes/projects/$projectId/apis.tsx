@@ -171,7 +171,7 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid templateRows={"40px minmax(0, 1fr)"}>
+    <Grid templateRows={"40px minmax(0, 1fr)"} userSelect={'none'} pointerEvents={'none'}>
       <GridItem>
         <HStack px={2}>
           <Heading ml="2" fontWeight={"500"} size={"sm"} color="gray.400">
