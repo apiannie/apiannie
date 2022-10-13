@@ -175,7 +175,7 @@ const SidebarContent = ({...rest}: SidebarProps) => {
                     <ProjecChangeButton p={2}/>
                     <Box ref={sideNavDrag as RefObject<HTMLDivElement>} position={"absolute"} right={0} top={0}
                          bottom={0}
-                         _hover={{borderColor: "blue.500", borderRightWidth: '5px'}}
+                         _hover={{width: '50px', borderColor: "blue.500", borderRightWidth: '5px'}}
                          cursor={"col-resize"}
                          borderRightWidth={"3px"}
                          zIndex={100}
