@@ -30,7 +30,12 @@ import {
 } from "@chakra-ui/react";
 import { RequestMethod } from "@prisma/client";
 import { ActionArgs, redirect } from "@remix-run/node";
-import {Link as RemixLink, useCatch, useFetcher, useMatches} from "@remix-run/react";
+import {
+  Link as RemixLink,
+  useCatch,
+  useFetcher,
+  useMatches,
+} from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -72,8 +77,7 @@ import Tree, {
   TreeSourcePosition,
   TreeDestinationPosition,
 } from "@atlaskit/tree";
-// @ts-ignore
-import { resetServerContext } from "react-beautiful-dnd-next";
+import { resetServerContext } from "react-beautiful-dnd";
 import TreeBuilder from "~/utils/treeBuilder";
 
 export const handle = {
@@ -177,9 +181,7 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid
-      templateRows={"40px minmax(0, 1fr)"}
-    >
+    <Grid templateRows={"40px minmax(0, 1fr)"}>
       <GridItem>
         <HStack px={2}>
           <Heading ml="2" fontWeight={"500"} size={"sm"} color="gray.400">
@@ -690,13 +692,13 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
   );
 };
 
-export function CatchBoundary() {
-  const caught = useCatch();
-  return (<Center pt={10}>
-        {caught.status}-{caught.statusText}
-      </Center>
-  );
-}
+// export function CatchBoundary() {
+//   const caught = useCatch();
+//   return (<Center pt={10}>
+//         {caught.status}-{caught.statusText}
+//       </Center>
+//   );
+// }
 
 const File = ({ api }: { api: Api }) => {
   const { projectId, apiId } = useParams();

@@ -44,6 +44,7 @@ import {
   MenuItem,
   Menu,
   MenuButton,
+  Grid,
 } from "@chakra-ui/react";
 import { ParamType, RequestBodyType } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
@@ -102,34 +103,32 @@ export const action = async ({ request }: ActionArgs) => {
 
 export default function ApiInfo() {
   return (
-    <Box pt={2} px={2}>
-      <Tabs>
-        <TabList>
-          <Tab>Info</Tab>
-          <Tab>Edit</Tab>
-          <Tab>Exec</Tab>
-          <Tab>Mock</Tab>
-        </TabList>
+    <Tabs display={"grid"} as={Grid} gridTemplateRows="48px 1fr" h="full">
+      <TabList px={2}>
+        <Tab>Info</Tab>
+        <Tab>Edit</Tab>
+        <Tab>Exec</Tab>
+        <Tab>Mock</Tab>
+      </TabList>
 
-        <TabPanels>
-          <TabPanel>
-            <Box>
-              <Form method="post" replace>
-                <Button type="submit" name="_action" value="test">
-                  Test
-                </Button>
-              </Form>
-            </Box>
-          </TabPanel>
-          <TabPanel>
-            <Edit />
-          </TabPanel>
-          <TabPanel>
-            <p>three!</p>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </Box>
+      <TabPanels overflowY={"auto"}>
+        <TabPanel>
+          <Box>
+            <Form method="post" replace>
+              <Button type="submit" name="_action" value="test">
+                Test
+              </Button>
+            </Form>
+          </Box>
+        </TabPanel>
+        <TabPanel>
+          <Edit />
+        </TabPanel>
+        <TabPanel>
+          <p>three!</p>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   );
 }
 
@@ -287,7 +286,7 @@ const Edit = () => {
 
       <Header mt={6}>Request</Header>
       <Box bg={bg} py={4}>
-        <Tabs variant="solid-rounded" colorScheme="blue">
+        <Tabs variant="solid-rounded" colorScheme="cyan">
           <TabList display={"flex"} justifyContent="center">
             <Tab flexBasis={"100px"}>Query</Tab>
             <Tab flexBasis={"100px"}>Body</Tab>
@@ -356,17 +355,20 @@ const Edit = () => {
         <JsonEditor prefix="response" />
       </Box>
       <Button
-        width={16}
-        height={16}
         position={"fixed"}
-        bottom={8}
-        right={8}
+        top={"60px"}
+        right={4}
         type="submit"
         colorScheme="blue"
-        borderRadius={"full"}
+        size="sm"
       >
         Save
       </Button>
+      <Center mt={12}>
+        <Button w="240px" type="submit" colorScheme="blue">
+          Save
+        </Button>
+      </Center>
     </Box>
   );
 };
