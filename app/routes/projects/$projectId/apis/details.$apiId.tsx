@@ -47,10 +47,12 @@ import {
 } from "@chakra-ui/react";
 import { ParamType, RequestBodyType } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
+import { Form } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import {
+  FiEye,
   FiMinus,
   FiMoreHorizontal,
   FiPlus,
@@ -73,7 +75,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   let api = await getApiById(apiId);
 
   if (!api) {
-    throw httpResponse.NotFound;
+    throw httpResponse.BadRequest;
   }
 
   return json({ api });
@@ -81,10 +83,18 @@ export const loader = async ({ request, params }: LoaderArgs) => {
 
 export const action = async ({ request }: ActionArgs) => {
   let formData = await request.formData();
+
+  if (formData.get("_action") === "test") {
+    throw httpResponse.NotFound;
+  }
+
   let result = await validator.validate(formData);
 
+  console.log(result.submittedData);
+  console.log(result.data);
+  console.log(result.error);
   if (result.error) {
-    throw validationError(result.error);
+    return validationError(result.error);
   }
 
   return json({});
@@ -103,7 +113,13 @@ export default function ApiInfo() {
 
         <TabPanels>
           <TabPanel>
-            <p>one!</p>
+            <Box>
+              <Form method="post" replace>
+                <Button type="submit" name="_action" value="test">
+                  Test
+                </Button>
+              </Form>
+            </Box>
           </TabPanel>
           <TabPanel>
             <Edit />
@@ -120,10 +136,10 @@ export default function ApiInfo() {
 const zodParam = (additionalData?: { [key: string]: z.ZodTypeDef }) => {
   return z
     .object({
-      name: z.string().trim(),
-      example: z.string().trim(),
-      description: z.string().trim(),
-      isRequired: z.string(),
+      name: z.string().trim().optional(),
+      example: z.string().trim().optional(),
+      description: z.string().trim().optional(),
+      isRequired: z.string().optional(),
       ...additionalData,
     })
     .array()
@@ -139,7 +155,7 @@ const JsonNodeType = [
 ] as const;
 
 interface JsonNode {
-  name: string;
+  name?: string;
   mock?: string;
   isRequired?: string;
   description?: string;
@@ -148,12 +164,12 @@ interface JsonNode {
 
 const JsonNode: z.ZodType<JsonNode> = z.lazy(() =>
   z.object({
-    name: z.string(),
+    name: z.string().optional(),
     mock: z.string().optional(),
     isRequired: z.string().optional(),
     description: z.string().optional(),
     type: z.enum(JsonNodeType),
-    children: z.array(JsonNode),
+    children: z.array(JsonNode).optional(),
     arrayElem: JsonNode.optional(),
   })
 );
@@ -178,6 +194,7 @@ const validator = withZod(
       example: z.string().trim(),
       description: z.string().trim(),
     }),
+    response: JsonNode,
   })
 );
 
@@ -200,6 +217,7 @@ const RadioTab = React.forwardRef<HTMLInputElement, RadioProps>(
     const isSelected = !!tabProps["aria-selected"];
     const styles = useMultiStyleConfig("Tabs", tabProps);
     const { children, ...rest } = tabProps;
+    const { name, value, defaultChecked } = props;
     return (
       <Box {...rest}>
         <Flex as="label">
@@ -208,6 +226,9 @@ const RadioTab = React.forwardRef<HTMLInputElement, RadioProps>(
             ref={ref}
             isChecked={isSelected}
             __css={styles.tab}
+            name={name}
+            value={value}
+            defaultChecked={defaultChecked}
           />
           <Box ml={2}>{children}</Box>
         </Flex>
@@ -279,11 +300,17 @@ const Edit = () => {
             </TabPanel>
             <TabPanel>
               <Tabs>
-                <RadioGroup px={4}>
+                <RadioGroup px={4} defaultValue={RequestBodyType.FORM}>
                   <TabList border={"none"} display={"flex"} gap={4}>
-                    <RadioTab>form-data</RadioTab>
-                    <RadioTab>json</RadioTab>
-                    <RadioTab>raw</RadioTab>
+                    <RadioTab name="bodyType" value={RequestBodyType.FORM}>
+                      form-data
+                    </RadioTab>
+                    <RadioTab name="bodyType" value={RequestBodyType.JSON}>
+                      json
+                    </RadioTab>
+                    <RadioTab name="bodyType" value={RequestBodyType.RAW}>
+                      raw
+                    </RadioTab>
                   </TabList>
                 </RadioGroup>
                 <TabPanels mt={4}>
@@ -294,7 +321,7 @@ const Edit = () => {
                     />
                   </TabPanel>
                   <TabPanel>
-                    <JsonEditor />
+                    <JsonEditor prefix="bodyJson" />
                   </TabPanel>
                   <TabPanel>
                     <Box>
@@ -325,9 +352,12 @@ const Edit = () => {
         </Tabs>
       </Box>
       <Header mt={6}>Response</Header>
+      <Box bg={bg} p={8}>
+        <JsonEditor prefix="response" />
+      </Box>
       <Button
-        width={20}
-        height={20}
+        width={16}
+        height={16}
         position={"fixed"}
         bottom={8}
         right={8}
@@ -422,11 +452,11 @@ const ParamTable = ({
             <Th>Description</Th>
           </Tr>
         </Thead>
-        <Tbody>
+        <Tbody verticalAlign={"baseline"}>
           {ids.map((id, i) => (
             <Tr key={id}>
               <Td>
-                <HStack>
+                <HStack alignItems={"flex-start"}>
                   <FormInput
                     id={`${prefix}-${id}-name`}
                     bg={bgBW}
@@ -434,14 +464,14 @@ const ParamTable = ({
                     name={`${prefix}[${i}].name`}
                   />
                   <Tooltip label="Required">
-                    <Box>
+                    <Center h={8}>
                       <Checkbox
                         id={`${prefix}-${id}-required`}
                         bg={bgBW}
                         name={`${prefix}[${i}].isRequired`}
                         value="true"
                       />
-                    </Box>
+                    </Center>
                   </Tooltip>
                 </HStack>
               </Td>
@@ -497,11 +527,19 @@ const ParamTable = ({
   );
 };
 
-const JsonEditor = () => {
+const JsonEditor = ({ prefix }: { prefix: string }) => {
   return (
-    <VStack>
-      <JsonRow depth={0} isParentOpen={true} />
-    </VStack>
+    <Box>
+      <VStack>
+        <JsonRow depth={0} isParentOpen={true} prefix={prefix} />
+      </VStack>
+      <Center mt={8}>
+        <Button colorScheme={"blue"} variant="outline" size="sm">
+          <Icon as={FiEye} />
+          <Text ml={2}>View Example</Text>
+        </Button>
+      </Center>
+    </Box>
   );
 };
 
@@ -512,6 +550,7 @@ const JsonRow = ({
   keyId,
   onAddSibling,
   onDelete,
+  prefix,
   ...rest
 }: {
   depth: number;
@@ -519,6 +558,7 @@ const JsonRow = ({
   isArrayElem?: boolean;
   onAddSibling?: (id: number) => void;
   onDelete?: (id: number) => void;
+  prefix: string;
   keyId?: number;
 } & BoxProps) => {
   const types = [
@@ -542,7 +582,7 @@ const JsonRow = ({
   const blue = useColorModeValue("blue.500", "blue.200");
   return (
     <>
-      <HStack w="full" {...rest}>
+      <HStack w="full" {...rest} alignItems="flex-start">
         <Center pl={`${depth * 24}px`} flex="0 0 320px">
           <Center w={4} h={4} cursor="pointer" onClick={onToggle}>
             {type === ParamType.OBJECT || type === ParamType.ARRAY ? (
@@ -555,18 +595,18 @@ const JsonRow = ({
           <FormInput
             minW={16}
             size="sm"
-            name=""
+            name={`${prefix}.name`}
             placeholder="Name"
             bg={bgBW}
             disabled={isRoot}
             value={isRoot ? "root" : undefined}
           />
         </Center>
-        <Box height={4}>
+        <Box>
           <Tooltip label="Required">
-            <Box>
+            <Center h={8}>
               <Checkbox bg={bgBW} />
-            </Box>
+            </Center>
           </Tooltip>
         </Box>
         <Select
@@ -578,6 +618,7 @@ const JsonRow = ({
           size="sm"
           flex="0 0 100px"
           defaultValue={type}
+          name={`${prefix}.type`}
         >
           {types.map((type) => (
             <option key={type} value={type}>
@@ -588,7 +629,7 @@ const JsonRow = ({
         <FormInput
           bg={bgBW}
           size="sm"
-          name=""
+          name={`${prefix}.mock`}
           placeholder="Mock"
           as={ModalInput}
           modal={{ title: "Mock" }}
@@ -596,7 +637,7 @@ const JsonRow = ({
         <FormInput
           bg={bgBW}
           size="sm"
-          name=""
+          name={`${prefix}.description`}
           placeholder="Description"
           as={ModalInput}
           modal={{ title: "Description" }}
@@ -665,10 +706,11 @@ const JsonRow = ({
           isArrayElem
           onAddSibling={insertAfterId}
           onDelete={removeId}
+          prefix={`${prefix}.arrayElem`}
         />
       )}
       {touched &&
-        ids.map((id) => (
+        ids.map((id, i) => (
           <JsonRow
             key={id}
             keyId={id}
@@ -677,6 +719,7 @@ const JsonRow = ({
             hidden={!isParentOpen || !isOpen || type !== ParamType.OBJECT}
             onAddSibling={insertAfterId}
             onDelete={removeId}
+            prefix={`${prefix}.children[${i}]`}
           />
         ))}
     </>

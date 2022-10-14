@@ -22,7 +22,7 @@ export interface FormInputProps
 }
 
 const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
-  const { id, name, label, children, as, container, ...rest } = props;
+  const { id, name, label, children, as, container, size, ...rest } = props;
   const { error, getInputProps } = useField(name);
 
   return (
@@ -33,12 +33,13 @@ const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
           id={id || name}
           ref={ref}
           as={as}
+          size={size}
           {...getInputProps({ ...rest })}
         />
         {children}
       </InputGroup>
       {error && (
-        <Alert status="error">
+        <Alert status="error" size={size}>
           <AlertIcon />
           {error}
         </Alert>

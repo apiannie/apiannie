@@ -22,6 +22,7 @@ const FormHInput = <T extends React.FunctionComponent>({
   as,
   isRequired,
   bg,
+  size,
   ...rest
 }: {
   name: string;
@@ -52,12 +53,13 @@ const FormHInput = <T extends React.FunctionComponent>({
           id: name,
           flexGrow: 1,
           bg: bg,
+          size: size,
           ...getInputProps(rest),
         })}
       </Flex>
       {error && (
         <Box w="full" pl={labelWidth}>
-          <Alert status="error">
+          <Alert size={size} status="error">
             <AlertIcon />
             {error}
           </Alert>

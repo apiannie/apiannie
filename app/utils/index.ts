@@ -68,5 +68,6 @@ export function useUser(): User {
 }
 
 export const httpResponse = {
+  BadRequest: new Response("Bad Request", {status: 401}),
   NotFound: new Response("Not Found", { status: 404 }),
 }

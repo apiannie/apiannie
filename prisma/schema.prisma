@@ -176,10 +176,3 @@ enum ParamType {
   ARRAY
   FILE
 }
-
-type Response {
-  code        Int
-  description String?
-  contentType String?
-  data        Json
-}
