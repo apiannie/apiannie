@@ -30,9 +30,9 @@ import {
 } from "@chakra-ui/react";
 import { RequestMethod } from "@prisma/client";
 import { ActionArgs, redirect } from "@remix-run/node";
-import { Link as RemixLink, useFetcher, useMatches } from "@remix-run/react";
+import {Link as RemixLink, useCatch, useFetcher, useMatches} from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FiAirplay,
   FiCopy,
@@ -689,6 +689,14 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
     </Text>
   );
 };
+
+export function CatchBoundary() {
+  const caught = useCatch();
+  return (<Center pt={10}>
+        {caught.status}-{caught.statusText}
+      </Center>
+  );
+}
 
 const File = ({ api }: { api: Api }) => {
   const { projectId, apiId } = useParams();
