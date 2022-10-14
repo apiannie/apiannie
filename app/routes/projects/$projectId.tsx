@@ -106,21 +106,23 @@ const SidebarContent = ({...rest}: SidebarProps) => {
     const matches = useMatches();
     const user = useUser();
     const sideNav = matches[2]?.handle?.sideNav;
-    const [sideNavWidth, setSideNavWidth] = useState(304);
-    const sideNavDrag = useRef<HTMLDivElement>();
+    const sideNavDragRef = useRef<HTMLDivElement>();
+    const sideNavContainerRef = useRef<HTMLDivElement>();
     const lastClientX = useRef(0);
+    const lastSideNavWidth = useRef(304);
     useEffect(() => {
         const mousedown = (e: MouseEvent) => {
-            if (e.target !== sideNavDrag.current) {
+            if (e.target !== sideNavDragRef.current) {
                 return;
             }
             lastClientX.current = e.clientX;
             const handleMove = ({clientX}: { clientX: number }) => {
-                setSideNavWidth(prevState => {
-                    const width = prevState + clientX - lastClientX.current;
-                    lastClientX.current = clientX;
-                    return width < 200 ? 200 : width;
-                });
+                const width = lastSideNavWidth.current + clientX - lastClientX.current;
+                lastClientX.current = clientX;
+                lastSideNavWidth.current = width;
+                if (sideNavContainerRef.current) {
+                    sideNavContainerRef.current.style.gridTemplateColumns = `${width < 200 ? 200 : width}px 1fr`;
+                }
             };
             document.addEventListener("mousemove", handleMove);
             document.addEventListener("mouseup", () => {
@@ -163,7 +165,7 @@ const SidebarContent = ({...rest}: SidebarProps) => {
 
                 <Spacer/>
             </GridItem>
-            <Grid templateColumns={`${sideNavWidth}px 1fr`}>
+            <Grid ref={sideNavContainerRef as RefObject<HTMLDivElement>} templateColumns={`304px 1fr`}>
                 <Grid
                     position={"relative"}
                     bg={useColorModeValue("gray.50", "gray.800")}
@@ -173,9 +175,9 @@ const SidebarContent = ({...rest}: SidebarProps) => {
                     h='100vh'
                 >
                     <ProjecChangeButton p={2}/>
-                    <Box ref={sideNavDrag as RefObject<HTMLDivElement>} position={"absolute"} right={0} top={0}
+                    <Box ref={sideNavDragRef as RefObject<HTMLDivElement>} position={"absolute"} right={0} top={0}
                          bottom={0}
-                         _hover={{width: '50px', borderColor: "blue.500", borderRightWidth: '5px'}}
+                         _hover={{width: "50px", borderColor: "blue.500", borderRightWidth: "5px"}}
                          cursor={"col-resize"}
                          borderRightWidth={"3px"}
                          zIndex={100}
