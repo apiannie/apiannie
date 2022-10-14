@@ -177,15 +177,6 @@ enum ParamType {
   FILE
 }
 
-type JsonData {
-  name        String
-  example     String?
-  description String?
-  isRequired  Boolean    @default(false)
-  type        ParamType  @default(STRING)
-  children    JsonData[]
-}
-
 type Response {
   code        Int
   description String?

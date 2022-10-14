@@ -10,15 +10,6 @@ import {
   HStack,
   Icon,
   Input,
-  InputRightElement,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  ModalProps,
   Radio,
   RadioGroup,
   RadioProps,
@@ -30,30 +21,48 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  Text,
   Tbody,
   Td,
-  Text,
   Textarea,
   Th,
   Thead,
   Tooltip,
   Tr,
   useColorModeValue,
-  useConst,
   useDisclosure,
   useMultiStyleConfig,
   useTab,
+  VStack,
+  Center,
+  FlexProps,
+  BoxProps,
+  useBoolean,
+  ButtonGroup,
+  IconButton,
+  MenuList,
+  MenuItem,
+  Menu,
+  MenuButton,
 } from "@chakra-ui/react";
 import { ParamType, RequestBodyType } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { RefObject, useCallback, useRef, useState } from "react";
-import { FiEdit, FiPlus, FiTrash2 } from "react-icons/fi";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
+import {
+  FiMinus,
+  FiMoreHorizontal,
+  FiPlus,
+  FiSettings,
+  FiTrash2,
+} from "react-icons/fi";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { object, z } from "zod";
 import { getApiById } from "~/models/api.server";
 import { FormHInput, FormInput } from "~/ui";
+import ModalInput from "~/ui/Form/ModalInput";
 import { httpResponse } from "~/utils";
 import { PathInput } from "../apis";
 
@@ -131,7 +140,7 @@ const JsonNodeType = [
 
 interface JsonNode {
   name: string;
-  example?: string;
+  mock?: string;
   isRequired?: string;
   description?: string;
   type: Exclude<ParamType, "FILE">;
@@ -140,11 +149,12 @@ interface JsonNode {
 const JsonNode: z.ZodType<JsonNode> = z.lazy(() =>
   z.object({
     name: z.string(),
-    example: z.string().optional(),
+    mock: z.string().optional(),
     isRequired: z.string().optional(),
     description: z.string().optional(),
     type: z.enum(JsonNodeType),
     children: z.array(JsonNode),
+    arrayElem: JsonNode.optional(),
   })
 );
 
@@ -293,7 +303,9 @@ const Edit = () => {
                         as={Textarea}
                         name="bodyRaw.example"
                         label="Example"
-                        mb={6}
+                        container={{
+                          mb: 6,
+                        }}
                       />
                       <FormInput
                         bg={bgBW}
@@ -360,7 +372,34 @@ const useIds = (initialValue?: number | null | undefined) => {
     [ids]
   );
 
-  return { ids, pushId, removeId };
+  const insertAt = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= ids.length) {
+        pushId();
+        return;
+      }
+      let value = [...ids];
+      value.splice(index, 0, ++currentId.current);
+      setIds(value);
+    },
+    [ids]
+  );
+
+  const insertAfterId = useCallback(
+    (elem: number) => {
+      let value = [...ids];
+      let index = value.findIndex((v) => v === elem);
+      if (index === -1) {
+        pushId();
+        return;
+      }
+      value.splice(index + 1, 0, ++currentId.current);
+      setIds(value);
+    },
+    [ids]
+  );
+
+  return { ids, pushId, removeId, insertAt, insertAfterId };
 };
 
 const ParamTable = ({
@@ -372,8 +411,6 @@ const ParamTable = ({
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
   const { ids, pushId, removeId } = useIds(1);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const descriptionRef = useRef<HTMLInputElement>(null);
   return (
     <TableContainer>
       <Table size={"sm"} colorScheme="teal">
@@ -434,19 +471,9 @@ const ParamTable = ({
                     bg={bgBW}
                     size="sm"
                     name={`${prefix}[${i}].description`}
-                    ref={descriptionRef}
-                  >
-                    <InputRightElement h={8}>
-                      <Button
-                        onClick={onOpen}
-                        size="xs"
-                        colorScheme="teal"
-                        variant={"ghost"}
-                      >
-                        <Icon as={FiEdit} />
-                      </Button>
-                    </InputRightElement>
-                  </FormInput>
+                    as={ModalInput}
+                    modal={{ title: "Description" }}
+                  />
                   <Button size="sm" onClick={() => removeId(id)}>
                     <Icon as={FiTrash2} />
                   </Button>
@@ -456,11 +483,6 @@ const ParamTable = ({
           ))}
         </Tbody>
       </Table>
-      <DiscriptionModal
-        inputRef={descriptionRef}
-        isOpen={isOpen}
-        onClose={onClose}
-      />
       <Box textAlign={"center"} mt={4}>
         <Button
           size="sm"
@@ -475,57 +497,30 @@ const ParamTable = ({
   );
 };
 
-const DiscriptionModal = ({
-  isOpen,
-  onClose,
-  inputRef,
-}: Omit<ModalProps, "children"> & {
-  inputRef: RefObject<HTMLInputElement>;
-}) => {
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Description</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Textarea
-            ref={textAreaRef}
-            defaultValue={inputRef.current?.value}
-            rows={6}
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button onClick={onClose} mr={3}>
-            Cancel
-          </Button>
-          <Button
-            colorScheme="blue"
-            onClick={(e) => {
-              if (inputRef.current && textAreaRef.current) {
-                inputRef.current.value = textAreaRef.current.value;
-              }
-              onClose();
-            }}
-          >
-            Confirm
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-};
-
 const JsonEditor = () => {
   return (
-    <Box>
-      <JsonRow />
-    </Box>
+    <VStack>
+      <JsonRow depth={0} isParentOpen={true} />
+    </VStack>
   );
 };
 
-const JsonRow = () => {
+const JsonRow = ({
+  depth,
+  isParentOpen,
+  isArrayElem,
+  keyId,
+  onAddSibling,
+  onDelete,
+  ...rest
+}: {
+  depth: number;
+  isParentOpen?: boolean;
+  isArrayElem?: boolean;
+  onAddSibling?: (id: number) => void;
+  onDelete?: (id: number) => void;
+  keyId?: number;
+} & BoxProps) => {
   const types = [
     ParamType.OBJECT,
     ParamType.ARRAY,
@@ -534,25 +529,156 @@ const JsonRow = () => {
     ParamType.FLOAT,
     ParamType.BOOLEAN,
   ];
+  const bgBW = useColorModeValue("white", "gray.900");
+  const { isOpen, onToggle } = useDisclosure({
+    defaultIsOpen: true,
+  });
+  const isRoot = depth === 0;
+  const [type, setType] = useState<ParamType>(
+    isRoot ? ParamType.OBJECT : ParamType.STRING
+  );
+  const [touched, setTouched] = useBoolean(isRoot);
+  const { ids, pushId, removeId, insertAfterId } = useIds(1);
+  const blue = useColorModeValue("blue.500", "blue.200");
   return (
-    <HStack>
-      <FormInput flex="1.25 0.8 auto" size="sm" name="" placeholder="Name" />
-      <Box height={4}>
-        <Tooltip label="Required">
-          <Box>
-            <Checkbox />
-          </Box>
-        </Tooltip>
-      </Box>
-      <Select size="sm" flex="0 0 100px">
-        {types.map((type) => (
-          <option key={type} value={type}>
-            {type.toLowerCase()}
-          </option>
+    <>
+      <HStack w="full" {...rest}>
+        <Center pl={`${depth * 24}px`} flex="0 0 320px">
+          <Center w={4} h={4} cursor="pointer" onClick={onToggle}>
+            {type === ParamType.OBJECT || type === ParamType.ARRAY ? (
+              <Icon
+                fontSize={10}
+                as={isOpen ? BsFillCaretDownFill : BsFillCaretRightFill}
+              />
+            ) : undefined}
+          </Center>
+          <FormInput
+            minW={16}
+            size="sm"
+            name=""
+            placeholder="Name"
+            bg={bgBW}
+            disabled={isRoot}
+            value={isRoot ? "root" : undefined}
+          />
+        </Center>
+        <Box height={4}>
+          <Tooltip label="Required">
+            <Box>
+              <Checkbox bg={bgBW} />
+            </Box>
+          </Tooltip>
+        </Box>
+        <Select
+          onChange={(e) => {
+            setTouched.on();
+            setType(e.target.value as ParamType);
+          }}
+          bg={bgBW}
+          size="sm"
+          flex="0 0 100px"
+          defaultValue={type}
+        >
+          {types.map((type) => (
+            <option key={type} value={type}>
+              {type.toLowerCase()}
+            </option>
+          ))}
+        </Select>
+        <FormInput
+          bg={bgBW}
+          size="sm"
+          name=""
+          placeholder="Mock"
+          as={ModalInput}
+          modal={{ title: "Mock" }}
+        />
+        <FormInput
+          bg={bgBW}
+          size="sm"
+          name=""
+          placeholder="Description"
+          as={ModalInput}
+          modal={{ title: "Description" }}
+        />
+        {isArrayElem ? (
+          <Box flexBasis={"64px"} flexShrink={0} flexGrow={0} />
+        ) : (
+          <Flex flexBasis={"64px"} flexShrink={0} flexGrow={0}>
+            {isRoot ? (
+              <Button p={0} size="sm" colorScheme={"green"} variant="ghost">
+                <Icon as={FiSettings} />
+              </Button>
+            ) : (
+              <Button
+                p={0}
+                size="sm"
+                colorScheme={"red"}
+                variant="ghost"
+                onClick={(e) => onDelete?.(keyId as number)}
+              >
+                <Icon as={FiMinus} />
+              </Button>
+            )}
+            {depth === 0 || type !== ParamType.OBJECT ? (
+              <Button
+                p={0}
+                size="sm"
+                colorScheme={"blue"}
+                variant="ghost"
+                onClick={(e) => {
+                  if (depth === 0) {
+                    pushId();
+                  } else {
+                    onAddSibling?.(keyId as number);
+                  }
+                }}
+              >
+                <Icon as={FiPlus} />
+              </Button>
+            ) : (
+              <Menu size={"sm"} colorScheme={"blue"}>
+                <MenuButton
+                  p={0}
+                  as={IconButton}
+                  icon={<FiPlus />}
+                  colorScheme="blue"
+                  size="sm"
+                  variant={"ghost"}
+                />
+                <MenuList zIndex={5}>
+                  <MenuItem onClick={pushId}>Add child node</MenuItem>
+                  <MenuItem onClick={(e) => onAddSibling?.(keyId as number)}>
+                    Add sibling node
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            )}
+          </Flex>
+        )}
+      </HStack>
+      {touched && (
+        <JsonRow
+          isParentOpen={isParentOpen && isOpen}
+          depth={depth + 1}
+          hidden={!isParentOpen || !isOpen || type !== ParamType.ARRAY}
+          isArrayElem
+          onAddSibling={insertAfterId}
+          onDelete={removeId}
+        />
+      )}
+      {touched &&
+        ids.map((id) => (
+          <JsonRow
+            key={id}
+            keyId={id}
+            isParentOpen={isParentOpen && isOpen}
+            depth={depth + 1}
+            hidden={!isParentOpen || !isOpen || type !== ParamType.OBJECT}
+            onAddSibling={insertAfterId}
+            onDelete={removeId}
+          />
         ))}
-      </Select>
-      <FormInput size="sm" name="" placeholder="Example" />
-      <FormInput flexGrow={30} size="sm" name="" placeholder="Description" />
-    </HStack>
+    </>
   );
 };
