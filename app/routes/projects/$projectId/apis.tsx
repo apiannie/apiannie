@@ -179,8 +179,6 @@ function SideNav() {
   return (
     <Grid
       templateRows={"40px minmax(0, 1fr)"}
-      userSelect={"none"}
-      pointerEvents={"none"}
     >
       <GridItem>
         <HStack px={2}>
@@ -414,9 +412,6 @@ const SideNavContent = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const color = useColorModeValue("teal.800", "teal.100");
   const bg = useColorModeValue("blue.100", "blue.800");
-  const fileNavBar = useMemo(() => {
-    return <FileNavbar />;
-  }, []);
   return (
     <Box pl={2} pt={2} pr={2}>
       <NavLink to={`/projects/${projectId}/apis`} end>
@@ -434,7 +429,7 @@ const SideNavContent = () => {
           </HStack>
         )}
       </NavLink>
-      {fileNavBar}
+      <FileNavbar />
     </Box>
   );
 };
@@ -478,7 +473,7 @@ const FileNavbar = () => {
     };
     generateTreeData(project.root, complexTree);
     setTreeData(complexTree.build());
-  }, [params.groupId, params.apiId]);
+  }, [params.projectId, params.groupId, params.apiId]);
 
   invariant(project);
   const renderItem = ({
