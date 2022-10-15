@@ -77,7 +77,8 @@ import Tree, {
   TreeSourcePosition,
   TreeDestinationPosition,
 } from "@atlaskit/tree";
-import { resetServerContext } from "react-beautiful-dnd";
+// @ts-ignore
+import { resetServerContext } from "react-beautiful-dnd-next";
 import TreeBuilder from "~/utils/treeBuilder";
 
 export const handle = {
