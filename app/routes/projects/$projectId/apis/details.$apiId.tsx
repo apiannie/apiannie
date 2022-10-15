@@ -1,15 +1,23 @@
 import {
   Box,
+  BoxProps,
   Button,
+  Center,
   Checkbox,
   Container,
   Divider,
   Flex,
+  Grid,
   Heading,
   HeadingProps,
   HStack,
   Icon,
+  IconButton,
   Input,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Radio,
   RadioGroup,
   RadioProps,
@@ -21,49 +29,33 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
-  Text,
   Tbody,
   Td,
+  Text,
   Textarea,
   Th,
   Thead,
   Tooltip,
   Tr,
+  useBoolean,
   useColorModeValue,
   useDisclosure,
   useMultiStyleConfig,
   useTab,
   VStack,
-  Center,
-  FlexProps,
-  BoxProps,
-  useBoolean,
-  ButtonGroup,
-  IconButton,
-  MenuList,
-  MenuItem,
-  Menu,
-  MenuButton,
-  Grid,
 } from "@chakra-ui/react";
-import { ParamType, RequestBodyType } from "@prisma/client";
+import { ApiData, ParamType, RequestBodyType } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
-import {
-  FiEye,
-  FiMinus,
-  FiMoreHorizontal,
-  FiPlus,
-  FiSettings,
-  FiTrash2,
-} from "react-icons/fi";
+import { FiEye, FiMinus, FiPlus, FiSettings, FiTrash2 } from "react-icons/fi";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { object, z } from "zod";
+import { z } from "zod";
 import { getApiById } from "~/models/api.server";
+import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
 import { FormHInput, FormInput } from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
 import { httpResponse } from "~/utils";
@@ -82,13 +74,21 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   return json({ api });
 };
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request, params }: ActionArgs) => {
+  let { apiId } = params;
+  invariant(apiId);
   let formData = await request.formData();
 
   if (formData.get("_action") === "test") {
     throw httpResponse.NotFound;
   }
 
+  saveApiAction(apiId, formData);
+
+  return json({});
+};
+
+export const saveApiAction = async (apiId: string, formData: FormData) => {
   let result = await validator.validate(formData);
 
   console.log(result.submittedData);
@@ -98,7 +98,24 @@ export const action = async ({ request }: ActionArgs) => {
     return validationError(result.error);
   }
 
-  return json({});
+  let data = result.data;
+  let apiData: ApiData = {
+    name: data.name,
+    path: data.path,
+    method: data.method,
+    description: data.description || null,
+    pathParams: [],
+    queryParams: [],
+    headers: [],
+    bodyType: data.bodyType,
+    bodyForm: [],
+    bodyRaw: {
+      example: data.bodyRaw.example,
+      description: data.bodyRaw.description,
+    },
+    bodyJson: {},
+    response: {},
+  };
 };
 
 export default function ApiInfo() {
@@ -145,31 +162,15 @@ const zodParam = (additionalData?: { [key: string]: z.ZodTypeDef }) => {
     .optional();
 };
 
-const JsonNodeType = [
-  ParamType.OBJECT,
-  ParamType.ARRAY,
-  ParamType.STRING,
-  ParamType.FLOAT,
-  ParamType.INT,
-] as const;
-
-interface JsonNode {
-  name?: string;
-  mock?: string;
-  isRequired?: string;
-  description?: string;
-  type: Exclude<ParamType, "FILE">;
-}
-
-const JsonNode: z.ZodType<JsonNode> = z.lazy(() =>
+const JsonNodeZod: z.ZodType<Omit<JsonNode, "children">> = z.lazy(() =>
   z.object({
     name: z.string().optional(),
     mock: z.string().optional(),
     isRequired: z.string().optional(),
     description: z.string().optional(),
     type: z.enum(JsonNodeType),
-    children: z.array(JsonNode).optional(),
-    arrayElem: JsonNode.optional(),
+    children: z.array(JsonNodeZod).optional(),
+    arrayElem: JsonNodeZod.optional(),
   })
 );
 
@@ -183,17 +184,19 @@ const validator = withZod(
   z.object({
     name: z.string().trim(),
     path: z.string().trim(),
+    method: z.enum(RequestMethods),
+    description: z.string().trim().optional(),
     pathParams: zodParam(),
     queryParams: zodParam(),
     headers: zodParam(),
     bodyType: z.enum(BodyTypes),
     bodyForm: zodParam({ type: z.enum([ParamType.STRING, ParamType.FILE]) }),
-    bodyJson: JsonNode,
+    bodyJson: JsonNodeZod,
     bodyRaw: z.object({
       example: z.string().trim(),
       description: z.string().trim(),
     }),
-    response: JsonNode,
+    response: JsonNodeZod,
   })
 );
 
@@ -240,7 +243,7 @@ const Edit = () => {
   const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
   const gray = useColorModeValue("gray.300", "gray.600");
-  const labelWidth = "80px";
+  const labelWidth = "100px";
   const ref = useRef<HTMLFormElement>(null);
 
   return (
@@ -279,6 +282,18 @@ const Edit = () => {
               as={PathInput}
               autoComplete="off"
               size="sm"
+            />
+          </Box>
+          <Box py={2}>
+            <FormHInput
+              bg={bgBW}
+              labelWidth={labelWidth}
+              name="description"
+              label="Description"
+              as={Textarea}
+              autoComplete="off"
+              size="sm"
+              rows={5}
             />
           </Box>
         </Container>

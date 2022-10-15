@@ -80,6 +80,7 @@ import Tree, {
 // @ts-ignore
 import { resetServerContext } from "react-beautiful-dnd-next";
 import TreeBuilder from "~/utils/treeBuilder";
+import { RequestMethods } from "~/models/type";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -303,16 +304,6 @@ const NewGroupModal = ({
     </FormModal>
   );
 };
-
-const RequestMethods = [
-  RequestMethod.GET,
-  RequestMethod.POST,
-  RequestMethod.PUT,
-  RequestMethod.PATCH,
-  RequestMethod.DELETE,
-  RequestMethod.OPTION,
-  RequestMethod.HEAD,
-] as const;
 
 const newApiValidator = withZod(
   z.object({
@@ -693,13 +684,14 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
   );
 };
 
-// export function CatchBoundary() {
-//   const caught = useCatch();
-//   return (<Center pt={10}>
-//         {caught.status}-{caught.statusText}
-//       </Center>
-//   );
-// }
+export function CatchBoundary() {
+  const caught = useCatch();
+  return (
+    <Center pt={10}>
+      {caught.status}-{caught.statusText}
+    </Center>
+  );
+}
 
 const File = ({ api }: { api: Api }) => {
   const { projectId, apiId } = useParams();
