@@ -134,8 +134,9 @@ type ApiData {
   headers     RequestParam[]
   bodyType    RequestBodyType @default(FORM)
   bodyForm    RequestParam[]
-  bodyJson    Json?
   bodyRaw     RequestBodyRaw?
+  bodyJson    Json?
+  response    Json?
 }
 
 enum RequestMethod {
