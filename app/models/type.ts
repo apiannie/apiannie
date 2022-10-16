@@ -1,4 +1,4 @@
-import { ParamType, RequestMethod } from "@prisma/client";
+import { ParamType, Prisma, RequestMethod } from "@prisma/client";
 
 export const JsonNodeType = [
   ParamType.OBJECT,
@@ -19,10 +19,12 @@ export const RequestMethods = [
 ] as const;
 
 export interface JsonNode {
-  name?: string;
-  mock?: string;
-  isRequired?: string;
-  description?: string;
+  name: string;
+  isRequired: boolean;
   type: Exclude<ParamType, "FILE">;
+  mock?: string;
+  example?: string;
+  description?: string;
   children: JsonNode[];
+  arrayElem?: JsonNode;
 }

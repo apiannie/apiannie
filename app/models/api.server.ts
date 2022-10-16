@@ -1,4 +1,4 @@
-import { ParamType, RequestMethod } from "@prisma/client";
+import { ApiData, ParamType, RequestMethod } from "@prisma/client";
 import { prisma } from "./prisma.server";
 
 export const createGroup = async ({
@@ -94,5 +94,16 @@ export const updateApi = async (
       id: id,
     },
     data: data,
+  });
+};
+
+export const saveApiData = async (id: string, data: ApiData) => {
+  return prisma.api.update({
+    where: {
+      id: id,
+    },
+    data: {
+      data: data,
+    },
   });
 };

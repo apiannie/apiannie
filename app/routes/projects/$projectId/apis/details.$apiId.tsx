@@ -44,17 +44,23 @@ import {
   useTab,
   VStack,
 } from "@chakra-ui/react";
-import { ApiData, ParamType, RequestBodyType } from "@prisma/client";
+import {
+  ApiData,
+  ParamType,
+  Prisma,
+  RequestBodyType,
+  RequestParam,
+} from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { Form } from "@remix-run/react";
+import { Form, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import { FiEye, FiMinus, FiPlus, FiSettings, FiTrash2 } from "react-icons/fi";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { z } from "zod";
-import { getApiById } from "~/models/api.server";
+import { z, ZodTypeDef } from "zod";
+import { getApiById, saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
 import { FormHInput, FormInput } from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
@@ -83,7 +89,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     throw httpResponse.NotFound;
   }
 
-  saveApiAction(apiId, formData);
+  await saveApiAction(apiId, formData);
 
   return json({});
 };
@@ -91,31 +97,39 @@ export const action = async ({ request, params }: ActionArgs) => {
 export const saveApiAction = async (apiId: string, formData: FormData) => {
   let result = await validator.validate(formData);
 
-  console.log(result.submittedData);
-  console.log(result.data);
-  console.log(result.error);
   if (result.error) {
     return validationError(result.error);
   }
 
   let data = result.data;
+
+  let queryParams: RequestParam[] = formatZodParam(data.queryParams);
+  let headers: RequestParam[] = formatZodParam(data.headers);
+  let bodyForm: RequestParam[] = formatZodParam(data.bodyForm);
+  let bodyJson = formatZodJson(data.bodyJson);
+  let responseJson = formatZodJson(data.response);
+
   let apiData: ApiData = {
     name: data.name,
     path: data.path,
     method: data.method,
     description: data.description || null,
     pathParams: [],
-    queryParams: [],
-    headers: [],
+    queryParams: queryParams,
+    headers: headers,
     bodyType: data.bodyType,
-    bodyForm: [],
+    bodyForm: bodyForm,
     bodyRaw: {
       example: data.bodyRaw.example,
       description: data.bodyRaw.description,
     },
-    bodyJson: {},
-    response: {},
+    bodyJson: bodyJson as unknown as Prisma.JsonValue,
+    response: {
+      "200": responseJson as unknown as Prisma.JsonValue,
+    },
   };
+
+  return saveApiData(apiId, apiData);
 };
 
 export default function ApiInfo() {
@@ -149,24 +163,51 @@ export default function ApiInfo() {
   );
 }
 
-const zodParam = (additionalData?: { [key: string]: z.ZodTypeDef }) => {
-  return z
-    .object({
-      name: z.string().trim().optional(),
-      example: z.string().trim().optional(),
-      description: z.string().trim().optional(),
-      isRequired: z.string().optional(),
-      ...additionalData,
-    })
-    .array()
-    .optional();
+const zodParam = z
+  .object({
+    name: z.string().trim().optional(),
+    example: z.string().trim().optional(),
+    description: z.string().trim().optional(),
+    isRequired: z
+      .string()
+      .optional()
+      .transform((arg) => arg !== undefined),
+    type: z.nativeEnum(ParamType).optional(),
+  })
+  .array()
+  .optional();
+
+type JsonNodeFormElem = Omit<
+  Partial<JsonNode>,
+  "children" | "arrayElem" | "isRequired"
+> & {
+  isRequired?: string;
+};
+type JsonNodeForm = JsonNodeFormElem & {
+  arrayElem?: JsonNodeForm;
+  children?: JsonNodeForm[];
+};
+type JsonNodeTransformedElem = Omit<JsonNodeFormElem, "isRequired"> & {
+  isRequired: boolean;
+};
+type JsonNodeTransformed = JsonNodeTransformedElem & {
+  arrayElem?: JsonNodeTransformed;
+  children?: JsonNodeTransformed[];
 };
 
-const JsonNodeZod: z.ZodType<Omit<JsonNode, "children">> = z.lazy(() =>
+const JsonNodeZod: z.ZodType<
+  JsonNodeTransformedElem,
+  ZodTypeDef,
+  JsonNodeFormElem
+> = z.lazy(() =>
   z.object({
     name: z.string().optional(),
     mock: z.string().optional(),
-    isRequired: z.string().optional(),
+    example: z.string().optional(),
+    isRequired: z
+      .string()
+      .optional()
+      .transform((elem) => elem !== undefined),
     description: z.string().optional(),
     type: z.enum(JsonNodeType),
     children: z.array(JsonNodeZod).optional(),
@@ -180,17 +221,68 @@ const BodyTypes = [
   RequestBodyType.RAW,
 ] as const;
 
+const formatZodParam = (params: z.infer<typeof zodParam>) => {
+  return (params || [])
+    .filter((obj) => !!obj.name)
+    .map((obj) => {
+      const { name, example, description, ...rest } = obj;
+      invariant(name);
+      return {
+        name: name,
+        example: example || "",
+        description: description || "",
+        type: obj.type || ParamType.STRING,
+        ...rest,
+      };
+    });
+};
+
+const formatZodJson = (json: JsonNodeTransformed): JsonNode => {
+  json.name = "root";
+  const formatZodJsonRec = (node: JsonNodeTransformed) => {
+    let { children, arrayElem, ...rest } = node;
+    let { name, description, type, isRequired, mock, example } = rest;
+
+    invariant(type);
+
+    if (!name) {
+      return undefined;
+    }
+
+    let newChildren: JsonNode[] =
+      children
+        ?.map((elem) => formatZodJsonRec(elem))
+        .filter((elem): elem is JsonNode => !!elem) || [];
+
+    let newArrayElem = arrayElem ? formatZodJsonRec(arrayElem) : undefined;
+
+    let retval: JsonNode = {
+      name: name,
+      type: type,
+      description: description || "",
+      example: example || "",
+      mock: mock || "",
+      isRequired: !!isRequired,
+      children: newChildren,
+      arrayElem: newArrayElem,
+    };
+    return retval;
+  };
+
+  return formatZodJsonRec(json) as JsonNode;
+};
+
 const validator = withZod(
   z.object({
     name: z.string().trim(),
     path: z.string().trim(),
     method: z.enum(RequestMethods),
     description: z.string().trim().optional(),
-    pathParams: zodParam(),
-    queryParams: zodParam(),
-    headers: zodParam(),
+    pathParams: zodParam,
+    queryParams: zodParam,
+    headers: zodParam,
     bodyType: z.enum(BodyTypes),
-    bodyForm: zodParam({ type: z.enum([ParamType.STRING, ParamType.FILE]) }),
+    bodyForm: zodParam,
     bodyJson: JsonNodeZod,
     bodyRaw: z.object({
       example: z.string().trim(),
@@ -239,13 +331,35 @@ const RadioTab = React.forwardRef<HTMLInputElement, RadioProps>(
   }
 );
 
+const jsonNodeToForm = (json: JsonNode) => {
+  const { type, children, arrayElem, isRequired, ...rest } = json;
+  const newChildren = children.map((elem) => jsonNodeToForm(elem));
+  const newArrayElem = arrayElem ? jsonNodeToForm(arrayElem) : undefined;
+  let retval: JsonNodeForm = {
+    type: type,
+    children: type === "ARRAY" ? [] : newChildren,
+    arrayElem: newArrayElem,
+    isRequired: isRequired ? "true" : undefined,
+    ...rest,
+  };
+  return retval;
+};
+
 const Edit = () => {
   const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
   const gray = useColorModeValue("gray.300", "gray.600");
   const labelWidth = "100px";
   const ref = useRef<HTMLFormElement>(null);
-
+  const { api } = useLoaderData<typeof loader>();
+  let { response, bodyJson, ...rest } = api.data;
+  let defaultValues = {
+    ...rest,
+    response: jsonNodeToForm((response as any)["200"] as unknown as JsonNode),
+    bodyJson: jsonNodeToForm(bodyJson as unknown as JsonNode),
+  };
+  // console.log(api);
+  // console.log(defaultValues);
   return (
     <Box
       position={"relative"}
@@ -256,6 +370,7 @@ const Edit = () => {
       validator={withZod(z.object({}))}
       formRef={ref}
       replace={true}
+      defaultValues={defaultValues}
     >
       <Header>General</Header>
       <Box bg={bg} p={4}>
@@ -335,7 +450,11 @@ const Edit = () => {
                     />
                   </TabPanel>
                   <TabPanel>
-                    <JsonEditor prefix="bodyJson" />
+                    <JsonEditor
+                      defaultValues={defaultValues.bodyJson}
+                      prefix="bodyJson"
+                      isMock={false}
+                    />
                   </TabPanel>
                   <TabPanel>
                     <Box>
@@ -367,7 +486,11 @@ const Edit = () => {
       </Box>
       <Header mt={6}>Response</Header>
       <Box bg={bg} p={8}>
-        <JsonEditor prefix="response" />
+        <JsonEditor
+          prefix="response"
+          isMock={true}
+          defaultValues={defaultValues.response}
+        />
       </Box>
       <Button
         position={"fixed"}
@@ -482,11 +605,11 @@ const ParamTable = ({
                   />
                   <Tooltip label="Required">
                     <Center h={8}>
-                      <Checkbox
+                      <FormInput
+                        as={Checkbox}
                         id={`${prefix}-${id}-required`}
                         bg={bgBW}
                         name={`${prefix}[${i}].isRequired`}
-                        value="true"
                       />
                     </Center>
                   </Tooltip>
@@ -544,11 +667,25 @@ const ParamTable = ({
   );
 };
 
-const JsonEditor = ({ prefix }: { prefix: string }) => {
+const JsonEditor = ({
+  prefix,
+  isMock,
+  defaultValues,
+}: {
+  prefix: string;
+  isMock: boolean;
+  defaultValues: JsonNodeForm;
+}) => {
   return (
     <Box>
       <VStack>
-        <JsonRow depth={0} isParentOpen={true} prefix={prefix} />
+        <JsonRow
+          depth={0}
+          isParentOpen={true}
+          prefix={prefix}
+          isMock={isMock}
+          defaultValues={defaultValues}
+        />
       </VStack>
       <Center mt={8}>
         <Button colorScheme={"blue"} variant="outline" size="sm">
@@ -568,6 +705,8 @@ const JsonRow = ({
   onAddSibling,
   onDelete,
   prefix,
+  isMock,
+  defaultValues,
   ...rest
 }: {
   depth: number;
@@ -577,6 +716,8 @@ const JsonRow = ({
   onDelete?: (id: number) => void;
   prefix: string;
   keyId?: number;
+  isMock: boolean;
+  defaultValues?: JsonNodeForm;
 } & BoxProps) => {
   const types = [
     ParamType.OBJECT,
@@ -592,11 +733,14 @@ const JsonRow = ({
   });
   const isRoot = depth === 0;
   const [type, setType] = useState<ParamType>(
-    isRoot ? ParamType.OBJECT : ParamType.STRING
+    defaultValues?.type || (isRoot ? ParamType.OBJECT : ParamType.STRING)
   );
-  const [touched, setTouched] = useBoolean(isRoot);
-  const { ids, pushId, removeId, insertAfterId } = useIds(1);
+  const [touched, setTouched] = useBoolean(isRoot || !!defaultValues?.name);
+  const { ids, pushId, removeId, insertAfterId } = useIds(
+    defaultValues?.children?.length || 1
+  );
   const blue = useColorModeValue("blue.500", "blue.200");
+
   return (
     <>
       <HStack w="full" {...rest} alignItems="flex-start">
@@ -615,14 +759,21 @@ const JsonRow = ({
             name={`${prefix}.name`}
             placeholder="Name"
             bg={bgBW}
-            disabled={isRoot}
-            value={isRoot ? "root" : undefined}
+            isDisabled={isRoot || isArrayElem}
+            value={isRoot ? "root" : isArrayElem ? "items" : undefined}
           />
         </Center>
         <Box>
           <Tooltip label="Required">
             <Center h={8}>
-              <Checkbox bg={bgBW} />
+              <FormInput
+                as={Checkbox}
+                name={`${prefix}.isRequired`}
+                bg={bgBW}
+                isChecked={isArrayElem ? false : undefined}
+                isDisabled={isArrayElem}
+                // value="true"
+              />
             </Center>
           </Tooltip>
         </Box>
@@ -646,10 +797,11 @@ const JsonRow = ({
         <FormInput
           bg={bgBW}
           size="sm"
-          name={`${prefix}.mock`}
-          placeholder="Mock"
+          name={`${prefix}.${isMock ? "mock" : "example"}`}
+          placeholder={isMock ? "Mock" : "Example"}
           as={ModalInput}
           modal={{ title: "Mock" }}
+          isDisabled={type === "ARRAY" || type === "OBJECT"}
         />
         <FormInput
           bg={bgBW}
@@ -724,6 +876,8 @@ const JsonRow = ({
           onAddSibling={insertAfterId}
           onDelete={removeId}
           prefix={`${prefix}.arrayElem`}
+          isMock={isMock}
+          defaultValues={defaultValues?.arrayElem}
         />
       )}
       {touched &&
@@ -737,6 +891,8 @@ const JsonRow = ({
             onAddSibling={insertAfterId}
             onDelete={removeId}
             prefix={`${prefix}.children[${i}]`}
+            isMock={isMock}
+            defaultValues={defaultValues?.children?.[i]}
           />
         ))}
     </>

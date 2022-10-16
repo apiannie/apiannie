@@ -128,7 +128,7 @@ type ApiData {
   name        String
   path        String
   method      RequestMethod   @default(GET)
-  descripiton String?
+  description String?
   pathParams  RequestParam[]
   queryParams RequestParam[]
   headers     RequestParam[]
@@ -157,7 +157,7 @@ enum RequestBodyType {
 
 type RequestBodyRaw {
   example     String?
-  descripiton String?
+  description String?
 }
 
 type RequestParam {

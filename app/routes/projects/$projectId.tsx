@@ -56,6 +56,11 @@ import { httpResponse, useUser } from "~/utils";
 import ColorModeButton from "../home/..lib/ColorModeButton";
 import UserMenuButton from "../home/..lib/UserMenuButton";
 import { loader as loadProjects } from "./index";
+import styles from "~/ui/dashboard.css";
+
+export function links() {
+  return [{ rel: "stylesheet", href: styles }];
+}
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   let user = await requireUser(request);

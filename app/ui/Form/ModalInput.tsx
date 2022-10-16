@@ -20,6 +20,7 @@ import { FiEdit } from "react-icons/fi";
 
 const ModalInput = ({
   modal,
+  isDisabled,
   ...props
 }: InputProps & {
   modal?: {
@@ -31,9 +32,15 @@ const ModalInput = ({
   let { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <InputGroup>
-      <Input {...props} ref={inputRef}></Input>
+      <Input isDisabled={isDisabled} {...props} ref={inputRef}></Input>
       <InputRightElement h={8}>
-        <Button onClick={onOpen} size="xs" colorScheme="teal" variant={"ghost"}>
+        <Button
+          isDisabled={isDisabled}
+          onClick={onOpen}
+          size="xs"
+          colorScheme="teal"
+          variant={"ghost"}
+        >
           <Icon as={FiEdit} />
         </Button>
       </InputRightElement>

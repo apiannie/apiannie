@@ -1,6 +1,8 @@
 import {
   Alert,
   AlertIcon,
+  Box,
+  Checkbox,
   ComponentWithAs,
   FormControl,
   FormControlProps,
@@ -22,19 +24,36 @@ export interface FormInputProps
 }
 
 const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
-  const { id, name, label, children, as, container, size, ...rest } = props;
+  const {
+    id,
+    name,
+    label,
+    children,
+    as,
+    container,
+    size,
+    isDisabled,
+    ...rest
+  } = props;
   const { error, getInputProps } = useField(name);
+  let inputProps = getInputProps(rest);
 
+  // console.log({ ...inputProps });
+
+  if (as === Checkbox) {
+    inputProps.defaultChecked = !!inputProps.defaultValue;
+  }
   return (
     <FormControl {...container}>
       {label && <FormLabel>{label}</FormLabel>}
       <InputGroup>
-        <Input
+        <Box
           id={id || name}
           ref={ref}
-          as={as}
+          as={as || Input}
           size={size}
-          {...getInputProps({ ...rest })}
+          isDisabled={isDisabled}
+          {...inputProps}
         />
         {children}
       </InputGroup>
