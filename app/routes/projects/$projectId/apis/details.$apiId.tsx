@@ -353,10 +353,16 @@ const Edit = () => {
   const ref = useRef<HTMLFormElement>(null);
   const { api } = useLoaderData<typeof loader>();
   let { response, bodyJson, ...rest } = api.data;
+  let response200 = response ? (response as any)["200"] : undefined;
+
   let defaultValues = {
     ...rest,
-    response: jsonNodeToForm((response as any)["200"] as unknown as JsonNode),
-    bodyJson: jsonNodeToForm(bodyJson as unknown as JsonNode),
+    response: response200
+      ? jsonNodeToForm(response200 as unknown as JsonNode)
+      : undefined,
+    bodyJson: bodyJson
+      ? jsonNodeToForm(bodyJson as unknown as JsonNode)
+      : undefined,
   };
   // console.log(api);
   // console.log(defaultValues);
