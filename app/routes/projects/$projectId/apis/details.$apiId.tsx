@@ -14,6 +14,7 @@ import invariant from "tiny-invariant";
 import { getApiById } from "~/models/api.server";
 import { httpResponse } from "~/utils";
 import Editor, { saveApiAction } from "./..editor";
+import Postman from "./..postman";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   let { apiId } = params;
@@ -65,8 +66,8 @@ export default function ApiInfo() {
         <TabPanel>
           <Editor />
         </TabPanel>
-        <TabPanel>
-          <p>three!</p>
+        <TabPanel h="full" p={0}>
+          <Postman />
         </TabPanel>
       </TabPanels>
     </Tabs>

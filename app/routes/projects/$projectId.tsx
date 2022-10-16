@@ -190,7 +190,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
             top={0}
             bottom={0}
             _hover={{
-              width: "50px",
+              width: "5px",
               borderColor: "blue.500",
               borderRightWidth: "5px",
             }}
