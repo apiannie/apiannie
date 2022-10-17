@@ -38,8 +38,6 @@ const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
   const { error, getInputProps } = useField(name);
   let inputProps = getInputProps(rest);
 
-  // console.log({ ...inputProps });
-
   if (as === Checkbox) {
     inputProps.defaultChecked = !!inputProps.defaultValue;
   }

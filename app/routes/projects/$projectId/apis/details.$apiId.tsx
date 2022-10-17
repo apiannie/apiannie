@@ -26,7 +26,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     throw httpResponse.BadRequest;
   }
 
-  return json({ api });
+  return json({ api, url: request.url });
 };
 
 export const action = async ({ request, params }: ActionArgs) => {

@@ -81,6 +81,7 @@ import Tree, {
 import { resetServerContext } from "react-beautiful-dnd-next";
 import TreeBuilder from "~/utils/treeBuilder";
 import { RequestMethods } from "~/models/type";
+import { PathInput } from "~/ui";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -379,26 +380,6 @@ const NewApiModal = ({
         </ModalFooter>
       </ModalContent>
     </FormModal>
-  );
-};
-
-export const PathInput = ({ size, bg, ...rest }: InputProps) => {
-  return (
-    <InputGroup size={size} bg={bg}>
-      <InputLeftAddon
-        bg={bg}
-        children={
-          <Select name="method" variant="unstyled">
-            {RequestMethods.map((method) => (
-              <option key={method} value={method}>
-                {method}
-              </option>
-            ))}
-          </Select>
-        }
-      />
-      <Input {...rest} />
-    </InputGroup>
   );
 };
 

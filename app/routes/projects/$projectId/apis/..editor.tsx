@@ -48,11 +48,12 @@ import {
   ParamType,
   Prisma,
   RequestBodyType,
+  RequestMethod,
   RequestParam,
 } from "@prisma/client";
 import { useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import { FiEye, FiMinus, FiPlus, FiSettings, FiTrash2 } from "react-icons/fi";
 import { ValidatedForm, validationError } from "remix-validated-form";
@@ -60,9 +61,8 @@ import invariant from "tiny-invariant";
 import { z, ZodTypeDef } from "zod";
 import { saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
-import { FormHInput, FormInput } from "~/ui";
+import { FormHInput, FormInput, PathInput } from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
-import { PathInput } from "../apis";
 import { loader } from "./details.$apiId";
 
 type JsonNodeFormElem = Omit<
@@ -295,6 +295,21 @@ const Editor = () => {
   let { response, bodyJson, ...rest } = api.data;
   let response200 = response ? (response as any)["200"] : undefined;
 
+  const [method, setMethod] = useState(api.data.method);
+  const [bodyTabIndex, setBodyTabIndex] = useState(0);
+
+  const requestHasBody =
+    method === "POST" ||
+    method === "DELETE" ||
+    method === "PUT" ||
+    method === "PATCH";
+
+  useEffect(() => {
+    if (!requestHasBody) {
+      setBodyTabIndex(1);
+    }
+  }, [requestHasBody]);
+
   let defaultValues = {
     ...rest,
     response: response200
@@ -304,8 +319,15 @@ const Editor = () => {
       ? jsonNodeToForm(bodyJson as unknown as JsonNode)
       : undefined,
   };
-  // console.log(api);
-  // console.log(defaultValues);
+
+  const onMethodChange: React.ChangeEventHandler<HTMLSelectElement> =
+    useCallback(
+      function (e) {
+        setMethod(e.target.value as RequestMethod);
+      },
+      [method]
+    );
+
   return (
     <Box
       position={"relative"}
@@ -343,6 +365,8 @@ const Editor = () => {
               as={PathInput}
               autoComplete="off"
               size="sm"
+              method={method}
+              onMethodChange={onMethodChange}
             />
           </Box>
           <Box py={2}>
@@ -362,67 +386,26 @@ const Editor = () => {
 
       <Header mt={6}>Request</Header>
       <Box bg={bg} py={4}>
-        <Tabs variant="solid-rounded" colorScheme="cyan">
+        <Tabs
+          index={bodyTabIndex}
+          onChange={setBodyTabIndex}
+          variant="solid-rounded"
+          colorScheme="cyan"
+        >
           <TabList display={"flex"} justifyContent="center">
+            <Tab hidden={!requestHasBody} flexBasis={"100px"}>
+              Body
+            </Tab>
             <Tab flexBasis={"100px"}>Query</Tab>
-            <Tab flexBasis={"100px"}>Body</Tab>
             <Tab flexBasis={"100px"}>Headers</Tab>
           </TabList>
           <Divider my={2} borderColor={gray} />
           <TabPanels>
             <TabPanel>
-              <ParamTable prefix="queryParams" />
+              <BodyEditor bodyJson={defaultValues.bodyJson} />
             </TabPanel>
             <TabPanel>
-              <Tabs>
-                <RadioGroup px={4} defaultValue={RequestBodyType.FORM}>
-                  <TabList border={"none"} display={"flex"} gap={4}>
-                    <RadioTab name="bodyType" value={RequestBodyType.FORM}>
-                      form-data
-                    </RadioTab>
-                    <RadioTab name="bodyType" value={RequestBodyType.JSON}>
-                      json
-                    </RadioTab>
-                    <RadioTab name="bodyType" value={RequestBodyType.RAW}>
-                      raw
-                    </RadioTab>
-                  </TabList>
-                </RadioGroup>
-                <TabPanels mt={4}>
-                  <TabPanel p={0}>
-                    <ParamTable
-                      prefix="bodyForm"
-                      types={[ParamType.STRING, ParamType.FILE]}
-                    />
-                  </TabPanel>
-                  <TabPanel>
-                    <JsonEditor
-                      defaultValues={defaultValues.bodyJson}
-                      prefix="bodyJson"
-                      isMock={false}
-                    />
-                  </TabPanel>
-                  <TabPanel>
-                    <Box>
-                      <FormInput
-                        bg={bgBW}
-                        as={Textarea}
-                        name="bodyRaw.example"
-                        label="Example"
-                        container={{
-                          mb: 6,
-                        }}
-                      />
-                      <FormInput
-                        bg={bgBW}
-                        as={Textarea}
-                        name="bodyRaw.description"
-                        label="Description"
-                      />
-                    </Box>
-                  </TabPanel>
-                </TabPanels>
-              </Tabs>
+              <ParamTable prefix="queryParams" />
             </TabPanel>
             <TabPanel>
               <ParamTable prefix="headers" />
@@ -454,6 +437,62 @@ const Editor = () => {
         </Button>
       </Center>
     </Box>
+  );
+};
+
+const BodyEditor = ({ bodyJson }: { bodyJson?: JsonNodeForm }) => {
+  const bgBW = useColorModeValue("white", "gray.900");
+
+  return (
+    <Tabs>
+      <RadioGroup px={4} defaultValue={RequestBodyType.FORM}>
+        <TabList border={"none"} display={"flex"} gap={4}>
+          <RadioTab name="bodyType" value={RequestBodyType.FORM}>
+            form-data
+          </RadioTab>
+          <RadioTab name="bodyType" value={RequestBodyType.JSON}>
+            json
+          </RadioTab>
+          <RadioTab name="bodyType" value={RequestBodyType.RAW}>
+            raw
+          </RadioTab>
+        </TabList>
+      </RadioGroup>
+      <TabPanels mt={4}>
+        <TabPanel p={0}>
+          <ParamTable
+            prefix="bodyForm"
+            types={[ParamType.STRING, ParamType.FILE]}
+          />
+        </TabPanel>
+        <TabPanel>
+          <JsonEditor
+            defaultValues={bodyJson}
+            prefix="bodyJson"
+            isMock={false}
+          />
+        </TabPanel>
+        <TabPanel>
+          <Box>
+            <FormInput
+              bg={bgBW}
+              as={Textarea}
+              name="bodyRaw.example"
+              label="Example"
+              container={{
+                mb: 6,
+              }}
+            />
+            <FormInput
+              bg={bgBW}
+              as={Textarea}
+              name="bodyRaw.description"
+              label="Description"
+            />
+          </Box>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   );
 };
 
@@ -653,6 +692,7 @@ const JsonRow = ({
   prefix,
   isMock,
   defaultValues,
+  hidden,
   ...rest
 }: {
   depth: number;
@@ -689,7 +729,7 @@ const JsonRow = ({
 
   return (
     <>
-      <HStack w="full" {...rest} alignItems="flex-start">
+      <HStack hidden={hidden} w="full" {...rest} alignItems="flex-start">
         <Center pl={`${depth * 24}px`} flex="0 0 320px">
           <Center w={4} h={4} cursor="pointer" onClick={onToggle}>
             {type === ParamType.OBJECT || type === ParamType.ARRAY ? (
@@ -817,7 +857,9 @@ const JsonRow = ({
         <JsonRow
           isParentOpen={isParentOpen && isOpen}
           depth={depth + 1}
-          hidden={!isParentOpen || !isOpen || type !== ParamType.ARRAY}
+          hidden={
+            hidden || !isParentOpen || !isOpen || type !== ParamType.ARRAY
+          }
           isArrayElem
           onAddSibling={insertAfterId}
           onDelete={removeId}
@@ -833,7 +875,9 @@ const JsonRow = ({
             keyId={id}
             isParentOpen={isParentOpen && isOpen}
             depth={depth + 1}
-            hidden={!isParentOpen || !isOpen || type !== ParamType.OBJECT}
+            hidden={
+              hidden || !isParentOpen || !isOpen || type !== ParamType.OBJECT
+            }
             onAddSibling={insertAfterId}
             onDelete={removeId}
             prefix={`${prefix}.children[${i}]`}

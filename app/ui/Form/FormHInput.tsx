@@ -6,7 +6,11 @@ import {
   ChakraProps,
   Flex,
   FormControl,
+  FormControlProps,
   FormLabel,
+  forwardRef,
+  Input,
+  InputProps,
   StyleProps,
   ThemingProps,
   VStack,
@@ -15,26 +19,21 @@ import React from "react";
 import { useField } from "remix-validated-form";
 import { MinimalInputProps } from "./type";
 
-const FormHInput = <T extends React.FunctionComponent>({
-  name,
-  label,
-  labelWidth,
-  as,
-  isRequired,
-  bg,
-  size,
-  ...rest
-}: {
+export interface FormInputProps
+  extends InputProps,
+    Pick<React.HTMLProps<HTMLButtonElement>, "autoComplete"> {
   name: string;
-  label: string;
+  label?: string;
+  container?: FormControlProps;
   labelWidth: string;
   isRequired?: boolean;
-  as: T;
-} & ThemingProps &
-  BackgroundProps &
-  MinimalInputProps &
-  Omit<React.HTMLProps<HTMLInputElement>, "size" | "autoCompolete" | "as">) => {
+}
+
+const FormHInput = forwardRef<FormInputProps, "input">((props, ref) => {
+  const { name, isRequired, container, labelWidth, label, size, as, ...rest } =
+    props;
   const { error, getInputProps } = useField(name);
+
   return (
     <FormControl
       isRequired={isRequired}
@@ -42,6 +41,7 @@ const FormHInput = <T extends React.FunctionComponent>({
       display={"flex"}
       alignItems="center"
       gap={2}
+      {...container}
     >
       <Flex alignItems={"center"} justifyContent="end" w="full">
         <Box flexBasis={labelWidth} flexShrink={0}>
@@ -49,11 +49,9 @@ const FormHInput = <T extends React.FunctionComponent>({
             {label}
           </FormLabel>
         </Box>
-        {React.createElement(as, {
-          id: name,
-          flexGrow: 1,
-          bg: bg,
+        {React.createElement(as || Input, {
           size: size,
+          ref: ref,
           ...getInputProps(rest),
         })}
       </Flex>
@@ -67,6 +65,6 @@ const FormHInput = <T extends React.FunctionComponent>({
       )}
     </FormControl>
   );
-};
+});
 
 export default FormHInput;
