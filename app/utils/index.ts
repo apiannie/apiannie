@@ -1,8 +1,9 @@
 import { json } from "@remix-run/node";
 import { useMatches } from "@remix-run/react";
 import { useMemo } from "react";
-
 import type { User } from "~/models/user.server";
+
+export * from "./hooks";
 
 const DEFAULT_REDIRECT = "/";
 

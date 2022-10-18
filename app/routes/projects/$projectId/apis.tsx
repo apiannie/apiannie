@@ -427,7 +427,6 @@ const groupDFS = (group: Group, id: string, path: string[]) => {
 const FileNavbar = () => {
   const matches = useMatches();
   const params = useParams();
-  console.info(params);
   const project: Project = matches[1].data.project;
   const [treeData, setTreeData] = useState<TreeData>(
     new TreeBuilder("1", null)
