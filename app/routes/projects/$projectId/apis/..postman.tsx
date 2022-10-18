@@ -52,7 +52,7 @@ import { withZod } from "@remix-validated-form/with-zod";
 import { z } from "zod";
 import { ClientOnly } from "remix-utils";
 import { lazy, useCallback, useMemo, useState } from "react";
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 const AceEditor = lazy(() => import("~/ui/AceEditor"));
 
@@ -89,14 +89,10 @@ const Postman = () => {
   const [bodyRaw, setBodyRaw] = useState(api.data.bodyRaw?.example || "");
   const form = useFormContext("postman-form");
   const [location, setLocation] = useState(`${origin}/mock/${projectId}`);
+  const [response, setResponse] = useState<AxiosResponse | null>(null);
 
   const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
     useCallback(async () => {
-      // let result = await validator.validate(form.getValues());
-      // let data = result.data;
-      // if (!data) {
-      //   return;
-      // }
       let formData = form.getValues();
       let result = await validator.validate(formData);
       let methodHasBody = methodContainsBody(api.data.method);
@@ -117,6 +113,8 @@ const Postman = () => {
       let config: AxiosRequestConfig = {
         method: api.data.method,
         url: location + api.data.path,
+        maxRedirects: 0,
+        validateStatus: () => true,
       };
 
       let queries: typeof config["params"] = {};
@@ -148,8 +146,8 @@ const Postman = () => {
         }
       }
 
-      let response = await axios(config);
-      console.info(response);
+      let res = await axios(config);
+      setResponse(res);
     }, [form]);
 
   return (
@@ -206,13 +204,13 @@ const Postman = () => {
         bg={bg}
       >
         {api.data.pathParams.length > 0 && (
-          <TabPanel>
+          <TabPanel overflowY="auto">
             <ParamTable prefix="path" data={api.data.pathParams} />
           </TabPanel>
         )}
         <TabPanel h="full" p={0}>
           {api.data.bodyType === "FORM" ? (
-            <Box p={4}>
+            <Box p={4} h="full" overflowY="auto">
               <ParamTable prefix="bodyForm" data={api.data.bodyForm} />
             </Box>
           ) : (
@@ -234,8 +232,8 @@ const Postman = () => {
           <ParamTable prefix="cookies" data={[]} />
         </TabPanel>
       </TabPanels>
-      <Box bg={useColorModeValue("gray.100", "gray.700")} overflowY={"auto"}>
-        <EmptyResponse />
+      <Box bg={useColorModeValue("gray.100", "gray.700")}>
+        {response ? <Response response={response} /> : <EmptyResponse />}
       </Box>
     </Grid>
   );
@@ -377,7 +375,6 @@ const BodyEditor = ({
           {() => (
             <AceEditor
               mode={mode}
-              theme="github"
               editorProps={{ $blockScrolling: true }}
               height="100%"
               width="100%"
@@ -446,6 +443,84 @@ const EmptyResponse = () => {
         <Text>Click the "Send" button to get the return results</Text>
       </VStack>
     </Center>
+  );
+};
+
+const Response = ({ response }: { response: AxiosResponse }) => {
+  let gray = useColorModeValue("gray.700", "gray.200");
+
+  let contentType = (
+    typeof response.headers.getContentType === "function"
+      ? response.headers.getContentType() || ""
+      : response.headers.getContentType || ""
+  ).toString();
+
+  let mode = contentType.startsWith("text/html")
+    ? "html"
+    : contentType.startsWith("application/json")
+    ? "json"
+    : "plain_text";
+
+  return (
+    <Tabs size={"sm"} h="full">
+      <TabList as={HStack} gap={0}>
+        <Tab fontSize={"xs"}>Body</Tab>
+        <Tab fontSize={"xs"}>Headers</Tab>
+        {/* TODO */}
+        {/* <Tab fontSize={"xs"}>Cookies</Tab> */}
+        <Spacer />
+        <Box px={2}>
+          <Text fontSize={"xs"} color={gray}>
+            Status: {response.status} {response.statusText}
+          </Text>
+        </Box>
+      </TabList>
+
+      <TabPanels h="calc(100% - 30px)" overflowY={"auto"}>
+        <TabPanel h="full" p={0}>
+          {response.data ? (
+            <AceEditor
+              mode={mode}
+              editorProps={{ $blockScrolling: true }}
+              height="100%"
+              width="100%"
+              showGutter={true}
+              showPrintMargin={false}
+              value={response.data}
+              tabSize={2}
+              readOnly
+            />
+          ) : (
+            <Center h="full">
+              <Text color={"gray.400"}>No Data</Text>
+            </Center>
+          )}
+        </TabPanel>
+        <TabPanel>
+          <TableContainer>
+            <Table size={"sm"} variant="simple" colorScheme={"teal"}>
+              <Thead>
+                <Tr>
+                  <Th width={"50%"}>Key</Th>
+                  <Th width={"50%"}>Value</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {Object.entries(response.headers).map(([key, val], i) => (
+                  <Tr key={i}>
+                    <Td>{key}</Td>
+                    <Td>{val}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+        <TabPanel>
+          <p>three!</p>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   );
 };
 

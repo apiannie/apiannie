@@ -4,6 +4,7 @@ import "ace-builds/src-noconflict/mode-plain_text";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-json5";
 import "ace-builds/src-noconflict/mode-xml";
+import "ace-builds/src-noconflict/mode-html";
 
 import "ace-builds/src-noconflict/theme-xcode";
 import "ace-builds/src-noconflict/theme-terminal";

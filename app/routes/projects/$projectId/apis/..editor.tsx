@@ -600,7 +600,7 @@ const ParamTable = ({
                     name={`${prefix}[${i}].description`}
                     as={ModalInput}
                     modal={{ title: "Description" }}
-                    defaultValue={defaultValue[id]?.description}
+                    defaultValue={defaultValue[id]?.description || ""}
                   />
                   <Button size="sm" onClick={() => removeId(id)}>
                     <Icon as={FiTrash2} />
