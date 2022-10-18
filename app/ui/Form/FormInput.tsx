@@ -21,6 +21,7 @@ export interface FormInputProps
   name: string;
   label?: string;
   container?: FormControlProps;
+  formId?: string;
 }
 
 const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
@@ -33,9 +34,10 @@ const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
     container,
     size,
     isDisabled,
+    formId,
     ...rest
   } = props;
-  const { error, getInputProps } = useField(name);
+  const { error, getInputProps } = useField(name, { formId });
   let inputProps = getInputProps(rest);
 
   if (as === Checkbox) {

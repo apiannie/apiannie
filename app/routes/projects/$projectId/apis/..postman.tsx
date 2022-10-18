@@ -1,4 +1,4 @@
-import { RequestParam } from ".prisma/client";
+import { ApiData, RequestParam } from ".prisma/client";
 import {
   Box,
   Button,
@@ -41,16 +41,43 @@ import invariant from "tiny-invariant";
 import { FormInput, ModalInput } from "~/ui";
 import { loader } from "./details.$apiId";
 import { SlRocket } from "react-icons/sl";
-import { useIds } from "~/utils";
-import { FiPlus, FiRepeat, FiRepeat } from "react-icons/fi";
-import { ValidatedForm } from "remix-validated-form";
+import { methodContainsBody, useIds } from "~/utils";
+import { FiPlus, FiRepeat } from "react-icons/fi";
+import {
+  useFormContext,
+  ValidatedForm,
+  ValidatorData,
+} from "remix-validated-form";
 import { withZod } from "@remix-validated-form/with-zod";
 import { z } from "zod";
 import { ClientOnly } from "remix-utils";
-import { lazy, useState } from "react";
+import { lazy, useCallback, useMemo, useState } from "react";
+import axios, { AxiosRequestConfig } from "axios";
 
-const validator = withZod(z.object({}));
 const AceEditor = lazy(() => import("~/ui/AceEditor"));
+
+const zodParam = z
+  .object({
+    checked: z
+      .string()
+      .optional()
+      .transform((v) => v !== undefined),
+    name: z.string().optional(),
+    value: z.string().optional(),
+  })
+  .array()
+  .default([]);
+
+const validator = withZod(
+  z.object({
+    query: zodParam,
+    query_ext: zodParam,
+    header: zodParam,
+    header_ext: zodParam,
+    bodyForm: zodParam,
+    bodyForm_ext: zodParam,
+  })
+);
 
 const Postman = () => {
   const { projectId } = useParams();
@@ -59,8 +86,70 @@ const Postman = () => {
   const bg = useColorModeValue("gray.50", "gray.800");
   const { api, url } = useLoaderData<typeof loader>();
   const origin = new URL(url).origin;
-
   const [bodyRaw, setBodyRaw] = useState(api.data.bodyRaw?.example || "");
+  const form = useFormContext("postman-form");
+  const [location, setLocation] = useState(`${origin}/mock/${projectId}`);
+
+  const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
+    useCallback(async () => {
+      // let result = await validator.validate(form.getValues());
+      // let data = result.data;
+      // if (!data) {
+      //   return;
+      // }
+      let formData = form.getValues();
+      let result = await validator.validate(formData);
+      let methodHasBody = methodContainsBody(api.data.method);
+      let data = result.data;
+      if (!data) {
+        return;
+      }
+
+      let query = Array<typeof data.query[0]>()
+        .concat(data.query, data.query_ext)
+        .filter((param) => param.checked && !!param.name);
+
+      let header = Array<typeof data.header[0]>()
+        .concat(data.header, data.header_ext)
+        .filter((param) => param.checked && !!param.name);
+
+      let config: AxiosRequestConfig = {
+        method: api.data.method,
+        url: location + api.data.path,
+      };
+
+      let queries: typeof config["params"] = {};
+      for (let elem of query) {
+        invariant(elem.name);
+        queries[elem.name] = elem.value;
+      }
+
+      let headers: typeof config["headers"] = {};
+      for (let elem of header) {
+        invariant(elem.name);
+        headers[elem.name] = elem.value;
+      }
+
+      config.headers = headers;
+      config.params = queries;
+
+      if (methodHasBody) {
+        if (api.data.bodyType === "FORM") {
+          let bodyForm = Array<typeof data.header[0]>()
+            .concat(data.bodyForm, data.bodyForm_ext)
+            .filter((param) => param.checked && !!param.name);
+          let formD = new FormData();
+          for (let elem of bodyForm) {
+            invariant(elem.name);
+            formD.append(elem.name, elem.value || "");
+          }
+          config.data = formD;
+        }
+      }
+
+      let response = await axios(config);
+      console.info(response);
+    }, [form]);
 
   return (
     <Grid
@@ -78,12 +167,13 @@ const Postman = () => {
             flex={"1"}
             w="auto"
             placeholder="http://example.com"
-            defaultValue={`${origin}/mock/${projectId}`}
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
           />
           <InputRightAddon fontSize={"sm"} flex="1" w="auto">
             {api.data.path}
           </InputRightAddon>
-          <Button ml="2" w="100px" colorScheme="blue">
+          <Button ml="2" w="100px" colorScheme="blue" onClick={onSubmit}>
             Send
           </Button>
         </Flex>
@@ -110,9 +200,9 @@ const Postman = () => {
       </Box>
       <TabPanels
         id="postman-form"
-        bg={bg}
         as={ValidatedForm}
         validator={validator}
+        bg={bg}
       >
         {api.data.pathParams.length > 0 && (
           <TabPanel>
@@ -122,7 +212,7 @@ const Postman = () => {
         <TabPanel h="full" p={0}>
           {api.data.bodyType === "FORM" ? (
             <Box p={4}>
-              <ParamTable prefix="body" data={api.data.pathParams} />
+              <ParamTable prefix="bodyForm" data={api.data.bodyForm} />
             </Box>
           ) : (
             <BodyEditor
@@ -183,7 +273,11 @@ const ParamTable = ({
                   isChecked={param.isRequired ? true : undefined}
                   isDisabled={param.isRequired}
                   defaultChecked
+                  name={`${prefix}[${i}].checked`}
                 />
+                {param.isRequired && (
+                  <input type={"hidden"} name={`${prefix}[${i}].checked`} />
+                )}
               </Td>
               <Td pl={0}>
                 <FormControl isRequired={param.isRequired}>
@@ -191,6 +285,11 @@ const ParamTable = ({
                     <Text ml={3} as={"span"}>
                       {param.name}
                     </Text>
+                    <input
+                      type={"hidden"}
+                      name={`${prefix}[${i}].name`}
+                      value={param.name}
+                    />
                   </FormLabel>
                 </FormControl>
               </Td>
@@ -199,7 +298,7 @@ const ParamTable = ({
                   borderWidth={0}
                   bg={bgBW}
                   size="sm"
-                  name={`${prefix}.${param.name}`}
+                  name={`${prefix}[${i}].value`}
                   defaultValue={param.example || undefined}
                   placeholder="Value"
                 />
@@ -214,7 +313,11 @@ const ParamTable = ({
           {ids.map((id, i) => (
             <Tr key={id}>
               <Td p={0} pl={1}>
-                <Checkbox mr={2} defaultChecked />
+                <Checkbox
+                  mr={2}
+                  defaultChecked
+                  name={`${prefix}_ext[${i}].checked`}
+                />
               </Td>
               <Td p={0} pr={4}>
                 <FormInput

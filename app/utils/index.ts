@@ -72,3 +72,12 @@ export const httpResponse = {
   BadRequest: new Response("Bad Request", { status: 401 }),
   NotFound: new Response("Not Found", { status: 404 }),
 };
+
+export const methodContainsBody = (method: string) => {
+  return (
+    method === "POST" ||
+    method === "DELETE" ||
+    method === "PUT" ||
+    method === "PATCH"
+  );
+};

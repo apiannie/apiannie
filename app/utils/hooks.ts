@@ -60,3 +60,15 @@ export const useIds = (initialValue?: number | null | undefined) => {
 
   return { ids, pushId, removeId, insertAt, insertAfterId };
 };
+
+export const useDefault = <T>(
+  defaultValue: T
+): [T, React.Dispatch<React.SetStateAction<T>>] => {
+  const [value, setValue] = useState(defaultValue);
+
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  return [value, setValue];
+};

@@ -1,3 +1,12 @@
+import Tree, {
+  ItemId,
+  moveItemOnTree,
+  mutateTree,
+  RenderItemParams,
+  TreeData,
+  TreeDestinationPosition,
+  TreeSourcePosition,
+} from "@atlaskit/tree";
 import {
   Box,
   Center,
@@ -10,9 +19,6 @@ import {
   Icon,
   IconButton,
   Input,
-  InputGroup,
-  InputLeftAddon,
-  InputProps,
   ModalBody,
   ModalCloseButton,
   ModalContent,
@@ -20,7 +26,6 @@ import {
   ModalHeader,
   ModalOverlay,
   ModalProps,
-  Select,
   Spacer,
   Text,
   Tooltip,
@@ -37,7 +42,12 @@ import {
   useMatches,
 } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  BsFillCaretDownFill,
+  BsFillCaretRightFill,
+  BsFolder2Open,
+} from "react-icons/bs";
 import {
   FiAirplay,
   FiCopy,
@@ -45,11 +55,6 @@ import {
   FiFolder,
   FiFolderPlus,
 } from "react-icons/fi";
-import {
-  BsFolder2Open,
-  BsFillCaretRightFill,
-  BsFillCaretDownFill,
-} from "react-icons/bs";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
@@ -68,20 +73,11 @@ import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
-import Tree, {
-  mutateTree,
-  moveItemOnTree,
-  RenderItemParams,
-  TreeData,
-  ItemId,
-  TreeSourcePosition,
-  TreeDestinationPosition,
-} from "@atlaskit/tree";
 // @ts-ignore
 import { resetServerContext } from "react-beautiful-dnd-next";
-import TreeBuilder from "~/utils/treeBuilder";
 import { RequestMethods } from "~/models/type";
 import { PathInput } from "~/ui";
+import TreeBuilder from "~/utils/treeBuilder";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -109,7 +105,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     case Action.UPDATE_API:
       return await updateApiAction(formData);
     default:
-      console.log("_action:", formData.get("_action"));
+      console.info("_action:", formData.get("_action"));
       throw httpResponse.NotFound;
   }
 };

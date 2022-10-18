@@ -63,7 +63,7 @@ import { saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
 import { FormHInput, FormInput, PathInput } from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
-import { useIds } from "~/utils";
+import { methodContainsBody, useDefault, useIds } from "~/utils";
 import { loader } from "./details.$apiId";
 
 type JsonNodeFormElem = Omit<
@@ -403,7 +403,10 @@ const Editor = () => {
           <Divider my={2} borderColor={gray} />
           <TabPanels>
             <TabPanel>
-              <BodyEditor bodyJson={defaultValues.bodyJson} />
+              <BodyEditor
+                type={defaultValues.bodyType}
+                bodyJson={defaultValues.bodyJson}
+              />
             </TabPanel>
             <TabPanel>
               <ParamTable prefix="queryParams" />
@@ -441,12 +444,24 @@ const Editor = () => {
   );
 };
 
-const BodyEditor = ({ bodyJson }: { bodyJson?: JsonNodeForm }) => {
+const BodyEditor = ({
+  type,
+  bodyJson,
+}: {
+  type: RequestBodyType;
+  bodyJson?: JsonNodeForm;
+}) => {
   const bgBW = useColorModeValue("white", "gray.900");
 
+  const index = [
+    RequestBodyType.FORM,
+    RequestBodyType.JSON,
+    RequestBodyType.RAW,
+  ].indexOf(type as RequestBodyType);
+
   return (
-    <Tabs>
-      <RadioGroup px={4} defaultValue={RequestBodyType.FORM}>
+    <Tabs index={index}>
+      <RadioGroup px={4} defaultValue={type}>
         <TabList border={"none"} display={"flex"} gap={4}>
           <RadioTab name="bodyType" value={RequestBodyType.FORM}>
             form-data

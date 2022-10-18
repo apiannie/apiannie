@@ -9,7 +9,7 @@ import {
   Tabs,
 } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { Form } from "@remix-run/react";
+import { Form, useParams } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import { getApiById } from "~/models/api.server";
 import { httpResponse } from "~/utils";
@@ -44,8 +44,15 @@ export const action = async ({ request, params }: ActionArgs) => {
 };
 
 export default function ApiInfo() {
+  const { apiId } = useParams();
   return (
-    <Tabs display={"grid"} as={Grid} gridTemplateRows="48px 1fr" h="full">
+    <Tabs
+      key={apiId}
+      display={"grid"}
+      as={Grid}
+      gridTemplateRows="48px 1fr"
+      h="full"
+    >
       <TabList px={2}>
         <Tab>Info</Tab>
         <Tab>Edit</Tab>
