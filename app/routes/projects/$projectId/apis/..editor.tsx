@@ -331,6 +331,7 @@ const Editor = () => {
 
   return (
     <Box
+      key={`${api.id}-${api.updatedAt}`}
       position={"relative"}
       as={ValidatedForm}
       method="patch"
@@ -339,7 +340,7 @@ const Editor = () => {
       validator={withZod(z.object({}))}
       formRef={ref}
       replace={true}
-      defaultValues={defaultValues}
+      resetAfterSubmit
     >
       <Header>General</Header>
       <Box bg={bg} p={4}>
@@ -354,6 +355,7 @@ const Editor = () => {
               size="sm"
               as={Input}
               autoComplete="off"
+              defaultValue={defaultValues.name}
             />
           </Box>
           <Box py={2}>
@@ -368,6 +370,7 @@ const Editor = () => {
               size="sm"
               method={method}
               onMethodChange={onMethodChange}
+              defaultValue={defaultValues.path}
             />
           </Box>
           <Box py={2}>
@@ -380,6 +383,7 @@ const Editor = () => {
               autoComplete="off"
               size="sm"
               rows={5}
+              defaultValue={defaultValues.description || ""}
             />
           </Box>
         </Container>
@@ -406,13 +410,20 @@ const Editor = () => {
               <BodyEditor
                 type={defaultValues.bodyType}
                 bodyJson={defaultValues.bodyJson}
+                bodyForm={defaultValues.bodyForm}
               />
             </TabPanel>
             <TabPanel>
-              <ParamTable prefix="queryParams" />
+              <ParamTable
+                defaultValue={defaultValues.queryParams}
+                prefix="queryParams"
+              />
             </TabPanel>
             <TabPanel>
-              <ParamTable prefix="headers" />
+              <ParamTable
+                defaultValue={defaultValues.headers}
+                prefix="headers"
+              />
             </TabPanel>
           </TabPanels>
         </Tabs>
@@ -447,20 +458,16 @@ const Editor = () => {
 const BodyEditor = ({
   type,
   bodyJson,
+  bodyForm,
 }: {
+  bodyForm: RequestParam[];
   type: RequestBodyType;
   bodyJson?: JsonNodeForm;
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
 
-  const index = [
-    RequestBodyType.FORM,
-    RequestBodyType.JSON,
-    RequestBodyType.RAW,
-  ].indexOf(type as RequestBodyType);
-
   return (
-    <Tabs index={index}>
+    <Tabs>
       <RadioGroup px={4} defaultValue={type}>
         <TabList border={"none"} display={"flex"} gap={4}>
           <RadioTab name="bodyType" value={RequestBodyType.FORM}>
@@ -477,6 +484,7 @@ const BodyEditor = ({
       <TabPanels mt={4}>
         <TabPanel p={0}>
           <ParamTable
+            defaultValue={bodyForm}
             prefix="bodyForm"
             types={[ParamType.STRING, ParamType.FILE]}
           />
@@ -515,12 +523,14 @@ const BodyEditor = ({
 const ParamTable = ({
   prefix,
   types,
+  defaultValue,
 }: {
   prefix: string;
   types?: string[];
+  defaultValue: RequestParam[];
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
-  const { ids, pushId, removeId } = useIds(1);
+  const { ids, pushId, removeId } = useIds(Math.max(defaultValue.length, 1));
   return (
     <TableContainer>
       <Table size={"sm"} colorScheme="teal">
@@ -542,6 +552,7 @@ const ParamTable = ({
                     bg={bgBW}
                     size="sm"
                     name={`${prefix}[${i}].name`}
+                    defaultValue={defaultValue[id]?.name}
                   />
                   <Tooltip label="Required">
                     <Center h={8}>
@@ -550,6 +561,7 @@ const ParamTable = ({
                         id={`${prefix}-${id}-required`}
                         bg={bgBW}
                         name={`${prefix}[${i}].isRequired`}
+                        defaultChecked={defaultValue[id]?.isRequired}
                       />
                     </Center>
                   </Tooltip>
@@ -557,7 +569,12 @@ const ParamTable = ({
               </Td>
               {types && (
                 <Td>
-                  <Select bg={bgBW} size="sm" name={`${prefix}[${i}].type`}>
+                  <Select
+                    bg={bgBW}
+                    size="sm"
+                    name={`${prefix}[${i}].type`}
+                    defaultValue={defaultValue[id]?.type}
+                  >
                     {types.map((type) => (
                       <option key={type} value={type}>
                         {type.toLowerCase()}
@@ -583,6 +600,7 @@ const ParamTable = ({
                     name={`${prefix}[${i}].description`}
                     as={ModalInput}
                     modal={{ title: "Description" }}
+                    defaultValue={defaultValue[id]?.description}
                   />
                   <Button size="sm" onClick={() => removeId(id)}>
                     <Icon as={FiTrash2} />

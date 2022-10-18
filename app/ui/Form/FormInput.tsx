@@ -35,14 +35,13 @@ const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
     size,
     isDisabled,
     formId,
+    defaultValue,
+    defaultChecked,
     ...rest
   } = props;
   const { error, getInputProps } = useField(name, { formId });
   let inputProps = getInputProps(rest);
 
-  if (as === Checkbox) {
-    inputProps.defaultChecked = !!inputProps.defaultValue;
-  }
   return (
     <FormControl {...container}>
       {label && <FormLabel>{label}</FormLabel>}
@@ -53,6 +52,8 @@ const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
           as={as || Input}
           size={size}
           isDisabled={isDisabled}
+          defaultChecked={defaultChecked}
+          defaultValue={defaultValue}
           {...inputProps}
         />
         {children}

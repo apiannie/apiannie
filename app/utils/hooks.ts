@@ -1,31 +1,30 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export const useIds = (initialValue?: number | null | undefined) => {
+export const useIds = (initCount?: number | null | undefined) => {
   let initial: number[] = [];
-  let currentId = useRef(initialValue || 0);
+  let currentId = useRef(initCount || 0);
 
-  if (initialValue === null || initialValue === undefined) {
+  if (initCount === null || initCount === undefined) {
     // nothing to do
-  } else if (Array.isArray(initialValue)) {
-    initial = initialValue;
   } else {
-    initial = Array<number>(initialValue)
+    initial = Array<number>(initCount)
       .fill(0)
-      .map((_, i) => i + 1);
+      .map((_, i) => i);
   }
 
   const [ids, setIds] = useState(initial);
 
   const pushId = useCallback(() => {
-    setIds([...ids, ++currentId.current]);
+    setIds([...ids, currentId.current++]);
   }, [ids]);
 
   const removeId = useCallback(
     (id: number) => {
       let value = ids.filter((current) => current !== id);
       if (value.length === 0) {
-        value.push(++currentId.current);
+        value.push(currentId.current++);
       }
+      console.log("removeId", id, value);
       setIds(value);
     },
     [ids]
@@ -38,7 +37,7 @@ export const useIds = (initialValue?: number | null | undefined) => {
         return;
       }
       let value = [...ids];
-      value.splice(index, 0, ++currentId.current);
+      value.splice(index, 0, currentId.current++);
       setIds(value);
     },
     [ids]
@@ -52,7 +51,7 @@ export const useIds = (initialValue?: number | null | undefined) => {
         pushId();
         return;
       }
-      value.splice(index + 1, 0, ++currentId.current);
+      value.splice(index + 1, 0, currentId.current++);
       setIds(value);
     },
     [ids]

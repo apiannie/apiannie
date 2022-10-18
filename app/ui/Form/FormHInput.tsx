@@ -1,9 +1,7 @@
 import {
   Alert,
   AlertIcon,
-  BackgroundProps,
   Box,
-  ChakraProps,
   Flex,
   FormControl,
   FormControlProps,
@@ -11,13 +9,9 @@ import {
   forwardRef,
   Input,
   InputProps,
-  StyleProps,
-  ThemingProps,
-  VStack,
 } from "@chakra-ui/react";
 import React from "react";
 import { useField } from "remix-validated-form";
-import { MinimalInputProps } from "./type";
 
 export interface FormInputProps
   extends InputProps,
@@ -30,8 +24,18 @@ export interface FormInputProps
 }
 
 const FormHInput = forwardRef<FormInputProps, "input">((props, ref) => {
-  const { name, isRequired, container, labelWidth, label, size, as, ...rest } =
-    props;
+  const {
+    name,
+    isRequired,
+    container,
+    labelWidth,
+    label,
+    size,
+    as,
+    defaultChecked,
+    defaultValue,
+    ...rest
+  } = props;
   const { error, getInputProps } = useField(name);
 
   return (
@@ -52,6 +56,8 @@ const FormHInput = forwardRef<FormInputProps, "input">((props, ref) => {
         {React.createElement(as || Input, {
           size: size,
           ref: ref,
+          defaultValue: defaultValue,
+          defaultChecked: defaultChecked,
           ...getInputProps(rest),
         })}
       </Flex>
