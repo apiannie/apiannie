@@ -1,4 +1,12 @@
-import { Box, Center, Input, Textarea, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Center,
+  Input,
+  TabPanel,
+  TabPanels,
+  Textarea,
+  VStack,
+} from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
@@ -10,6 +18,10 @@ import { getGroupById, updateGroup } from "~/models/api.server";
 import FormHInput from "~/ui/Form/FormHInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
+
+export const handle = {
+  tabs: ["Edit Group"],
+};
 
 export const loader = async ({ params }: LoaderArgs) => {
   let { groupId } = params;
@@ -64,34 +76,36 @@ export default function ApiGroup() {
   }, [group.id]);
 
   return (
-    <Box p={5} pr={20} mx="auto" maxW={"64rem"}>
-      <ValidatedForm
-        validator={validator}
-        method="patch"
-        defaultValues={defaultValue}
-        formRef={formRef}
-      >
-        <VStack spacing={6}>
-          <FormHInput
-            labelWidth="200px"
-            name="name"
-            label="Group name"
-            isRequired
-            as={Input}
-          />
-          <FormHInput
-            labelWidth="200px"
-            name="description"
-            label="Description"
-            as={Textarea}
-          />
-          <Center>
-            <FormSubmitButton colorScheme="blue" px={12}>
-              Save
-            </FormSubmitButton>
-          </Center>
-        </VStack>
-      </ValidatedForm>
-    </Box>
+    <TabPanels overflowY={"auto"}>
+      <Box as={TabPanel} pb={5} pt={20} pr={20} mx="auto" maxW={"64rem"}>
+        <ValidatedForm
+          validator={validator}
+          method="patch"
+          defaultValues={defaultValue}
+          formRef={formRef}
+        >
+          <VStack spacing={6}>
+            <FormHInput
+              labelWidth="200px"
+              name="name"
+              label="Group name"
+              isRequired
+              as={Input}
+            />
+            <FormHInput
+              labelWidth="200px"
+              name="description"
+              label="Description"
+              as={Textarea}
+            />
+            <Center>
+              <FormSubmitButton colorScheme="blue" px={12}>
+                Save
+              </FormSubmitButton>
+            </Center>
+          </VStack>
+        </ValidatedForm>
+      </Box>
+    </TabPanels>
   );
 }

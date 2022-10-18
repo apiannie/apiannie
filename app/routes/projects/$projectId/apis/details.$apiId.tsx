@@ -1,7 +1,11 @@
 import {
   Box,
   Button,
+  Flex,
   Grid,
+  HStack,
+  IconButton,
+  Spacer,
   Tab,
   TabList,
   TabPanel,
@@ -10,11 +14,18 @@ import {
 } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { Form, useParams } from "@remix-run/react";
+import { FiBell } from "react-icons/fi";
 import invariant from "tiny-invariant";
 import { getApiById } from "~/models/api.server";
+import ColorModeButton from "~/routes/home/..lib/ColorModeButton";
+import UserMenuButton from "~/routes/home/..lib/UserMenuButton";
 import { httpResponse } from "~/utils";
 import Editor, { saveApiAction } from "./..editor";
 import Postman from "./..postman";
+
+export const handle = {
+  tabs: ["Info", "Edit", "Exec", "Mock"],
+};
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   let { apiId } = params;
@@ -46,37 +57,25 @@ export const action = async ({ request, params }: ActionArgs) => {
 export default function ApiInfo() {
   const { apiId } = useParams();
   return (
-    <Tabs
-      key={apiId}
-      display={"grid"}
-      as={Grid}
-      gridTemplateRows="48px 1fr"
-      h="full"
-    >
-      <TabList px={2}>
-        <Tab>Info</Tab>
-        <Tab>Edit</Tab>
-        <Tab>Exec</Tab>
-        <Tab>Mock</Tab>
-      </TabList>
-
-      <TabPanels overflowY={"auto"}>
-        <TabPanel>
-          <Box>
-            <Form method="post" replace>
-              <Button type="submit" name="_action" value="test">
-                Test
-              </Button>
-            </Form>
-          </Box>
-        </TabPanel>
-        <TabPanel>
-          <Editor />
-        </TabPanel>
-        <TabPanel h="full" p={0}>
-          <Postman />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+    <TabPanels key={apiId}>
+      <TabPanel overflowY={"auto"}>
+        <Box>
+          <Form method="post" replace>
+            <Button type="submit" name="_action" value="test">
+              Test
+            </Button>
+          </Form>
+        </Box>
+      </TabPanel>
+      <TabPanel overflowY={"auto"}>
+        <Editor />
+      </TabPanel>
+      <TabPanel h="full" p={0}>
+        <Postman />
+      </TabPanel>
+      <TabPanel h="full" p={0}>
+        Mock
+      </TabPanel>
+    </TabPanels>
   );
 }

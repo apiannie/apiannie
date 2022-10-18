@@ -2,6 +2,7 @@ import {
   Box,
   BoxProps,
   Button,
+  Center,
   Divider,
   Flex,
   FlexProps,
@@ -24,6 +25,9 @@ import {
   Skeleton,
   Spacer,
   Stack,
+  Tab,
+  TabList,
+  Tabs,
   Text,
   useColorModeValue,
   useDisclosure,
@@ -109,6 +113,13 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
   const matches = useMatches();
   const user = useUser();
   const sideNav = matches[2]?.handle?.sideNav;
+  let tabs: string[] = [];
+  for (let i = matches.length - 1; i >= 0; i--) {
+    if (matches[i]?.handle?.tabs) {
+      tabs = matches[i]?.handle?.tabs;
+    }
+  }
+
   const sideNavDragRef = useRef<HTMLDivElement>();
   const sideNavContainerRef = useRef<HTMLDivElement>();
   const lastClientX = useRef(0);
@@ -157,11 +168,11 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
           icon={FiGrid}
           name="Apis"
         />
-        <SubMenuItem
+        {/* <SubMenuItem
           to={`/projects/${project.id}/activities`}
           icon={FiActivity}
           name="Activities"
-        />
+        /> */}
         <SubMenuItem
           to={`/projects/${project.id}/settings`}
           icon={FiSettings}
@@ -201,35 +212,34 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
           ></Box>
           {sideNav}
         </Grid>
-        <GridItem>
-          <Grid
-            h="100vh"
-            templateRows={"52px minmax(0, 1fr)"}
-            bg={useColorModeValue("white", "gray.800")}
+        <GridItem h="100vh">
+          <Tabs
+            key={matches[matches.length - 1].id}
+            display={"grid"}
+            as={Grid}
+            gridTemplateRows="50px 1fr"
+            h="full"
           >
-            <HStack
-              px={{ base: 4, md: 4 }}
-              height="full"
-              alignItems="center"
-              bg={useColorModeValue("gray.50", "gray.800")}
-              borderBottomWidth="1px"
-              borderBottomColor={useColorModeValue("gray.200", "gray.700")}
-              justifyContent={{ base: "space-between", md: "flex-end" }}
-              spacing={{ base: "0", md: "6" }}
-            >
-              <ColorModeButton />
-              <IconButton
-                size="md"
-                variant="ghost"
-                aria-label="open menu"
-                icon={<FiBell />}
-              />
-              <UserMenuButton avatar={user.avatar || undefined} />
-            </HStack>
-            <Box overflowY={"auto"}>
-              <Outlet />
-            </Box>
-          </Grid>
+            <TabList as={HStack} px={2}>
+              {tabs.map((tab, i) => (
+                <Tab key={i} p={3}>
+                  {tab}
+                </Tab>
+              ))}
+              <Spacer />
+              <HStack spacing={4}>
+                <ColorModeButton />
+                <IconButton
+                  size="md"
+                  variant="ghost"
+                  aria-label="open menu"
+                  icon={<FiBell />}
+                />
+                <UserMenuButton w={8} h={8} avatar={undefined} />
+              </HStack>
+            </TabList>
+            <Outlet />
+          </Tabs>
         </GridItem>
       </Grid>
     </Grid>

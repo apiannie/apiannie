@@ -25,6 +25,7 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  Tag,
   Tbody,
   Td,
   Text,
@@ -42,17 +43,17 @@ import { FormInput, ModalInput } from "~/ui";
 import { loader } from "./details.$apiId";
 import { SlRocket } from "react-icons/sl";
 import { methodContainsBody, useIds } from "~/utils";
-import { FiPlus, FiRepeat } from "react-icons/fi";
+import { FiAlertOctagon, FiPlus, FiRepeat } from "react-icons/fi";
 import {
   useFormContext,
   ValidatedForm,
   ValidatorData,
 } from "remix-validated-form";
 import { withZod } from "@remix-validated-form/with-zod";
-import { z } from "zod";
+import { any, z } from "zod";
 import { ClientOnly } from "remix-utils";
 import { lazy, useCallback, useMemo, useState } from "react";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 const AceEditor = lazy(() => import("~/ui/AceEditor"));
 
@@ -90,6 +91,7 @@ const Postman = () => {
   const form = useFormContext("postman-form");
   const [location, setLocation] = useState(`${origin}/mock/${projectId}`);
   const [response, setResponse] = useState<AxiosResponse | null>(null);
+  const [error, setError] = useState<any>(null);
 
   const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
     useCallback(async () => {
@@ -146,9 +148,14 @@ const Postman = () => {
         }
       }
 
-      let res = await axios(config);
-      setResponse(res);
-    }, [form]);
+      try {
+        let res = await axios(config);
+        setResponse(res);
+        setError(null);
+      } catch (err: any) {
+        setError(err);
+      }
+    }, [form, location]);
 
   return (
     <Grid
@@ -233,7 +240,13 @@ const Postman = () => {
         </TabPanel>
       </TabPanels>
       <Box bg={useColorModeValue("gray.100", "gray.700")}>
-        {response ? <Response response={response} /> : <EmptyResponse />}
+        {error ? (
+          <ErrorEesponse err={error} />
+        ) : response ? (
+          <Response response={response} />
+        ) : (
+          <EmptyResponse />
+        )}
       </Box>
     </Grid>
   );
@@ -431,6 +444,27 @@ const BodyEditor = ({
   );
 };
 
+const ErrorEesponse = ({ err }: { err: any }) => {
+  let msg =
+    (err instanceof AxiosError ? err.code : undefined) || "unkown error";
+
+  return (
+    <Center position={"relative"} h="full">
+      <Text color="gray.400" p={4} position={"absolute"} top={0} left={0}>
+        Response
+      </Text>
+      <VStack>
+        <Icon color="red.300" as={FiAlertOctagon} w={20} h={20} />
+        <br />
+        <Text>Could not send request</Text>
+        <Tag px={4} colorScheme={"red"}>
+          Error: {msg}
+        </Tag>
+      </VStack>
+    </Center>
+  );
+};
+
 const EmptyResponse = () => {
   return (
     <Center position={"relative"} h="full">
@@ -463,9 +497,9 @@ const Response = ({ response }: { response: AxiosResponse }) => {
 
   return (
     <Tabs size={"sm"} h="full">
-      <TabList as={HStack} gap={0}>
-        <Tab fontSize={"xs"}>Body</Tab>
-        <Tab fontSize={"xs"}>Headers</Tab>
+      <TabList px={2} as={HStack} gap={0}>
+        <Tab fontSize={"sm"}>Body</Tab>
+        <Tab fontSize={"sm"}>Headers</Tab>
         {/* TODO */}
         {/* <Tab fontSize={"xs"}>Cookies</Tab> */}
         <Spacer />
@@ -477,7 +511,7 @@ const Response = ({ response }: { response: AxiosResponse }) => {
       </TabList>
 
       <TabPanels h="calc(100% - 30px)" overflowY={"auto"}>
-        <TabPanel h="full" p={0}>
+        <TabPanel h="full" p={0} pb={1}>
           {response.data ? (
             <AceEditor
               mode={mode}
@@ -501,13 +535,15 @@ const Response = ({ response }: { response: AxiosResponse }) => {
             <Table size={"sm"} variant="simple" colorScheme={"teal"}>
               <Thead>
                 <Tr>
-                  <Th width={"50%"}>Key</Th>
-                  <Th width={"50%"}>Value</Th>
+                  <Th width={"4%"}></Th>
+                  <Th width={"48%"}>Key</Th>
+                  <Th width={"48%"}>Value</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {Object.entries(response.headers).map(([key, val], i) => (
                   <Tr key={i}>
+                    <Td></Td>
                     <Td>{key}</Td>
                     <Td>{val}</Td>
                   </Tr>

@@ -6,6 +6,7 @@ import {
   Flex,
   Menu,
   MenuButton,
+  MenuButtonProps,
   MenuDivider,
   MenuItem,
   MenuList,
@@ -13,36 +14,37 @@ import {
 import { useSubmit } from "@remix-run/react";
 
 export default function UserMenuButton({
+  size,
   avatar,
-  ...rest
-}: BoxProps & { avatar: AvatarProps["src"] }) {
+  ...props
+}: Omit<AvatarProps, "avatar"> & {
+  avatar: AvatarProps["src"];
+}) {
   const submit = useSubmit();
 
   return (
-    <Flex alignItems={"center"} {...rest}>
-      <Menu>
-        <MenuButton
-          as={Button}
-          rounded={"full"}
-          variant={"link"}
-          cursor={"pointer"}
-          minW={0}
+    <Menu>
+      <MenuButton
+        as={Button}
+        rounded={"full"}
+        variant={"link"}
+        cursor={"pointer"}
+        minW={0}
+      >
+        <Avatar size={size || "sm"} src={avatar} {...props}></Avatar>
+      </MenuButton>
+      <MenuList>
+        <MenuItem>Link 1</MenuItem>
+        <MenuItem>Link 2</MenuItem>
+        <MenuDivider />
+        <MenuItem
+          onClick={(e) =>
+            submit(null, { method: "post", action: "/home/logout" })
+          }
         >
-          <Avatar src={avatar} size={"sm"}></Avatar>
-        </MenuButton>
-        <MenuList>
-          <MenuItem>Link 1</MenuItem>
-          <MenuItem>Link 2</MenuItem>
-          <MenuDivider />
-          <MenuItem
-            onClick={(e) =>
-              submit(null, { method: "post", action: "/home/logout" })
-            }
-          >
-            Sign out
-          </MenuItem>
-        </MenuList>
-      </Menu>
-    </Flex>
+          Sign out
+        </MenuItem>
+      </MenuList>
+    </Menu>
   );
 }

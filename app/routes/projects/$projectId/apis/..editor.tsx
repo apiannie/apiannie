@@ -436,16 +436,6 @@ const Editor = () => {
           defaultValues={defaultValues.response}
         />
       </Box>
-      <Button
-        position={"fixed"}
-        top={"60px"}
-        right={4}
-        type="submit"
-        colorScheme="blue"
-        size="sm"
-      >
-        Save
-      </Button>
       <Center mt={12}>
         <Button w="240px" type="submit" colorScheme="blue">
           Save
