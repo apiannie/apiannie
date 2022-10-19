@@ -163,7 +163,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
         <RemixLink to={"/projects"}>
           <Image src={logo} p={5} _hover={{ opacity: 0.8 }} />
         </RemixLink>
-        <Divider mb={2} />
+        <Divider />
         <SubMenuItem
           to={`/projects/${project.id}/apis`}
           icon={FiGrid}

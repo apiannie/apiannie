@@ -29,6 +29,7 @@ import {
   Spacer,
   Text,
   Tooltip,
+  useColorMode,
   useColorModeValue,
   useDisclosure,
   VStack,
@@ -268,7 +269,7 @@ const NewGroupModal = ({
       <ModalOverlay />
 
       <ModalContent>
-        <ModalHeader>Create group</ModalHeader>
+        <ModalHeader>New Group</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <FormInput
@@ -336,7 +337,7 @@ export const NewApiModal = ({
       <ModalOverlay />
 
       <ModalContent>
-        <ModalHeader>Create Api</ModalHeader>
+        <ModalHeader>New Api</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <VStack spacing={5}>
@@ -616,34 +617,53 @@ const Folder = ({
   );
 };
 
-const MethodTag = ({ method }: { method: RequestMethod }) => {
+export const useMethodTag = (method: string) => {
+  let colorMode = useColorMode();
   let color = "";
-  let text: string = method;
+  let [value, setValue] = useState(generator(method));
 
-  switch (method) {
-    case RequestMethod.GET:
-      color = "green.400";
-      break;
-    case RequestMethod.POST:
-      color = "orange.400";
-      break;
-    case RequestMethod.PUT:
-      color = "blue.400";
-      break;
-    case RequestMethod.PATCH:
-      color = "teal.400";
-      text = "PAT";
-      break;
-    case RequestMethod.DELETE:
-      color = "red.400";
-      text = "DEL";
-      break;
-    case RequestMethod.HEAD:
-      color = "purple.400";
-      break;
-    case RequestMethod.OPTION:
-      color = "cyan.400";
+  useEffect(() => {
+    setValue(generator(method));
+  }, [method, colorMode.colorMode]);
+
+  function generator(method: string) {
+    let text: string = method;
+
+    switch (method) {
+      case RequestMethod.GET:
+        color = "green";
+        break;
+      case RequestMethod.POST:
+        color = "orange";
+        break;
+      case RequestMethod.PUT:
+        color = "blue";
+        break;
+      case RequestMethod.PATCH:
+        color = "teal";
+        text = "PAT";
+        break;
+      case RequestMethod.DELETE:
+        color = "red";
+        text = "DEL";
+        break;
+      case RequestMethod.HEAD:
+        color = "purple";
+        break;
+      case RequestMethod.OPTION:
+        color = "cyan";
+    }
+
+    color += colorMode.colorMode === "light" ? ".600" : ".300";
+
+    return { text, color };
   }
+
+  return value;
+};
+
+const MethodTag = ({ method }: { method: RequestMethod }) => {
+  let { text, color } = useMethodTag(method);
 
   return (
     <Text

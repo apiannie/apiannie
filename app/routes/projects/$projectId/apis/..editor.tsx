@@ -65,6 +65,7 @@ import { FormHInput, FormInput, PathInput } from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
 import { methodContainsBody, useDefault, useIds } from "~/utils";
 import { loader } from "./details.$apiId";
+import { Header } from "~/ui";
 
 type JsonNodeFormElem = Omit<
   Partial<JsonNode>,
@@ -232,18 +233,6 @@ const validator = withZod(
     response: JsonNodeZod,
   })
 );
-
-const Header = (props: HeadingProps) => {
-  return (
-    <Heading
-      borderLeft={"3px solid #2395f1"}
-      pl={2}
-      size={"md"}
-      mb={4}
-      {...props}
-    />
-  );
-};
 
 const RadioTab = React.forwardRef<HTMLInputElement, RadioProps>(
   (props, ref) => {
