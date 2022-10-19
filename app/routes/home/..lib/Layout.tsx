@@ -104,7 +104,10 @@ function Header() {
 
           <ColorModeButton />
           {user ? (
-            <UserMenuButton avatar={user.avatar || undefined} />
+            <UserMenuButton
+              avatar={user.avatar || undefined}
+              name={user.name}
+            />
           ) : (
             <GuestMenuButtons />
           )}

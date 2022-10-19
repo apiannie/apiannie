@@ -1,5 +1,6 @@
 import {
   Button,
+  ButtonProps,
   Center,
   Icon,
   Popover,
@@ -13,11 +14,11 @@ import {
 import React from "react";
 import { FiBell } from "react-icons/fi";
 
-const NotificationButton = () => {
+const NotificationButton = ({ ...props }: ButtonProps) => {
   return (
     <Popover>
       <PopoverTrigger>
-        <Button variant="ghost">
+        <Button {...props}>
           <Icon aria-label="open menu" as={FiBell} />
         </Button>
       </PopoverTrigger>

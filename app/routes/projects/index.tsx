@@ -59,6 +59,7 @@ import { FormCancelButton, FormInput, FormModal, FormSubmitButton } from "~/ui";
 import ColorModeButton from "../home/..lib/ColorModeButton";
 import UserMenuButton from "../home/..lib/UserMenuButton";
 import logo from "~/images/logo.png";
+import NotificationButton from "../home/..lib/NotificationButton";
 
 export const loader = async ({ request }: LoaderArgs) => {
   let user = await requireUser(request);
@@ -99,8 +100,13 @@ export default function () {
           <Image src={logo} h={10} />
           <Spacer />
           <ColorModeButton />
-          <IconButton size="md" aria-label="open menu" icon={<FiBell />} />
-          <UserMenuButton avatar={user.avatar || undefined} />
+          <NotificationButton />
+          <UserMenuButton
+            w={10}
+            h={10}
+            avatar={user.avatar || undefined}
+            name={user.name}
+          />
         </HStack>
         <NewProjectModal isOpen={isOpen} onClose={onClose} />
         <Box borderRadius={"xl"} bg={useColorModeValue("white", "gray.800")}>

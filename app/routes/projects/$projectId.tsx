@@ -230,8 +230,13 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
               <Spacer />
               <HStack spacing={4}>
                 <ColorModeButton />
-                <NotificationButton />
-                <UserMenuButton w={8} h={8} avatar={undefined} />
+                <NotificationButton variant={"ghost"} />
+                <UserMenuButton
+                  w={8}
+                  h={8}
+                  avatar={user.avatar || undefined}
+                  name={user.name}
+                />
               </HStack>
             </TabList>
             <Outlet />

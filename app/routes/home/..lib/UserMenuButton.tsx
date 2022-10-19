@@ -1,24 +1,25 @@
 import {
   Avatar,
   AvatarProps,
-  BoxProps,
+  Box,
   Button,
-  Flex,
   Menu,
   MenuButton,
-  MenuButtonProps,
   MenuDivider,
   MenuItem,
   MenuList,
+  Text,
 } from "@chakra-ui/react";
 import { useSubmit } from "@remix-run/react";
 
 export default function UserMenuButton({
   size,
   avatar,
+  name,
   ...props
 }: Omit<AvatarProps, "avatar"> & {
-  avatar: AvatarProps["src"];
+  avatar?: string;
+  name: string;
 }) {
   const submit = useSubmit();
 
@@ -34,8 +35,12 @@ export default function UserMenuButton({
         <Avatar size={size || "sm"} src={avatar} {...props}></Avatar>
       </MenuButton>
       <MenuList>
-        <MenuItem>Link 1</MenuItem>
-        <MenuItem>Link 2</MenuItem>
+        <Box px={3} fontSize="sm">
+          <Text>Signed in as</Text>
+          <Text fontWeight={"bold"}>{name}</Text>
+        </Box>
+        <MenuDivider />
+        <MenuItem>Settings</MenuItem>
         <MenuDivider />
         <MenuItem
           onClick={(e) =>
