@@ -43,7 +43,7 @@ import { FormInput, ModalInput } from "~/ui";
 import { loader } from "./details.$apiId";
 import { SlRocket } from "react-icons/sl";
 import { methodContainsBody, useIds } from "~/utils";
-import { FiAlertOctagon, FiPlus, FiRepeat } from "react-icons/fi";
+import { FiAlertOctagon, FiPlus, FiRepeat, FiTrash2 } from "react-icons/fi";
 import {
   useFormContext,
   ValidatedForm,
@@ -349,7 +349,15 @@ const ParamTable = ({
                   placeholder="Value"
                 />
               </Td>
-              <Td></Td>
+              <Td p={0} pl={2}>
+                <Button
+                  variant={"ghost"}
+                  size="sm"
+                  onClick={() => removeId(id)}
+                >
+                  <Icon as={FiTrash2} />
+                </Button>
+              </Td>
             </Tr>
           ))}
         </Tbody>

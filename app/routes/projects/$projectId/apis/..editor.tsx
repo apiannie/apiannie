@@ -520,7 +520,7 @@ const ParamTable = ({
   defaultValue: RequestParam[];
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
-  const { ids, pushId, removeId } = useIds(Math.max(defaultValue.length, 1));
+  const { ids, pushId, removeId } = useIds(Math.max(defaultValue.length, 1), 1);
   return (
     <TableContainer>
       <Table size={"sm"} colorScheme="teal">
@@ -686,7 +686,8 @@ const JsonRow = ({
   );
   const [touched, setTouched] = useBoolean(isRoot || !!defaultValues?.name);
   const { ids, pushId, removeId, insertAfterId } = useIds(
-    defaultValues?.children?.length || 1
+    defaultValues?.children?.length || 1,
+    1
   );
   const blue = useColorModeValue("blue.500", "blue.200");
 

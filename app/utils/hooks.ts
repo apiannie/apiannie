@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export const useIds = (initCount?: number | null | undefined) => {
+export const useIds = (
+  initCount?: number | null | undefined,
+  minimum: number = 0
+) => {
   let initial: number[] = [];
   let currentId = useRef(initCount || 0);
 
@@ -21,7 +24,7 @@ export const useIds = (initCount?: number | null | undefined) => {
   const removeId = useCallback(
     (id: number) => {
       let value = ids.filter((current) => current !== id);
-      if (value.length === 0) {
+      if (value.length < minimum) {
         value.push(currentId.current++);
       }
       setIds(value);
