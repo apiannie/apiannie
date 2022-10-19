@@ -510,8 +510,8 @@ const Response = ({ response }: { response: AxiosResponse }) => {
         </Box>
       </TabList>
 
-      <TabPanels h="calc(100% - 30px)" overflowY={"auto"}>
-        <TabPanel h="full" p={0} pb={1}>
+      <TabPanels h="calc(100% - 33px)" overflowY={"auto"}>
+        <TabPanel h="full" p={0}>
           {response.data ? (
             <AceEditor
               mode={mode}

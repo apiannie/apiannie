@@ -311,7 +311,7 @@ const newApiValidator = withZod(
   })
 );
 
-const NewApiModal = ({
+export const NewApiModal = ({
   isOpen,
   onClose,
 }: {

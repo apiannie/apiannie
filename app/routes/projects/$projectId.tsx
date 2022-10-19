@@ -61,6 +61,7 @@ import ColorModeButton from "../home/..lib/ColorModeButton";
 import UserMenuButton from "../home/..lib/UserMenuButton";
 import { loader as loadProjects } from "./index";
 import styles from "~/ui/dashboard.css";
+import NotificationButton from "~/routes/home/..lib/NotificationButton";
 
 export function links() {
   return [{ rel: "stylesheet", href: styles }];
@@ -229,12 +230,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
               <Spacer />
               <HStack spacing={4}>
                 <ColorModeButton />
-                <IconButton
-                  size="md"
-                  variant="ghost"
-                  aria-label="open menu"
-                  icon={<FiBell />}
-                />
+                <NotificationButton />
                 <UserMenuButton w={8} h={8} avatar={undefined} />
               </HStack>
             </TabList>
@@ -338,53 +334,5 @@ const SubMenuItem = ({ to, icon, name, ...rest }: SubMenuItemProps) => {
         </Box>
       )}
     </NavLink>
-  );
-};
-
-interface MobileProps extends FlexProps {
-  onOpen: () => void;
-}
-
-const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
-  const user = useUser();
-
-  return (
-    <Flex
-      px={{ base: 4, md: 4 }}
-      alignItems="center"
-      bg={useColorModeValue("teal.50", "gray.800")}
-      borderBottomWidth="1px"
-      borderBottomColor={useColorModeValue("gray.200", "gray.700")}
-      justifyContent={{ base: "space-between", md: "flex-end" }}
-      {...rest}
-    >
-      <IconButton
-        display={{ base: "flex", md: "none" }}
-        onClick={onOpen}
-        variant="outline"
-        aria-label="open menu"
-        icon={<FiMenu />}
-      />
-
-      <Text
-        display={{ base: "flex", md: "none" }}
-        fontSize="2xl"
-        fontFamily="monospace"
-        fontWeight="bold"
-      >
-        Logo
-      </Text>
-
-      <HStack spacing={{ base: "0", md: "6" }}>
-        <ColorModeButton />
-        <IconButton
-          size="md"
-          variant="ghost"
-          aria-label="open menu"
-          icon={<FiBell />}
-        />
-        <UserMenuButton avatar={user.avatar || undefined} />
-      </HStack>
-    </Flex>
   );
 };

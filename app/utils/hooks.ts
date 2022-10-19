@@ -24,7 +24,6 @@ export const useIds = (initCount?: number | null | undefined) => {
       if (value.length === 0) {
         value.push(currentId.current++);
       }
-      console.log("removeId", id, value);
       setIds(value);
     },
     [ids]

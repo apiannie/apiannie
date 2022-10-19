@@ -57,8 +57,8 @@ export const action = async ({ request, params }: ActionArgs) => {
 export default function ApiInfo() {
   const { apiId } = useParams();
   return (
-    <TabPanels key={apiId}>
-      <TabPanel overflowY={"auto"}>
+    <TabPanels h="full" overflowY={"auto"} key={apiId}>
+      <TabPanel>
         <Box>
           <Form method="post" replace>
             <Button type="submit" name="_action" value="test">
@@ -67,15 +67,13 @@ export default function ApiInfo() {
           </Form>
         </Box>
       </TabPanel>
-      <TabPanel overflowY={"auto"}>
+      <TabPanel>
         <Editor />
       </TabPanel>
       <TabPanel h="full" p={0}>
         <Postman />
       </TabPanel>
-      <TabPanel h="full" p={0}>
-        Mock
-      </TabPanel>
+      <TabPanel p={0}>Mock</TabPanel>
     </TabPanels>
   );
 }
