@@ -10,7 +10,7 @@ import {
   MenuList,
   Text,
 } from "@chakra-ui/react";
-import { useSubmit } from "@remix-run/react";
+import { Link, useSubmit } from "@remix-run/react";
 
 export default function UserMenuButton({
   size,
@@ -40,7 +40,9 @@ export default function UserMenuButton({
           <Text fontWeight={"bold"}>{name}</Text>
         </Box>
         <MenuDivider />
-        <MenuItem>Settings</MenuItem>
+        <MenuItem>
+          <Link to="/home/settings">Settings</Link>
+        </MenuItem>
         <MenuDivider />
         <MenuItem
           onClick={(e) =>

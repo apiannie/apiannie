@@ -49,3 +49,29 @@ export async function verifyLogin(
 
   return userWithoutPassword;
 }
+
+export const updateUserInfo = async (
+  id: string,
+  {
+    name,
+  }: {
+    name?: string;
+  }
+) => {
+  const result = await prisma.user.update({
+    where: { id: id },
+    data: {
+      name: name,
+    },
+  });
+
+  return result;
+};
+
+export const updatePassword = async (id: string, password: string) => {
+  const hashedPassword = await bcrypt.hash(password, 10);
+  return await prisma.user.update({
+    where: { id },
+    data: { password: hashedPassword },
+  });
+};

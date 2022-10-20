@@ -228,7 +228,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
                 </Tab>
               ))}
               <Spacer />
-              <HStack spacing={4}>
+              <HStack spacing={4} pr={4}>
                 <ColorModeButton />
                 <NotificationButton variant={"ghost"} />
                 <UserMenuButton

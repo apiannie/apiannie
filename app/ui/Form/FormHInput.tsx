@@ -19,7 +19,7 @@ export interface FormInputProps
   name: string;
   label?: string;
   container?: FormControlProps;
-  labelWidth: string;
+  labelWidth: string | number;
   isRequired?: boolean;
 }
 

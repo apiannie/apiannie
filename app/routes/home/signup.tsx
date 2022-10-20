@@ -36,12 +36,13 @@ export async function action({ request }: ActionArgs) {
   const { name, email, password, passwordConfirm } = result.data;
   const redirectTo = safeRedirect(formData.get("redirectTo"), "/");
 
-  const errors = {
-    name: null,
-    email: null,
-    password: null,
-    confirmPassword: null,
-  };
+  if (password !== passwordConfirm) {
+    return validationError(
+      { fieldErrors: { passwordConfirm: "Password does not match" } },
+      undefined,
+      { status: 400 }
+    );
+  }
 
   const existingUser = await getUserByEmail(email);
   if (existingUser) {

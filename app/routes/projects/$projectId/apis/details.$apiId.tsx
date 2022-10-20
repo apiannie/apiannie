@@ -23,7 +23,7 @@ import Editor, { saveApiAction } from "./..editor";
 import Postman from "./..postman";
 
 export const handle = {
-  tabs: ["Info", "Edit", "Exec", "Mock"],
+  tabs: ["Api", "Edit", "Run"],
 };
 
 export const loader = async ({ request, params }: LoaderArgs) => {
