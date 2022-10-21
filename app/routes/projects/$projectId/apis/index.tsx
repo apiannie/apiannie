@@ -70,7 +70,7 @@ export default function ApiOverview() {
   }
 
   return (
-    <Box py={8} px={12} fontSize="sm">
+    <Box py={'32px'} px={12} fontSize="sm">
       <Flex>
         <Header>{apis.length} API definition</Header>
         <Spacer />
@@ -80,18 +80,18 @@ export default function ApiOverview() {
         <NewApiModal isOpen={isOpen} onClose={onClose} />
       </Flex>
       <Divider />
-      <TableContainer mt={4}>
+      <TableContainer mt={'10px'}>
         <Table variant="striped">
-          <Thead>
-            <Tr>
+          <Thead display={'block'}>
+            <Tr display={'table'} width={'100%'} style={{tableLayout: 'fixed'}}>
               <Th>Name</Th>
               <Th>Path</Th>
               <Th isNumeric>Group</Th>
             </Tr>
           </Thead>
-          <Tbody>
+          <Tbody height={'calc(100vh - 183px)'} display={'block'} overflowY={'auto'}>
             {apis.map((api) => (
-              <Tr key={api.id}>
+              <Tr key={api.id} display={'table'} width={'100%'} style={{tableLayout: 'fixed'}}>
                 <Td>
                   <Link
                     color={blue}
