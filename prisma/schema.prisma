@@ -32,7 +32,6 @@ model Project {
   isJson5    Boolean       @default(true)
   tags       ProjectTag[]
   members    ProjectUser[]
-  ownerId    String        @db.ObjectId
   apiIds     String[]      @db.ObjectId
 
   groups Group[]

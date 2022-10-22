@@ -79,6 +79,7 @@ import { resetServerContext } from "react-beautiful-dnd-next";
 import { RequestMethods } from "~/models/type";
 import { PathInput } from "~/ui";
 import TreeBuilder from "~/utils/treeBuilder";
+import { ProjecChangeButton } from "../$projectId";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -181,7 +182,8 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid templateRows={"40px minmax(0, 1fr)"}>
+    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh">
+      <ProjecChangeButton />
       <GridItem>
         <HStack px={2}>
           <Heading ml="2" fontWeight={"500"} size={"sm"} color="gray.400">

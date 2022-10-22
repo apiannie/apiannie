@@ -40,8 +40,8 @@ export default function UserMenuButton({
           <Text fontWeight={"bold"}>{name}</Text>
         </Box>
         <MenuDivider />
-        <MenuItem>
-          <Link to="/home/settings">Settings</Link>
+        <MenuItem as={Link} to="/home/settings">
+          Settings
         </MenuItem>
         <MenuDivider />
         <MenuItem

@@ -113,7 +113,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
   const { project } = useLoaderData<typeof loader>();
   const matches = useMatches();
   const user = useUser();
-  const sideNav = matches[2]?.handle?.sideNav;
+  const sideNav = matches[2]?.handle?.sideNav || <Box />;
   let tabs: string[] = [];
   for (let i = matches.length - 1; i >= 0; i--) {
     if (matches[i]?.handle?.tabs) {
@@ -186,19 +186,17 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
         ref={sideNavContainerRef as RefObject<HTMLDivElement>}
         templateColumns={`304px 1fr`}
       >
-        <Grid
-          position={"relative"}
-          bg={useColorModeValue("gray.50", "gray.800")}
-          borderRightWidth="1px"
-          borderRightColor={useColorModeValue("gray.200", "gray.700")}
-          templateRows="56px minmax(0, 1fr)"
+        {sideNav}
+        <GridItem
           h="100vh"
+          position={"relative"}
+          borderLeftWidth="1px"
+          borderLeftColor={useColorModeValue("gray.200", "gray.700")}
         >
-          <ProjecChangeButton p={2} />
           <Box
             ref={sideNavDragRef as RefObject<HTMLDivElement>}
             position={"absolute"}
-            right={0}
+            left={"-3px"}
             top={0}
             bottom={0}
             _hover={{
@@ -207,21 +205,18 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
               borderRightWidth: "5px",
             }}
             cursor={"col-resize"}
-            borderRightWidth={"3px"}
+            width={"3px"}
+            borderColor="transparent"
             zIndex={100}
-            borderRightColor={"whiteAlpha.100"}
           ></Box>
-          {sideNav}
-        </Grid>
-        <GridItem h="100vh">
           <Tabs
             key={matches[matches.length - 1].id}
             display={"grid"}
             as={Grid}
-            gridTemplateRows="50px 1fr"
+            gridTemplateRows="51px 1fr"
             h="full"
           >
-            <TabList as={HStack} px={2}>
+            <TabList as={HStack} px={2} borderBottomWidth={"1px"}>
               {tabs.map((tab, i) => (
                 <Tab key={i} p={3}>
                   {tab}
@@ -247,13 +242,13 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
   );
 };
 
-const ProjecChangeButton = (props: BoxProps) => {
+export const ProjecChangeButton = (props: BoxProps) => {
   const fetcher = useFetcher<SerializeFrom<typeof loadProjects>>();
   const { project } = useLoaderData<typeof loader>();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
-    <Box {...props}>
+    <Box p="5px" {...props}>
       <fetcher.Form method="post">
         <Button w="full" variant="ghost" onClick={onOpen} type="submit">
           <Heading whiteSpace={"normal"} maxW={64} size={"md"} noOfLines={1}>

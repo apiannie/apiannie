@@ -1,12 +1,20 @@
 import invariant from "tiny-invariant";
-import { User, Group as PrismaGroup, Api as PrismaApi } from "@prisma/client";
+import {
+  User,
+  Group as PrismaGroup,
+  Api as PrismaApi,
+  ProjectUserRole,
+} from "@prisma/client";
 import { prisma } from "./prisma.server";
 
 export const createProject = async (user: User, name: string) => {
   let project = await prisma.project.create({
     data: {
       name: name,
-      ownerId: user.id,
+      members: {
+        id: user.id,
+        role: ProjectUserRole.ADMIN,
+      },
     },
   });
   await prisma.user.update({

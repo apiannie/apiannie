@@ -37,13 +37,14 @@ const FormInput = forwardRef<FormInputProps, "input">((props, ref) => {
     formId,
     defaultValue,
     defaultChecked,
+    isRequired,
     ...rest
   } = props;
   const { error, getInputProps } = useField(name, { formId });
   let inputProps = getInputProps(rest);
 
   return (
-    <FormControl {...container}>
+    <FormControl isRequired={isRequired} {...container}>
       {label && <FormLabel>{label}</FormLabel>}
       <InputGroup>
         <Box
