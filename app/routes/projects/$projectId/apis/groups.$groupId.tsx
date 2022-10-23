@@ -5,10 +5,11 @@ import {
   TabPanel,
   TabPanels,
   Textarea,
+  useToast,
   VStack,
 } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { useEffect, useRef } from "react";
 import { ValidatedForm, validationError } from "remix-validated-form";
@@ -75,6 +76,23 @@ export default function ApiGroup() {
     formRef.current?.reset();
   }, [group.id]);
 
+  const transition = useTransition();
+  const toast = useToast();
+
+  useEffect(() => {
+    if (transition.state === "loading") {
+      let action = transition.submission?.formData?.get("_action");
+      if (action === "saveGroup") {
+        toast({
+          title: "Your change has been saved.",
+          status: "success",
+          position: "top",
+          isClosable: true,
+        });
+      }
+    }
+  }, [transition.state]);
+
   return (
     <TabPanels overflowY={"auto"}>
       <Box as={TabPanel} pb={5} pt={20} pr={20} mx="auto" maxW={"64rem"}>
@@ -99,7 +117,12 @@ export default function ApiGroup() {
               as={Textarea}
             />
             <Center>
-              <FormSubmitButton colorScheme="blue" px={12}>
+              <FormSubmitButton
+                name="_action"
+                value="saveGroup"
+                colorScheme="blue"
+                px={12}
+              >
                 Save
               </FormSubmitButton>
             </Center>

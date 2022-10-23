@@ -41,6 +41,7 @@ import {
   useDisclosure,
   useMultiStyleConfig,
   useTab,
+  useToast,
   VStack,
 } from "@chakra-ui/react";
 import {
@@ -51,7 +52,7 @@ import {
   RequestMethod,
   RequestParam,
 } from "@prisma/client";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
@@ -61,7 +62,7 @@ import invariant from "tiny-invariant";
 import { z, ZodTypeDef } from "zod";
 import { saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
-import { FormHInput, FormInput, PathInput } from "~/ui";
+import { FormHInput, FormInput, FormSubmitButton, PathInput } from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
 import { methodContainsBody, useDefault, useIds } from "~/utils";
 import { loader } from "./details.$apiId";
@@ -318,6 +319,23 @@ const Editor = () => {
       [method]
     );
 
+  const transition = useTransition();
+  const toast = useToast();
+
+  useEffect(() => {
+    if (transition.state === "loading") {
+      let action = transition.submission?.formData?.get("_action");
+      if (action === "saveApi") {
+        toast({
+          title: "Your change has been saved.",
+          status: "success",
+          position: "top",
+          isClosable: true,
+        });
+      }
+    }
+  }, [transition.state]);
+
   return (
     <Box
       key={`${api.id}-${api.updatedAt}`}
@@ -426,9 +444,15 @@ const Editor = () => {
         />
       </Box>
       <Center mt={12}>
-        <Button w="240px" type="submit" colorScheme="blue">
+        <FormSubmitButton
+          name="_action"
+          value="saveApi"
+          w="240px"
+          type="submit"
+          colorScheme="blue"
+        >
           Save
-        </Button>
+        </FormSubmitButton>
       </Center>
     </Box>
   );
