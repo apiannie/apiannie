@@ -7,6 +7,7 @@ import {
   Icon,
   Link,
   Spacer,
+  Text,
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
@@ -74,24 +75,21 @@ const NavItem = ({ icon, children, to, end, ...rest }: NavItemProps) => {
           align="center"
           py={2}
           px={4}
-          borderRadius="lg"
+          // borderRadius="lg"
           cursor="pointer"
           _hover={{
             bg: isActive ? activeBG : hoverBG,
           }}
           bg={isActive ? activeBG : undefined}
-          justifyContent="space-between"
           {...rest}
         >
           {icon && <Icon mr="4" fontSize="16" as={icon} />}
-          <Spacer />
-          <Link
-            href="#"
+          <Text
             style={{ textDecoration: "none" }}
             _focus={{ boxShadow: "none" }}
           >
             {children}
-          </Link>
+          </Text>
         </Flex>
       )}
     </NavLink>

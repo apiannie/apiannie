@@ -134,3 +134,10 @@ export const getProjectById = async (id: string) => {
 export type Project = Awaited<ReturnType<typeof getProjectById>>;
 export type Api = NonNullable<Project>["root"]["apis"][0];
 export type Group = NonNullable<Project>["root"]["groups"][0];
+
+export const updateProject = async (id: string, data: { name?: string }) => {
+  return await prisma.project.update({
+    where: { id: id },
+    data: data,
+  });
+};

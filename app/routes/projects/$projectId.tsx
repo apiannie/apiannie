@@ -67,7 +67,7 @@ export function links() {
   return [{ rel: "stylesheet", href: styles }];
 }
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request, params, context }: LoaderArgs) => {
   let user = await requireUser(request);
 
   let { projectId } = params;
@@ -85,7 +85,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   if (!project) {
     throw httpResponse.NotFound;
   }
-
+  context.project = project;
   return json({ user: user, project: project });
 };
 
