@@ -92,12 +92,11 @@ const Postman = () => {
   const [location, setLocation] = useState(`${origin}/mock/${projectId}`);
   const [response, setResponse] = useState<AxiosResponse | null>(null);
   const [error, setError] = useState<any>(null);
-
+  const methodHasBody = methodContainsBody(api.data.method);
   const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
     useCallback(async () => {
       let formData = form.getValues();
       let result = await validator.validate(formData);
-      let methodHasBody = methodContainsBody(api.data.method);
       let data = result.data;
       if (!data) {
         // TODO
@@ -190,9 +189,12 @@ const Postman = () => {
               Path
             </Tab>
           )}
-          <Tab fontSize={"sm"} w={tabWidth}>
-            Body
-          </Tab>
+          {methodHasBody && (
+            <Tab fontSize={"sm"} w={tabWidth}>
+              Body
+            </Tab>
+          )}
+
           <Tab fontSize={"sm"} w={tabWidth}>
             Query
           </Tab>
@@ -215,20 +217,22 @@ const Postman = () => {
             <ParamTable prefix="path" data={api.data.pathParams} />
           </TabPanel>
         )}
-        <TabPanel h="full" p={0}>
-          {api.data.bodyType === "FORM" ? (
-            <Box p={4} h="full" overflowY="auto">
-              <ParamTable prefix="bodyForm" data={api.data.bodyForm} />
-            </Box>
-          ) : (
-            <BodyEditor
-              value={bodyRaw}
-              onChange={setBodyRaw}
-              description={api.data.bodyRaw?.description || ""}
-              isJson={api.data.bodyType === "JSON"}
-            />
-          )}
-        </TabPanel>
+        {methodHasBody && (
+          <TabPanel h="full" p={0}>
+            {api.data.bodyType === "FORM" ? (
+              <Box p={4} h="full" overflowY="auto">
+                <ParamTable prefix="bodyForm" data={api.data.bodyForm} />
+              </Box>
+            ) : (
+              <BodyEditor
+                value={bodyRaw}
+                onChange={setBodyRaw}
+                description={api.data.bodyRaw?.description || ""}
+                isJson={api.data.bodyType === "JSON"}
+              />
+            )}
+          </TabPanel>
+        )}
         <TabPanel maxH="full" overflowY="auto">
           <ParamTable prefix="query" data={api.data.queryParams} />
         </TabPanel>
