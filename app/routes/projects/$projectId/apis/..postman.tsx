@@ -155,11 +155,11 @@ const Postman = () => {
       }
       lastClientY.current = e.clientY;
       const handleMove = ({ clientY }: { clientY: number }) => {
-        const height = lastResponseHeight.current + clientY - lastClientY.current;
+        const height = lastResponseHeight.current - clientY + lastClientY.current;
         lastClientY.current = clientY;
-        lastResponseHeight.current = height < 150 ? 150 : height;
+        lastResponseHeight.current = height < 0 ? 0 : height;
         if (gridContainerRef.current) {
-          gridContainerRef.current.style.gridTemplateRows = `112px ${lastResponseHeight.current}px 1fr`;
+          gridContainerRef.current.style.gridTemplateRows = `112px 1fr ${lastResponseHeight.current}px `;
         }
       };
       document.addEventListener("mousemove", handleMove);
@@ -223,12 +223,12 @@ const Postman = () => {
            </Tab> */}
         </TabList>
       </Box>
-      <GridItem position={"relative"}>
         <TabPanels
           id="postman-form"
           as={ValidatedForm}
           validator={validator}
           bg={bg}
+          overflowY={"auto"}
         >
           {api.data.pathParams.length > 0 && (
             <TabPanel overflowY="auto">
@@ -261,31 +261,29 @@ const Postman = () => {
             <ParamTable prefix="cookies" data={[]} />
           </TabPanel>
         </TabPanels>
+      <Box bg={useColorModeValue("gray.100", "gray.700")} position={"relative"}>
         <Box
           ref={responseDragRef as RefObject<HTMLDivElement>}
           position={"absolute"}
-          bottom={0}
+          top={"-10px"}
           left={0}
           right={0}
-          _hover={{
-            height: "5px",
-            borderColor: "blue.500",
-            borderTopWidth: "5px",
-          }}
-          cursor={"row-resize"}
-          height={"3px"}
-          borderColor="transparent"
+          role="group"
+          py={"10px"}
+          cursor={"ns-resize"}
           zIndex={100}
-        ></Box>
-      </GridItem>
-      <Box bg={useColorModeValue("gray.100", "gray.700")}>
-        {error ? (
-          <ErrorEesponse err={error} />
-        ) : response ? (
-          <Response response={response} />
-        ) : (
-          <EmptyResponse />
-        )}
+        >
+          <Box _groupHover={{ opacity: 1 }} opacity={0} height={"1px"} width={"100%"} bgColor={"blue.500"} />
+        </Box>
+        <Box h={'full'} overflowY={'auto'}>
+          {error ? (
+            <ErrorEesponse err={error} />
+          ) : response ? (
+            <Response response={response} />
+          ) : (
+            <EmptyResponse />
+          )}
+        </Box>
       </Box>
     </Grid>
   );

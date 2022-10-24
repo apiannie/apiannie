@@ -182,7 +182,7 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh">
+    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh" overflowX={'auto'}>
       <ProjecChangeButton />
       <GridItem>
         <HStack px={2}>

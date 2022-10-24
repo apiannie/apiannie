@@ -134,7 +134,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
       const handleMove = ({ clientX }: { clientX: number }) => {
         const width = lastSideNavWidth.current + clientX - lastClientX.current;
         lastClientX.current = clientX;
-        lastSideNavWidth.current =  width < 200 ? 200 : width;
+        lastSideNavWidth.current =  width < 0 ? 0 : width;
         if (sideNavContainerRef.current) {
           sideNavContainerRef.current.style.gridTemplateColumns = `${
             lastSideNavWidth.current
@@ -196,19 +196,16 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
           <Box
             ref={sideNavDragRef as RefObject<HTMLDivElement>}
             position={"absolute"}
-            left={"-3px"}
+            left={'-10px'}
             top={0}
             bottom={0}
-            _hover={{
-              width: "5px",
-              borderColor: "blue.500",
-              borderRightWidth: "5px",
-            }}
-            cursor={"col-resize"}
-            width={"3px"}
-            borderColor="transparent"
+            role="group"
+            px={'10px'}
+            cursor={"ew-resize"}
             zIndex={100}
-          ></Box>
+          >
+          <Box _groupHover={{opacity: 1}} opacity={0} width={'1px'} height={'100%'} bgColor={'blue.500'} />
+        </Box>
           <Tabs
             key={matches[matches.length - 1].id}
             display={"grid"}
