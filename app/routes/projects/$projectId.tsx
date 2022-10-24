@@ -134,10 +134,10 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
       const handleMove = ({ clientX }: { clientX: number }) => {
         const width = lastSideNavWidth.current + clientX - lastClientX.current;
         lastClientX.current = clientX;
-        lastSideNavWidth.current = width;
+        lastSideNavWidth.current =  width < 200 ? 200 : width;
         if (sideNavContainerRef.current) {
           sideNavContainerRef.current.style.gridTemplateColumns = `${
-            width < 200 ? 200 : width
+            lastSideNavWidth.current
           }px 1fr`;
         }
       };
