@@ -1,10 +1,5 @@
+import { ProjectUserRole, User } from "@prisma/client";
 import invariant from "tiny-invariant";
-import {
-  User,
-  Group as PrismaGroup,
-  Api as PrismaApi,
-  ProjectUserRole,
-} from "@prisma/client";
 import { prisma } from "./prisma.server";
 
 export const createProject = async (user: User, name: string) => {
@@ -41,13 +36,15 @@ export const getProjectByIds = async (ids: string[]) => {
       id: true,
       name: true,
       members: true,
-      apiIds: true,
+      apis: {
+        select: { id: true },
+      },
     },
   });
   return projects;
 };
 
-export const getProjectById = async (id: string) => {
+const findProjectById = async (id: string) => {
   let project = await prisma.project.findFirst({
     where: {
       id: id,
@@ -76,16 +73,26 @@ export const getProjectById = async (id: string) => {
     },
   });
 
+  return project;
+};
+
+export type Api = NonNullable<
+  Awaited<ReturnType<typeof findProjectById>>
+>["apis"][0];
+export type PlainGroup = NonNullable<
+  Awaited<ReturnType<typeof findProjectById>>
+>["groups"][0];
+export type Group = PlainGroup & {
+  apis: Api[];
+  groups: Group[];
+};
+
+export const getProjectById = async (id: string) => {
+  let project = await findProjectById(id);
+
   if (!project) {
     return null;
   }
-
-  type Api = typeof project.apis[0];
-  type PlainGroup = typeof project.groups[0];
-  type Group = PlainGroup & {
-    apis: Api[];
-    groups: Group[];
-  };
 
   let groupMap = new Map<string, Group>();
   let groups = project.groups.map((group) => ({
@@ -95,7 +102,7 @@ export const getProjectById = async (id: string) => {
   }));
 
   let root: Group = {
-    id: "",
+    id: "root",
     name: "root",
     parentId: null,
     apis: [],
@@ -132,8 +139,6 @@ export const getProjectById = async (id: string) => {
 };
 
 export type Project = Awaited<ReturnType<typeof getProjectById>>;
-export type Api = NonNullable<Project>["root"]["apis"][0];
-export type Group = NonNullable<Project>["root"]["groups"][0];
 
 export const updateProject = async (id: string, data: { name?: string }) => {
   return await prisma.project.update({

@@ -1,12 +1,3 @@
-import Tree, {
-  ItemId,
-  moveItemOnTree,
-  mutateTree,
-  RenderItemParams,
-  TreeData,
-  TreeDestinationPosition,
-  TreeSourcePosition,
-} from "@atlaskit/tree";
 import {
   Box,
   Center,
@@ -51,10 +42,12 @@ import {
 } from "react-icons/bs";
 import {
   FiAirplay,
+  FiChevronDown,
   FiCopy,
   FiFilePlus,
   FiFolder,
   FiFolderPlus,
+  FiChevronRight,
 } from "react-icons/fi";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
@@ -74,12 +67,10 @@ import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
-// @ts-ignore
-import { resetServerContext } from "react-beautiful-dnd-next";
 import { RequestMethods } from "~/models/type";
 import { PathInput } from "~/ui";
-import TreeBuilder from "~/utils/treeBuilder";
 import { ProjecChangeButton } from "../$projectId";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -182,7 +173,7 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh" overflowX={'auto'}>
+    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh" overflowX={"auto"}>
       <ProjecChangeButton />
       <GridItem>
         <HStack px={2}>
@@ -387,22 +378,7 @@ const SideNavContent = () => {
   const color = useColorModeValue("teal.800", "teal.100");
   const bg = useColorModeValue("blue.100", "blue.800");
   return (
-    <Box pl={2} pt={2} pr={2}>
-      <NavLink to={`/projects/${projectId}/apis`} end>
-        {({ isActive }) => (
-          <HStack
-            h={8}
-            pl={2}
-            color={color}
-            borderRadius={2}
-            bg={isActive ? bg : undefined}
-            _hover={{ background: isActive ? undefined : "blackAlpha.50" }}
-          >
-            <Icon as={FiAirplay} mt={0.5} />
-            <Text userSelect={"none"}>Overview</Text>
-          </HStack>
-        )}
-      </NavLink>
+    <Box>
       <FileNavbar />
     </Box>
   );
@@ -423,198 +399,197 @@ const groupDFS = (group: Group, id: string, path: string[]) => {
   return false;
 };
 
+const useAccordion = (initialValue?: string[] | null | undefined) => {
+  let initial: { [key: string]: boolean } = {};
+  if (initialValue instanceof Array) {
+    for (let value of initialValue) {
+      initial[value] = true;
+    }
+  }
+  const [accordionMap, setAccordionMap] = useState(initial);
+
+  const onAdd = (value: string | string[]) => {
+    let newValues: { [key: string]: boolean } = {};
+    if (!(value instanceof Array)) {
+      value = [value];
+    }
+    for (let v of value) {
+      newValues[v] = true;
+    }
+    setAccordionMap({
+      ...accordionMap,
+      ...newValues,
+    });
+  };
+
+  const onDelete = (value: string) => {
+    let clone = Object.assign({}, accordionMap);
+    delete clone[value];
+    setAccordionMap(clone);
+  };
+
+  return {
+    accordionMap,
+    onAdd,
+    onDelete,
+  };
+};
+
 const FileNavbar = () => {
   const matches = useMatches();
   const params = useParams();
   const project = matches[1].data.project as Project;
-  const [treeData, setTreeData] = useState<TreeData>(
-    new TreeBuilder("1", null)
-  );
   const fetcher = useFetcher();
   invariant(project);
-  useEffect(() => {
-    const complexTree = new TreeBuilder(1, null);
-    const generateTreeData = (group: Group, builder: TreeBuilder) => {
-      for (let g of group.groups) {
-        const childTree = new TreeBuilder(g.id, g);
-        generateTreeData(g, childTree);
-        builder.withSubTree(childTree);
-      }
-      for (let api of group.apis) {
-        builder.withLeaf(api.id, api);
-      }
-    };
-    generateTreeData(project.root, complexTree);
-    setTreeData(complexTree.build());
-  }, [params.projectId, params.groupId, params.apiId]);
-
-  invariant(project);
-  const renderItem = ({
-    item,
-    onExpand,
-    onCollapse,
-    provided,
-  }: RenderItemParams) => {
-    return (
-      <div
-        ref={provided.innerRef}
-        {...provided.draggableProps}
-        {...provided.dragHandleProps}
-      >
-        {item.data.data ? (
-          <File key={item.id} api={item.data} />
-        ) : (
-          <Folder
-            key={item.id}
-            group={item.data}
-            isExpanded={item.isExpanded}
-            itemId={item.id}
-            onExpand={onExpand}
-            onCollapse={onCollapse}
-            onAdd={() => {}}
-            onDelete={() => {}}
-          />
-        )}
-      </div>
-    );
-  };
-
-  const onExpand = (itemId: ItemId) => {
-    setTreeData(mutateTree(treeData, itemId, { isExpanded: true }));
-  };
-
-  const onCollapse = (itemId: ItemId) => {
-    setTreeData(mutateTree(treeData, itemId, { isExpanded: false }));
-  };
-  const onDragEnd = (
-    source: TreeSourcePosition,
-    destination?: TreeDestinationPosition
-  ) => {
-    if (!destination) {
-      return;
-    }
-    const itemData =
-      treeData.items[treeData.items[source.parentId].children[source.index]]
-        .data;
-    const destParentId = treeData.items[destination.parentId].data.id;
-    itemData.data
-      ? fetcher.submit(
-          {
-            id: itemData.id,
-            groupId: destParentId,
-            _action: Action.UPDATE_API,
-          },
-          {
-            method: "patch",
-            action: `/projects/${params.projectId}/apis`,
-          }
-        )
-      : fetcher.submit(
-          {
-            id: itemData.id,
-            name: itemData.name,
-            description: itemData.description,
-            parentId: destParentId,
-            _action: Action.UPDATE_GROUP,
-          },
-          {
-            method: "patch",
-            action: `/projects/${params.projectId}/apis`,
-          }
-        );
-    setTreeData(moveItemOnTree(treeData, source, destination));
-  };
-  resetServerContext();
+  const { accordionMap, onAdd, onDelete } = useAccordion(["root"]);
   return (
     <Flex flexDir={"column"}>
-      <Tree
-        tree={treeData}
-        renderItem={renderItem}
-        onExpand={onExpand}
-        onCollapse={onCollapse}
-        onDragEnd={onDragEnd}
-        isDragEnabled
-      />
+      <DragDropContext onDragEnd={(result, provided) => {}}>
+        <Folder
+          accordionMap={accordionMap}
+          onAdd={onAdd}
+          onDelete={onDelete}
+          group={project.root}
+          depth={-1}
+        />
+      </DragDropContext>
     </Flex>
+  );
+};
+
+const FolderIcon = ({
+  isExpanded,
+  onClick,
+}: {
+  isExpanded: boolean;
+  onClick: (e: any) => void;
+}) => {
+  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
+  return (
+    <Center
+      mr={1}
+      w="4"
+      h="4"
+      borderRadius={"full"}
+      _groupHover={{ background: "blackAlpha.50" }}
+      onClick={onClick}
+    >
+      <Icon
+        as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
+        fontSize="12px"
+        color={iconColor}
+      />
+    </Center>
   );
 };
 
 const Folder = ({
   group,
-  itemId,
-  isExpanded,
-  onExpand,
-  onCollapse,
   onDelete,
   onAdd,
+  depth,
+  accordionMap,
 }: {
   group: Group;
-  itemId: ItemId;
-  isExpanded?: boolean;
-  onExpand: (itemId: ItemId) => void;
-  onCollapse: (itemId: ItemId) => void;
   onDelete: (value: string) => void;
   onAdd: (value: string) => void;
+  accordionMap: { [key: string]: boolean };
+
+  depth: number;
 }) => {
   const { projectId, groupId } = useParams<{
     projectId: string;
     groupId: string;
   }>();
   const isActive = groupId === group.id;
-  const bg = useColorModeValue("blue.200", "blue.800");
+  const bg = useColorModeValue("blue.200", "blue.600");
   const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
-  const hoverColor = useColorModeValue("blue.100", "blue.600");
+  const hoverColor = useColorModeValue("blue.100", "blue.800");
+  const isOpen = accordionMap[group.id];
   return (
     <Flex border={"none"} flexDir="column">
-      <HStack
-        spacing={0}
+      {depth === -1 ? (
+        <NavLink to={`/projects/${projectId}/apis`} end>
+          {({ isActive }) => (
+            <HStack
+              h={8}
+              pl={2}
+              borderRadius={2}
+              bg={isActive ? bg : undefined}
+              _hover={{ background: isActive ? undefined : hoverColor }}
+            >
+              <Icon as={FiAirplay} mt={0.5} />
+              <Text userSelect={"none"}>Overview</Text>
+            </HStack>
+          )}
+        </NavLink>
+      ) : (
+        <HStack
+          spacing={0}
+          w="full"
+          pl={`${8 + depth * 16}px`}
+          _hover={{ background: isActive ? undefined : hoverColor }}
+          cursor="pointer"
+          role="group"
+          h={8}
+          bg={isActive ? bg : undefined}
+          onClick={(_e) =>
+            isActive
+              ? isOpen
+                ? onDelete(group.id)
+                : onAdd(group.id)
+              : undefined
+          }
+        >
+          <FolderIcon
+            isExpanded={isOpen}
+            onClick={(e) =>
+              !isActive
+                ? isOpen
+                  ? onDelete(group.id)
+                  : onAdd(group.id)
+                : undefined
+            }
+          />
+          <Box
+            as={RemixLink}
+            flexGrow={1}
+            display="flex"
+            alignItems={"center"}
+            to={`/projects/${projectId}/apis/groups/${group.id}`}
+          >
+            <Icon
+              as={isOpen ? BsFolder2Open : FiFolder}
+              fontWeight="100"
+              color={iconColor}
+              mr={2}
+            />
+            <Text py={1} userSelect={"none"}>
+              {group.name}
+            </Text>
+          </Box>
+        </HStack>
+      )}
+      <Flex
+        display={isOpen ? "flex" : "none"}
+        flexDir={"column"}
         w="full"
-        borderRadius={2}
-        _hover={{ background: isActive ? undefined : hoverColor }}
-        cursor="pointer"
-        role="group"
-        h={8}
-        bg={isActive ? bg : undefined}
-        onClick={(_e) =>
-          isActive
-            ? isExpanded
-              ? onDelete(group.id)
-              : onAdd(group.id)
-            : undefined
-        }
+        p={0}
       >
-        <Center
-          mr={1}
-          w="4"
-          h="4"
-          borderRadius={"full"}
-          _groupHover={{ background: "blackAlpha.50" }}
-          onClick={() => (isExpanded ? onCollapse(itemId) : onExpand(itemId))}
-        >
-          <Icon
-            as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
-            color={iconColor}
-            fontSize={10}
+        {group.groups.map((g) => (
+          <Folder
+            key={g.id}
+            accordionMap={accordionMap}
+            onAdd={onAdd}
+            onDelete={onDelete}
+            group={g}
+            depth={depth + 1}
           />
-        </Center>
-        <Box
-          as={RemixLink}
-          flexGrow={1}
-          display="flex"
-          alignItems={"center"}
-          to={`/projects/${projectId}/apis/groups/${group.id}`}
-        >
-          <Icon
-            as={isExpanded ? BsFolder2Open : FiFolder}
-            fontWeight="100"
-            color={iconColor}
-            mr={2}
-          />
-          <Text py={1} userSelect={"none"}>
-            {group.name}
-          </Text>
-        </Box>
-      </HStack>
+        ))}
+        {group.apis.map((api, i) => (
+          <File api={api} depth={depth + 1} key={api.id} />
+        ))}
+      </Flex>
     </Flex>
   );
 };
@@ -691,22 +666,24 @@ export function CatchBoundary() {
   );
 }
 
-const File = ({ api }: { api: Api }) => {
+const File = ({ api, depth, ...rest }: { api: Api; depth: number }) => {
   const { projectId, apiId } = useParams();
-  const bg = useColorModeValue("blue.200", "blue.800");
+  const bg = useColorModeValue("blue.200", "blue.600");
   const isActive = api.id === apiId;
   invariant(projectId);
-  const hoverColor = useColorModeValue("blue.100", "blue.600");
+  const hoverColor = useColorModeValue("blue.100", "blue.800");
   return (
     <Flex
       as={RemixLink}
       to={`/projects/${projectId}/apis/details/${api.id}`}
+      pl={`${12 + depth * 16}px`}
       h="8"
       _hover={{ background: isActive ? undefined : hoverColor }}
       bg={isActive ? bg : undefined}
       cursor="pointer"
+      {...rest}
     >
-      <HStack w="full" spacing={0} borderRadius={2}>
+      <HStack w="full" spacing={0}>
         <MethodTag method={api.data.method} />
         <Text noOfLines={1}>{api.data.name}</Text>
       </HStack>

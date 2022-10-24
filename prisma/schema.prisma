@@ -32,7 +32,6 @@ model Project {
   isJson5    Boolean       @default(true)
   tags       ProjectTag[]
   members    ProjectUser[]
-  apiIds     String[]      @db.ObjectId
 
   groups Group[]
   apis   Api[]
@@ -118,9 +117,8 @@ model Api {
   groupId   String?  @db.ObjectId
   projectId String   @db.ObjectId
   data      ApiData
-
-  group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id])
+  group     Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id])
 }
 
 type ApiData {

@@ -162,8 +162,8 @@ const Projects = ({
             key={project.id}
             id={project.id}
             name={project.name}
-            memberCount={project.members.length + 1}
-            apiCount={project.apiIds.length}
+            memberCount={project.members.length}
+            apiCount={project.apis.length}
           />
         ))}
       </VStack>
