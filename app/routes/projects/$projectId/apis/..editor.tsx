@@ -468,9 +468,14 @@ const BodyEditor = ({
   bodyJson?: JsonNodeForm;
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
-
   return (
-    <Tabs>
+    <Tabs
+      defaultIndex={[
+        RequestBodyType.FORM,
+        RequestBodyType.JSON,
+        RequestBodyType.RAW,
+      ].indexOf(type)}
+    >
       <RadioGroup px={4} defaultValue={type}>
         <TabList border={"none"} display={"flex"} gap={4}>
           <RadioTab name="bodyType" value={RequestBodyType.FORM}>
@@ -703,7 +708,7 @@ const JsonRow = ({
     1
   );
   const blue = useColorModeValue("blue.500", "blue.200");
-
+  const value = isRoot ? "root" : isArrayElem ? "items" : undefined;
   return (
     <>
       <HStack hidden={hidden} w="full" {...rest} alignItems="flex-start">
@@ -723,7 +728,8 @@ const JsonRow = ({
             placeholder="Name"
             bg={bgBW}
             isDisabled={isRoot || isArrayElem}
-            value={isRoot ? "root" : isArrayElem ? "items" : undefined}
+            value={value}
+            defaultValue={!!value ? undefined : defaultValues?.name}
           />
         </Center>
         <Box>
@@ -757,15 +763,30 @@ const JsonRow = ({
             </option>
           ))}
         </Select>
-        <FormInput
-          bg={bgBW}
-          size="sm"
-          name={`${prefix}.${isMock ? "mock" : "example"}`}
-          placeholder={isMock ? "Mock" : "Example"}
-          as={ModalInput}
-          modal={{ title: "Mock" }}
-          isDisabled={type === "ARRAY" || type === "OBJECT"}
-        />
+        {isMock ? (
+          <FormInput
+            bg={bgBW}
+            size="sm"
+            name={`${prefix}.mock`}
+            placeholder={"Mock"}
+            as={ModalInput}
+            modal={{ title: "Mock" }}
+            isDisabled={type === "ARRAY" || type === "OBJECT"}
+            defaultValue={defaultValues?.mock}
+          />
+        ) : (
+          <FormInput
+            bg={bgBW}
+            size="sm"
+            name={`${prefix}.example`}
+            placeholder={"Example"}
+            as={ModalInput}
+            modal={{ title: "Example" }}
+            isDisabled={type === "ARRAY" || type === "OBJECT"}
+            defaultValue={defaultValues?.example}
+          />
+        )}
+
         <FormInput
           bg={bgBW}
           size="sm"
@@ -773,6 +794,7 @@ const JsonRow = ({
           placeholder="Description"
           as={ModalInput}
           modal={{ title: "Description" }}
+          defaultValue={defaultValues?.description}
         />
         {isArrayElem ? (
           <Box flexBasis={"64px"} flexShrink={0} flexGrow={0} />
