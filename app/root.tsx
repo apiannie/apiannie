@@ -1,5 +1,9 @@
 // root.tsx
-import { ChakraProvider } from "@chakra-ui/react";
+import {
+  ChakraProvider,
+  cookieStorageManagerSSR,
+  localStorageManager,
+} from "@chakra-ui/react";
 import { withEmotionCache } from "@emotion/react";
 import { json, LinksFunction, LoaderArgs, MetaFunction } from "@remix-run/node"; // Depends on the runtime you choose
 import {
@@ -9,10 +13,23 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 import React, { useContext, useEffect } from "react";
 import { ClientStyleContext, ServerStyleContext } from "./context";
 import { getUser } from "./session.server";
+
+// Typescript
+// This will return cookies
+export const loader = async ({ request }: LoaderArgs) => {
+  // first time users will not have any cookies and you may not return
+  // undefined here, hence ?? is necessary
+  let user = await getUser(request);
+  return json({
+    cookies: request.headers.get("cookie") ?? "",
+    user: { ...user },
+  });
+};
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
@@ -79,17 +96,17 @@ const Document = withEmotionCache(
   }
 );
 
-export async function loader({ request }: LoaderArgs) {
-  let user = await getUser(request);
-  return json({
-    user: { ...user },
-  });
-}
-
 export default function App() {
+  const { cookies } = useLoaderData<typeof loader>();
   return (
     <Document>
-      <ChakraProvider>
+      <ChakraProvider
+        colorModeManager={
+          typeof cookies === "string"
+            ? cookieStorageManagerSSR(cookies)
+            : localStorageManager
+        }
+      >
         <Outlet />
       </ChakraProvider>
     </Document>

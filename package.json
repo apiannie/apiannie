@@ -3,6 +3,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "remix build",
+    "deploy": "fly deploy --remote-only",
     "dev": "remix dev",
     "start": "remix-serve build"
   },
@@ -28,6 +29,7 @@
     "bcryptjs": "^2.4.3",
     "bson": "^4.6.5",
     "framer-motion": "^6.5.1",
+    "isbot": "^3.6.1",
     "marked": "^4.0.18",
     "react": "^18.2.0",
     "react-ace": "^10.1.0",
