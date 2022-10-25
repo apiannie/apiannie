@@ -1,26 +1,15 @@
 import {
-  Box,
-  Button,
-  Flex,
-  Grid,
-  HStack,
-  IconButton,
-  Spacer,
-  Tab,
-  TabList,
   TabPanel,
   TabPanels,
-  Tabs,
 } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { Form, useParams } from "@remix-run/react";
-import { FiBell } from "react-icons/fi";
+import { useParams } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import { getApiById } from "~/models/api.server";
-import ColorModeButton from "~/routes/home/..lib/ColorModeButton";
 import { httpResponse } from "~/utils";
 import Editor, { saveApiAction } from "./..editor";
 import Postman from "./..postman";
+import Api from "./..api";
 
 export const handle = {
   tabs: ["Api", "Edit", "Run"],
@@ -58,13 +47,7 @@ export default function ApiInfo() {
   return (
     <TabPanels h="full" overflowY={"auto"} key={apiId}>
       <TabPanel>
-        <Box>
-          <Form method="post" replace>
-            <Button type="submit" name="_action" value="test">
-              Test
-            </Button>
-          </Form>
-        </Box>
+        <Api />
       </TabPanel>
       <TabPanel>
         <Editor />
