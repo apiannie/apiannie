@@ -23,7 +23,7 @@ import {
   RequestParam,
 } from "@prisma/client";
 import { useLoaderData } from "@remix-run/react";
-import React, { RefObject, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { loader } from "./details.$apiId";
 import { Header } from "~/ui";
 import { useMethodTag } from "../apis";
@@ -58,12 +58,9 @@ const Api = () => {
     method === "DELETE" ||
     method === "PUT" ||
     method === "PATCH";
-
   useEffect(() => {
-    if (!requestHasBody) {
-      setBodyTabIndex(1);
-    }
-  }, [requestHasBody]);
+    console.info(api.data);
+  }, []);
   return (
     <Box
       key={`${api.id}-${api.updatedAt}`}
@@ -73,73 +70,50 @@ const Api = () => {
     >
       <Header>General</Header>
       <Box bg={bg} p={4} borderRadius={5}>
-        <Grid templateColumns="repeat(2, 1fr)" gap={6} maxW="container.lg">
-          <Flex>
-            <Text width={labelWidth}>Name:</Text>
-            <Text color={fontColor}>{api.data.name}</Text>
+        <Flex>
+          <Text width={labelWidth}>Name:</Text>
+          <Text color={fontColor}>{api.data.name}</Text>
+        </Flex>
+        <Flex mt={5}>
+          <Text width={labelWidth}>Path:</Text>
+          <Flex color={fontColor}>
+            <Box
+              fontWeight={700}
+              bg={color}
+              px={2}
+              mr={3}
+              borderRadius={3}
+              color={"white"}
+              flexBasis="40px"
+            >
+              {text}
+            </Box>
+            {api.data.path}
           </Flex>
-          <Flex>
-            <Text width={labelWidth}>Path:</Text>
-            <Flex color={fontColor}>
-              <Box
-                fontWeight={700}
-                bg={color}
-                px={2}
-                mr={3}
-                borderRadius={3}
-                color={"white"}
-                flexBasis="40px"
-              >
-                {text}
-              </Box>
-              {api.data.path}
-            </Flex>
-          </Flex>
-        </Grid>
+        </Flex>
         <Flex mt={5}>
           <Text width={labelWidth}>Description:</Text>
-          <Textarea color={fontColor} lineHeight={"24px"} py={0} readOnly={true} defaultValue={api.data.description ?? ""}></Textarea>
+          {api.data.description}
         </Flex>
       </Box>
 
       <Header mt={6}>Request</Header>
-      <Box bg={bg} p={4} borderRadius={5}>
-        <Tabs
-          index={bodyTabIndex}
-          onChange={setBodyTabIndex}
-          variant="solid-rounded"
-          colorScheme="cyan"
-        >
-          <TabList display={"flex"} justifyContent="center">
-            <Tab hidden={!requestHasBody} flexBasis={"100px"}>
-              Body
-            </Tab>
-            <Tab flexBasis={"100px"}>Query</Tab>
-            <Tab flexBasis={"100px"}>Headers</Tab>
-          </TabList>
-          <Divider my={2} borderColor={gray} />
-          <TabPanels>
-            <TabPanel>
-              <BodyEditor
-                type={api.data.bodyType}
-                bodyJson={api.data.bodyJson}
-                bodyForm={api.data.bodyForm}
-                bodyRaw={api.data.bodyRaw}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ParamTable
-                defaultValue={api.data.queryParams}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ParamTable
-                defaultValue={api.data.headers}
-              />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
+      {api.data.headers && api.data.headers.length > 0 && <Box bg={bg} p={4} borderRadius={5}>
+          <Heading size={"sm"} mb={5}>Headers:</Heading>
+          <ParamTable defaultValue={api.data.headers} /></Box>}
+      {api.data.queryParams && api.data.queryParams.length > 0 && <Box mt={3} bg={bg} p={4} borderRadius={5}>
+          <Heading size={"sm"} mb={5}>Query:</Heading>
+          <ParamTable defaultValue={api.data.queryParams} />
+      </Box>}
+      {requestHasBody && <Box mt={3} bg={bg} p={4} borderRadius={5}>
+          <Heading size={"sm"} mb={5}>Body:</Heading>
+          <BodyEditor
+              type={api.data.bodyType}
+              bodyJson={api.data.bodyJson}
+              bodyForm={api.data.bodyForm}
+              bodyRaw={api.data.bodyRaw}
+          />
+      </Box>}
       <Header mt={6}>Response</Header>
       <Box bg={bg} p={4} borderRadius={5}>
         {api.data.response && <JsonRow
@@ -159,7 +133,7 @@ const ParamTable = ({
 }) => {
   return (
     <TableContainer>
-      <Table size={"sm"} colorScheme="teal">
+      <Table variant="simple" colorScheme={"blackAlpha"}>
         <Thead>
           <Tr>
             <Th>Name</Th>
@@ -169,7 +143,7 @@ const ParamTable = ({
             <Th>Description</Th>
           </Tr>
         </Thead>
-        <Tbody verticalAlign={"baseline"}>
+        <Tbody>
           {defaultValue.map((data, i) => (
             <Tr key={i}>
               <Td>
@@ -216,29 +190,43 @@ const JsonRow = ({
   const isRoot = depth === 0;
   return (
     <>
-      <HStack hidden={hidden} mb={3} w="full" {...rest} alignItems="flex-start">
+      {isRoot && <Grid templateColumns={"1fr 120px 1fr 1fr 1fr"} py={3} w="full" {...rest} borderBottomWidth={1} borderColor={"blackAlpha"}>
+          <Center flex="0 0 320px">
+              <Text color={'gray.600'} fontWeight={"bold"}>Name</Text>
+          </Center>
+          <Center>
+              <Text color={'gray.600'} fontWeight={"bold"}>Is Required</Text>
+          </Center>
+          <Center>
+              <Text color={'gray.600'} fontWeight={"bold"}>Type</Text>
+          </Center>
+          <Center>
+              <Text color={'gray.600'} fontWeight={"bold"}>Mock</Text>
+          </Center>
+          <Center>
+              <Text color={'gray.600'} fontWeight={"bold"}>Description</Text>
+          </Center>
+      </Grid>}
+      <Grid templateColumns={"1fr 120px 1fr 1fr 1fr"} py={3} hidden={hidden} w="full" {...rest} borderBottomWidth={1} borderColor={"blackAlpha"}>
         <Center pl={`${depth * 24}px`} flex="0 0 320px">
-          <Center w={4} h={4} cursor="pointer" onClick={onToggle}>
+          <Center cursor="pointer" onClick={onToggle}>
             {defaultValues?.type === ParamType.OBJECT || defaultValues?.type === ParamType.ARRAY ? (
               <Icon
                 fontSize={10}
+                mr={2}
                 as={isOpen ? BsFillCaretDownFill : BsFillCaretRightFill}
               />
             ) : undefined}
           </Center>
-          <Input readOnly={true} defaultValue={isRoot ? "root" : isArrayElem ? "items" : defaultValues?.name} />
+          <Text fontSize={"sm"}>{isRoot ? "Root" : isArrayElem ? "Items" : defaultValues?.name}</Text>
         </Center>
-        <Box>
-          <Tooltip label="Required">
-            <Center h={8}>
-              <Checkbox readOnly={true} defaultChecked={!!defaultValues?.isRequired} />
-            </Center>
-          </Tooltip>
-        </Box>
-        <Input readOnly={true} defaultValue={defaultValues?.type.toLowerCase()} />
-        <Input readOnly={true} placeholder={"Mock"} disabled={isRoot || isArrayElem} defaultValue={isRoot || isArrayElem ? "Mock" : defaultValues?.mock} />
-        <Input readOnly={true} placeholder={"Description"} defaultValue={defaultValues?.description} />
-      </HStack>
+        <Center>
+          <Text fontSize={"sm"}>{defaultValues?.isRequired ? "YES" : "NO"}</Text>
+        </Center>
+        <Center><Text fontSize={"sm"}>{defaultValues?.type.toLowerCase()}</Text></Center>
+        <Center><Text fontSize={"sm"}>{isRoot || isArrayElem ? "Mock" : defaultValues?.mock}</Text></Center>
+        <Center><Text fontSize={"sm"}>{defaultValues?.description}</Text></Center>
+      </Grid>
       {defaultValues?.children.map((child, i) => (
         <JsonRow
           key={i}
@@ -267,65 +255,23 @@ const BodyEditor = ({
   bodyRaw?: RequestBodyRaw
 }) => {
   return <>
-    <Heading size={"sm"} mb={5}>{type}</Heading>
+    <Flex>
+      <Text width={120}>Content-Type:</Text>
+      {type}
+    </Flex>
     {type === "FORM" && <ParamTable defaultValue={bodyForm} />}
     {type === "JSON" && <JsonRow depth={0} isParentOpen={true} defaultValues={bodyJson} />}
     {type === "RAW" && <>
-        <Flex>
+        <Flex mt={3}>
             <Text width={120}>Example:</Text>
-            <Textarea readOnly={true}  defaultValue={bodyRaw?.example} />
+          {bodyRaw?.example}
         </Flex>
-        <Flex mt={5}>
+        <Flex mt={3}>
             <Text width={120}>Description:</Text>
-            <Textarea readOnly={true} defaultValue={bodyRaw?.description} />
+          {bodyRaw?.description}
         </Flex>
     </>}
   </>;
-  // <Tabs>
-  //   {/*<RadioGroup px={4} defaultValue={type}>*/}
-  //   {/*  <TabList border={"none"} display={"flex"} gap={4}>*/}
-  //   {/*    <RadioTab name="bodyType" value={RequestBodyType.FORM}>*/}
-  //   {/*      form-data*/}
-  //   {/*    </RadioTab>*/}
-  //   {/*    <RadioTab name="bodyType" value={RequestBodyType.JSON}>*/}
-  //   {/*      json*/}
-  //   {/*    </RadioTab>*/}
-  //   {/*    <RadioTab name="bodyType" value={RequestBodyType.RAW}>*/}
-  //   {/*      raw*/}
-  //   {/*    </RadioTab>*/}
-  //   {/*  </TabList>*/}
-  //   {/*</RadioGroup>*/}
-  //
-  //   <TabPanels mt={4}>
-  //     <TabPanel p={0}>
-  //       <ParamTable
-  //         defaultValue={bodyForm}
-  //       />
-  //     </TabPanel>
-  //     <TabPanel>
-  //       <JsonRow depth={0}  isParentOpen={true} defaultValues={bodyJson} />
-  //     </TabPanel>
-  //     <TabPanel>
-  //       {/*<Box>*/}
-  //       {/*  <FormInput*/}
-  //       {/*    bg={bgBW}*/}
-  //       {/*    as={Textarea}*/}
-  //       {/*    name="bodyRaw.example"*/}
-  //       {/*    label="Example"*/}
-  //       {/*    container={{*/}
-  //       {/*      mb: 6,*/}
-  //       {/*    }}*/}
-  //       {/*  />*/}
-  //       {/*  <FormInput*/}
-  //       {/*    bg={bgBW}*/}
-  //       {/*    as={Textarea}*/}
-  //       {/*    name="bodyRaw.description"*/}
-  //       {/*    label="Description"*/}
-  //       {/*  />*/}
-  //       {/*</Box>*/}
-  //     </TabPanel>
-  //   </TabPanels>
-  // </Tabs>
 };
 
 export default Api;
