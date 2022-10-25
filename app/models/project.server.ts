@@ -138,11 +138,39 @@ export const getProjectById = async (id: string) => {
   };
 };
 
-export type Project = Awaited<ReturnType<typeof getProjectById>>;
+export type Project = NonNullable<Awaited<ReturnType<typeof getProjectById>>>;
 
 export const updateProject = async (id: string, data: { name?: string }) => {
   return await prisma.project.update({
     where: { id: id },
     data: data,
   });
+};
+
+export const addMemberToProject = async (
+  projectId: string,
+  userId: string,
+  role: ProjectUserRole
+) => {
+  return await prisma.$transaction([
+    prisma.project.update({
+      where: { id: projectId },
+      data: {
+        members: {
+          push: {
+            id: userId,
+            role: role,
+          },
+        },
+      },
+    }),
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        projectIds: {
+          push: projectId,
+        },
+      },
+    }),
+  ]);
 };

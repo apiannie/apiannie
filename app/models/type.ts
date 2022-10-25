@@ -1,4 +1,9 @@
-import { ParamType, Prisma, RequestMethod } from "@prisma/client";
+import {
+  ParamType,
+  Prisma,
+  ProjectUserRole,
+  RequestMethod,
+} from "@prisma/client";
 
 export const JsonNodeType = [
   ParamType.OBJECT,
@@ -28,3 +33,9 @@ export interface JsonNode {
   children: JsonNode[];
   arrayElem?: JsonNode;
 }
+
+export const ProjectUserRoles = [
+  ProjectUserRole.READ,
+  ProjectUserRole.WRITE,
+  ProjectUserRole.ADMIN,
+] as const;

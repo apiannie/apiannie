@@ -61,7 +61,7 @@ export default function () {
             alignSelf={"center"}
             position={"relative"}
           >
-            <RemixLink to="/index/signup">
+            <RemixLink to="/home/signup">
               <Button colorScheme={"teal"} px={6}>
                 Get Started
               </Button>

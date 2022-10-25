@@ -70,7 +70,6 @@ import { httpResponse } from "~/utils";
 import { RequestMethods } from "~/models/type";
 import { PathInput } from "~/ui";
 import { ProjecChangeButton } from "../$projectId";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 export const handle = {
   sideNav: <SideNav />,
@@ -444,15 +443,13 @@ const FileNavbar = () => {
   const { accordionMap, onAdd, onDelete } = useAccordion(["root"]);
   return (
     <Flex flexDir={"column"}>
-      <DragDropContext onDragEnd={(result, provided) => {}}>
-        <Folder
-          accordionMap={accordionMap}
-          onAdd={onAdd}
-          onDelete={onDelete}
-          group={project.root}
-          depth={-1}
-        />
-      </DragDropContext>
+      <Folder
+        accordionMap={accordionMap}
+        onAdd={onAdd}
+        onDelete={onDelete}
+        group={project.root}
+        depth={-1}
+      />
     </Flex>
   );
 };
@@ -645,7 +642,7 @@ const MethodTag = ({ method }: { method: RequestMethod }) => {
   return (
     <Text
       fontWeight={700}
-      fontSize="sm"
+      fontSize="xs"
       mt={0.25}
       color={color}
       flexBasis="40px"

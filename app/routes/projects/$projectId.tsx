@@ -60,12 +60,12 @@ import { httpResponse, useUser } from "~/utils";
 import ColorModeButton from "../home/..lib/ColorModeButton";
 import UserMenuButton from "../home/..lib/UserMenuButton";
 import { loader as loadProjects } from "./index";
-import styles from "~/ui/dashboard.css";
+// import styles from "~/ui/dashboard.css";
 import NotificationButton from "~/routes/home/..lib/NotificationButton";
 
-export function links() {
-  return [{ rel: "stylesheet", href: styles }];
-}
+// export function links() {
+//   return [{ rel: "stylesheet", href: styles }];
+// }
 
 export const loader = async ({ request, params, context }: LoaderArgs) => {
   let user = await requireUser(request);
@@ -134,11 +134,9 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
       const handleMove = ({ clientX }: { clientX: number }) => {
         const width = lastSideNavWidth.current + clientX - lastClientX.current;
         lastClientX.current = clientX;
-        lastSideNavWidth.current =  width < 0 ? 0 : width;
+        lastSideNavWidth.current = width < 0 ? 0 : width;
         if (sideNavContainerRef.current) {
-          sideNavContainerRef.current.style.gridTemplateColumns = `${
-            lastSideNavWidth.current
-          }px 1fr`;
+          sideNavContainerRef.current.style.gridTemplateColumns = `${lastSideNavWidth.current}px 1fr`;
         }
       };
       document.addEventListener("mousemove", handleMove);
@@ -185,6 +183,7 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
       <Grid
         ref={sideNavContainerRef as RefObject<HTMLDivElement>}
         templateColumns={`304px 1fr`}
+        fontSize={"sm"}
       >
         {sideNav}
         <GridItem
@@ -196,16 +195,22 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
           <Box
             ref={sideNavDragRef as RefObject<HTMLDivElement>}
             position={"absolute"}
-            left={'-10px'}
+            left={"-10px"}
             top={0}
             bottom={0}
             role="group"
-            px={'10px'}
+            px={"10px"}
             cursor={"ew-resize"}
             zIndex={100}
           >
-          <Box _groupHover={{opacity: 1}} opacity={0} width={'1px'} height={'100%'} bgColor={'blue.500'} />
-        </Box>
+            <Box
+              _groupHover={{ opacity: 1 }}
+              opacity={0}
+              width={"1px"}
+              height={"100%"}
+              bgColor={"blue.500"}
+            />
+          </Box>
           <Tabs
             key={matches[matches.length - 1].id}
             display={"grid"}
