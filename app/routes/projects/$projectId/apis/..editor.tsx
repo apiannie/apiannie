@@ -7,8 +7,6 @@ import {
   Container,
   Divider,
   Flex,
-  Heading,
-  HeadingProps,
   HStack,
   Icon,
   IconButton,
@@ -62,11 +60,16 @@ import invariant from "tiny-invariant";
 import { z, ZodTypeDef } from "zod";
 import { saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
-import { FormHInput, FormInput, FormSubmitButton, PathInput } from "~/ui";
+import {
+  FormHInput,
+  FormInput,
+  FormSubmitButton,
+  Header,
+  PathInput,
+} from "~/ui";
 import ModalInput from "~/ui/Form/ModalInput";
-import { methodContainsBody, useDefault, useIds } from "~/utils";
+import { useIds } from "~/utils";
 import { loader } from "./details.$apiId";
-import { Header } from "~/ui";
 
 type JsonNodeFormElem = Omit<
   Partial<JsonNode>,
@@ -418,6 +421,7 @@ const Editor = () => {
                 type={defaultValues.bodyType}
                 bodyJson={defaultValues.bodyJson}
                 bodyForm={defaultValues.bodyForm}
+                bodyRaw={defaultValues.bodyRaw}
               />
             </TabPanel>
             <TabPanel>
@@ -462,10 +466,15 @@ const BodyEditor = ({
   type,
   bodyJson,
   bodyForm,
+  bodyRaw,
 }: {
   bodyForm: RequestParam[];
   type: RequestBodyType;
   bodyJson?: JsonNodeForm;
+  bodyRaw: {
+    example: string | null;
+    description: string | null;
+  } | null;
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
   return (
@@ -514,12 +523,14 @@ const BodyEditor = ({
               container={{
                 mb: 6,
               }}
+              defaultValue={bodyRaw?.example || undefined}
             />
             <FormInput
               bg={bgBW}
               as={Textarea}
               name="bodyRaw.description"
               label="Description"
+              defaultValue={bodyRaw?.description || undefined}
             />
           </Box>
         </TabPanel>
@@ -709,6 +720,7 @@ const JsonRow = ({
   );
   const blue = useColorModeValue("blue.500", "blue.200");
   const value = isRoot ? "root" : isArrayElem ? "items" : undefined;
+  const readOnly = isRoot || isArrayElem;
   return (
     <>
       <HStack hidden={hidden} w="full" {...rest} alignItems="flex-start">
@@ -726,10 +738,11 @@ const JsonRow = ({
             size="sm"
             name={`${prefix}.name`}
             placeholder="Name"
-            bg={bgBW}
-            isDisabled={isRoot || isArrayElem}
+            cursor={readOnly ? "not-allowed" : undefined}
+            bg={readOnly ? undefined : bgBW}
+            readOnly={readOnly}
             value={value}
-            defaultValue={!!value ? undefined : defaultValues?.name}
+            defaultValue={!!value ? undefined : defaultValues?.name || ""}
           />
         </Center>
         <Box>
@@ -881,7 +894,7 @@ const JsonRow = ({
             onDelete={removeId}
             prefix={`${prefix}.children[${i}]`}
             isMock={isMock}
-            defaultValues={defaultValues?.children?.[i]}
+            defaultValues={defaultValues?.children?.[id]}
           />
         ))}
     </>
