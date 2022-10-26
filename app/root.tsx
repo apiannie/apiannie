@@ -101,11 +101,11 @@ export default function App() {
   return (
     <Document>
       <ChakraProvider
-        colorModeManager={
-          typeof cookies === "string"
-            ? cookieStorageManagerSSR(cookies)
-            : localStorageManager
-        }
+      // colorModeManager={
+      //   typeof cookies === "string"
+      //     ? cookieStorageManagerSSR(cookies)
+      //     : localStorageManager
+      // }
       >
         <Outlet />
       </ChakraProvider>
