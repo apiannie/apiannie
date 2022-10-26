@@ -1,20 +1,13 @@
 import {
-  Box, BoxProps, Center, Checkbox,
-  Divider, Flex,
-  Grid, Heading, HStack, Icon, Input,
-  Tab,
+  Box, BoxProps, Center, Flex,
+  Grid, Heading, Icon,
   Table,
   TableContainer,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
   Tbody,
   Td,
   Text,
-  Textarea,
   Th,
-  Thead, Tooltip,
+  Thead,
   Tr,
   useColorModeValue, useDisclosure,
 } from "@chakra-ui/react";
@@ -37,6 +30,7 @@ type ResponseData = {
   mock: string;
   isRequired: boolean;
   children: Array<ResponseData>;
+  arrayElem: ResponseData;
 }
 
 type RequestBodyRaw = {
@@ -47,20 +41,15 @@ type RequestBodyRaw = {
 const Api = () => {
   const bg = useColorModeValue("gray.100", "gray.700");
   const fontColor = useColorModeValue("gray.600", "whiteAlpha.700");
-  const gray = useColorModeValue("gray.300", "gray.600");
   const labelWidth = "120px";
   const { api }: { [prop: string]: any } = useLoaderData<typeof loader>();
   let { text, color } = useMethodTag(api.data.method);
-  const [bodyTabIndex, setBodyTabIndex] = useState(0);
   const method = api.data.method;
   const requestHasBody =
     method === "POST" ||
     method === "DELETE" ||
     method === "PUT" ||
     method === "PATCH";
-  useEffect(() => {
-    console.info(api.data);
-  }, []);
   return (
     <Box
       key={`${api.id}-${api.updatedAt}`}
@@ -105,7 +94,7 @@ const Api = () => {
           <Heading size={"sm"} mb={5}>Query:</Heading>
           <ParamTable defaultValue={api.data.queryParams} />
       </Box>}
-      {requestHasBody && <Box mt={3} bg={bg} p={4} borderRadius={5}>
+      {requestHasBody && <Box mt={3} bg={bg} p={4} borderRadius={5} minH={60}>
           <Heading size={"sm"} mb={5}>Body:</Heading>
           <BodyEditor
               type={api.data.bodyType}
@@ -114,8 +103,9 @@ const Api = () => {
               bodyRaw={api.data.bodyRaw}
           />
       </Box>}
+      {!requestHasBody && !api.data.headers.length && !api.data.queryParams.length && <Box h={40} mt={3} bg={bg} p={4} borderRadius={5}></Box>}
       <Header mt={6}>Response</Header>
-      <Box bg={bg} p={4} borderRadius={5}>
+      <Box bg={bg} p={4} borderRadius={5} minH={40}>
         {api.data.response && <JsonRow
             depth={0}
             isParentOpen={true}
@@ -192,19 +182,19 @@ const JsonRow = ({
     <>
       {isRoot && <Grid templateColumns={"1fr 120px 1fr 1fr 1fr"} py={3} w="full" {...rest} borderBottomWidth={1} borderColor={"blackAlpha"}>
           <Center flex="0 0 320px">
-              <Text color={'gray.600'} fontWeight={"bold"}>Name</Text>
+              <Text color={"gray.600"} fontWeight={"bold"}>NAME</Text>
           </Center>
           <Center>
-              <Text color={'gray.600'} fontWeight={"bold"}>Is Required</Text>
+              <Text color={"gray.600"} fontWeight={"bold"}>IS REQUIRED</Text>
           </Center>
           <Center>
-              <Text color={'gray.600'} fontWeight={"bold"}>Type</Text>
+              <Text color={"gray.600"} fontWeight={"bold"}>TYPE</Text>
           </Center>
           <Center>
-              <Text color={'gray.600'} fontWeight={"bold"}>Mock</Text>
+              <Text color={"gray.600"} fontWeight={"bold"}>MOCK</Text>
           </Center>
           <Center>
-              <Text color={'gray.600'} fontWeight={"bold"}>Description</Text>
+              <Text color={"gray.600"} fontWeight={"bold"}>DESCRIPTION</Text>
           </Center>
       </Grid>}
       <Grid templateColumns={"1fr 120px 1fr 1fr 1fr"} py={3} hidden={hidden} w="full" {...rest} borderBottomWidth={1} borderColor={"blackAlpha"}>
@@ -227,7 +217,15 @@ const JsonRow = ({
         <Center><Text fontSize={"sm"}>{isRoot || isArrayElem ? "Mock" : defaultValues?.mock}</Text></Center>
         <Center><Text fontSize={"sm"}>{defaultValues?.description}</Text></Center>
       </Grid>
-      {defaultValues?.children.map((child, i) => (
+      {defaultValues?.type === "ARRAY" && <JsonRow
+          hidden={
+            hidden || !isParentOpen || !isOpen
+          }
+          isParentOpen={isParentOpen && isOpen}
+          depth={depth + 1}
+          defaultValues={defaultValues.arrayElem}
+      />}
+      {defaultValues?.type === "OBJECT" && defaultValues?.children?.map((child, i) => (
         <JsonRow
           key={i}
           keyId={i}
@@ -255,7 +253,7 @@ const BodyEditor = ({
   bodyRaw?: RequestBodyRaw
 }) => {
   return <>
-    <Flex>
+    <Flex mb={2}>
       <Text width={120}>Content-Type:</Text>
       {type}
     </Flex>
