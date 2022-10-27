@@ -124,16 +124,24 @@ function Header() {
 function GuestMenuButtons() {
   return (
     <>
-      <Button fontSize={"sm"} fontWeight={400} variant={"link"}>
-        <RemixLink to="/home/signin">Sign In</RemixLink>
+      <Button
+        fontSize={"sm"}
+        fontWeight={400}
+        variant={"link"}
+        as={RemixLink}
+        to="/home/signin"
+      >
+        Sign In
       </Button>
       <Button
         display={{ base: "none", md: "inline-flex" }}
         fontSize={"sm"}
         fontWeight={600}
         colorScheme="teal"
+        as={RemixLink}
+        to="/home/signup"
       >
-        <RemixLink to="/home/signup">Sign up</RemixLink>
+        Sign up
       </Button>
     </>
   );
