@@ -1,6 +1,11 @@
 import {
-  Box, BoxProps, Center, Flex,
-  Grid, Heading, Icon,
+  Box,
+  BoxProps,
+  Center,
+  Flex,
+  Grid,
+  Heading,
+  Icon,
   Table,
   TableContainer,
   Tbody,
@@ -9,10 +14,13 @@ import {
   Th,
   Thead,
   Tr,
-  useColorModeValue, useDisclosure,
+  useColorModeValue,
+  useDisclosure,
 } from "@chakra-ui/react";
 import {
-  ParamType, RequestBodyType,
+  ParamType,
+  RequestBodyRaw,
+  RequestBodyType,
   RequestParam,
 } from "@prisma/client";
 import { useLoaderData } from "@remix-run/react";
@@ -21,50 +29,47 @@ import { loader } from "./details.$apiId";
 import { Header } from "~/ui";
 import { useMethodTag } from "../apis";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
-
-type ResponseData = {
-  name: string;
-  type: string;
-  description: string;
-  example: string;
-  mock: string;
-  isRequired: boolean;
-  children: Array<ResponseData>;
-  arrayElem: ResponseData;
-}
-
-type RequestBodyRaw = {
-  description: string;
-  example: string;
-}
+import { JsonNode } from "~/models/type";
+import { methodContainsBody, parsePath } from "~/utils";
 
 const Api = () => {
   const bg = useColorModeValue("gray.100", "gray.700");
   const fontColor = useColorModeValue("gray.600", "whiteAlpha.700");
   const labelWidth = "120px";
-  const { api }: { [prop: string]: any } = useLoaderData<typeof loader>();
+  const { api } = useLoaderData<typeof loader>();
   let { text, color } = useMethodTag(api.data.method);
   const method = api.data.method;
-  const requestHasBody =
-    method === "POST" ||
-    method === "DELETE" ||
-    method === "PUT" ||
-    method === "PATCH";
+  const requestHasBody = methodContainsBody(method);
+
+  const bodyJson = api.data.bodyJson as JsonNode | null;
+  const bodyRaw = api.data.bodyRaw as RequestBodyRaw | null;
+  const response200 = (api.data.response as any)?.["200"] as JsonNode | null;
+
+  const parsedPath = parsePath(api.data.path);
+  const pathParams = parsedPath.params.map<RequestParam>((param) => {
+    let elem = api.data.pathParams.find((obj) => obj.name === param);
+    return {
+      name: param,
+      example: elem?.example || null,
+      description: elem?.description || null,
+      isRequired: elem?.isRequired || false,
+      type: elem?.type || ParamType.STRING,
+    };
+  });
   return (
-    <Box
-      key={`${api.id}-${api.updatedAt}`}
-      position={"relative"}
-      p={2}
-      pb={10}
-    >
+    <Box key={`${api.id}-${api.updatedAt}`} position={"relative"} p={2} pb={10}>
       <Header>General</Header>
-      <Box bg={bg} p={4} borderRadius={5}>
+      <Box p={4}>
         <Flex>
-          <Text width={labelWidth}>Name:</Text>
+          <Text as="strong" width={labelWidth}>
+            Name:
+          </Text>
           <Text color={fontColor}>{api.data.name}</Text>
         </Flex>
         <Flex mt={5}>
-          <Text width={labelWidth}>Path:</Text>
+          <Text as="strong" width={labelWidth}>
+            Path:
+          </Text>
           <Flex color={fontColor}>
             <Box
               fontWeight={700}
@@ -80,37 +85,78 @@ const Api = () => {
             {api.data.path}
           </Flex>
         </Flex>
-        <Flex mt={5}>
-          <Text width={labelWidth}>Description:</Text>
-          {api.data.description}
-        </Flex>
+        {pathParams.length > 0 && (
+          <Flex mt={2}>
+            <Text as="strong" width={labelWidth}>
+              Params:
+            </Text>
+            <ParamTable
+              flexGrow={1}
+              size="sm"
+              noPadding={true}
+              defaultValue={pathParams}
+            />
+          </Flex>
+        )}
+        {api.data.description && (
+          <Flex mt={5}>
+            <Text as="strong" width={labelWidth}>
+              Description:
+            </Text>
+            {api.data.description}
+          </Flex>
+        )}
       </Box>
 
-      <Header mt={6}>Request</Header>
-      {api.data.headers && api.data.headers.length > 0 && <Box bg={bg} p={4} borderRadius={5}>
-          <Heading size={"sm"} mb={5}>Headers:</Heading>
-          <ParamTable defaultValue={api.data.headers} /></Box>}
-      {api.data.queryParams && api.data.queryParams.length > 0 && <Box mt={3} bg={bg} p={4} borderRadius={5}>
-          <Heading size={"sm"} mb={5}>Query:</Heading>
-          <ParamTable defaultValue={api.data.queryParams} />
-      </Box>}
-      {requestHasBody && <Box mt={3} bg={bg} p={4} borderRadius={5} minH={60}>
-          <Heading size={"sm"} mb={5}>Body:</Heading>
-          <BodyEditor
-              type={api.data.bodyType}
-              bodyJson={api.data.bodyJson}
-              bodyForm={api.data.bodyForm}
-              bodyRaw={api.data.bodyRaw}
+      <Header mt={12}>Request</Header>
+      {api.data.headers && api.data.headers.length > 0 && (
+        <Box p={4}>
+          <Text as="strong" size={"sm"} mb={5}>
+            Headers:
+          </Text>
+          <ParamTable
+            mt={1}
+            borderWidth="1px"
+            defaultValue={api.data.headers}
           />
-      </Box>}
-      {!requestHasBody && !api.data.headers.length && !api.data.queryParams.length && <Box h={40} mt={3} bg={bg} p={4} borderRadius={5}></Box>}
-      <Header mt={6}>Response</Header>
-      <Box bg={bg} p={4} borderRadius={5} minH={40}>
-        {api.data.response && <JsonRow
-            depth={0}
-            isParentOpen={true}
-            defaultValues={api.data.response["200"]}
-        />}
+        </Box>
+      )}
+      {api.data.queryParams && api.data.queryParams.length > 0 && (
+        <Box mt={3} p={4}>
+          <Text as={"strong"} size={"sm"} mb={5}>
+            Query:
+          </Text>
+          <ParamTable
+            mt={1}
+            borderWidth="1px"
+            defaultValue={api.data.queryParams}
+          />
+        </Box>
+      )}
+      {requestHasBody && (
+        <Box mt={3} p={4}>
+          <Text as="strong">Body ({api.data.bodyType}):</Text>
+          <BodyEditor
+            mt={1}
+            type={api.data.bodyType}
+            bodyJson={bodyJson || undefined}
+            bodyForm={api.data.bodyForm}
+            bodyRaw={bodyRaw || undefined}
+            borderWidth="1px"
+          />
+        </Box>
+      )}
+      <Header mt={12}>Response</Header>
+      <Box p={4}>
+        <Box borderWidth={"1px"} p={4} borderRadius={5}>
+          {api.data.response && (
+            <JsonRow
+              depth={0}
+              isParentOpen={true}
+              defaultValues={response200 || undefined}
+            />
+          )}
+        </Box>
       </Box>
     </Box>
   );
@@ -118,37 +164,65 @@ const Api = () => {
 
 const ParamTable = ({
   defaultValue,
+  noPadding,
+  size,
+  ...rest
 }: {
   defaultValue: RequestParam[];
-}) => {
+  noPadding?: boolean;
+  size?: string;
+} & Omit<BoxProps, "defaultValue">) => {
   return (
-    <TableContainer>
-      <Table variant="simple" colorScheme={"blackAlpha"}>
+    <TableContainer borderRadius={5} {...rest}>
+      <Table size={size} variant="simple">
         <Thead>
           <Tr>
-            <Th>Name</Th>
-            <Th>Is Required</Th>
+            <Th pl={noPadding ? 0 : undefined}>Name</Th>
+            <Th>Required</Th>
             <Th>Type</Th>
             <Th>Example</Th>
-            <Th>Description</Th>
+            <Th pr={noPadding ? 0 : undefined}>Description</Th>
           </Tr>
         </Thead>
+
         <Tbody>
           {defaultValue.map((data, i) => (
             <Tr key={i}>
-              <Td>
+              <Td
+                pl={noPadding ? 0 : undefined}
+                borderBottomWidth={
+                  i === defaultValue.length - 1 ? 0 : undefined
+                }
+              >
                 {data?.name}
               </Td>
-              <Td>
+              <Td
+                borderBottomWidth={
+                  i === defaultValue.length - 1 ? 0 : undefined
+                }
+              >
                 {data?.isRequired ? "YES" : "NO"}
               </Td>
-              <Td>
+              <Td
+                borderBottomWidth={
+                  i === defaultValue.length - 1 ? 0 : undefined
+                }
+              >
                 {data?.type.toLowerCase()}
               </Td>
-              <Td>
+              <Td
+                borderBottomWidth={
+                  i === defaultValue.length - 1 ? 0 : undefined
+                }
+              >
                 {data?.example}
               </Td>
-              <Td>
+              <Td
+                pr={noPadding ? 0 : undefined}
+                borderBottomWidth={
+                  i === defaultValue.length - 1 ? 0 : undefined
+                }
+              >
                 {data?.description}
               </Td>
             </Tr>
@@ -172,35 +246,64 @@ const JsonRow = ({
   isParentOpen?: boolean;
   isArrayElem?: boolean;
   keyId?: number;
-  defaultValues?: ResponseData;
+  defaultValues?: JsonNode;
 } & BoxProps) => {
   const { isOpen, onToggle } = useDisclosure({
     defaultIsOpen: true,
   });
   const isRoot = depth === 0;
+  const headerColor = useColorModeValue("gray.600", "gray.400");
   return (
     <>
-      {isRoot && <Grid templateColumns={"1fr 120px 1fr 1fr 1fr"} py={3} w="full" {...rest} borderBottomWidth={1} borderColor={"blackAlpha"}>
-          <Center flex="0 0 320px">
-              <Text color={"gray.600"} fontWeight={"bold"}>NAME</Text>
+      {isRoot && (
+        <Grid
+          templateColumns={"1fr 120px 1fr 1fr 1fr"}
+          py={3}
+          w="full"
+          {...rest}
+          borderBottomWidth={1}
+          fontSize={"xs"}
+        >
+          <Flex flex="0 0 320px">
+            <Text color={headerColor} fontWeight={"bold"}>
+              NAME
+            </Text>
+          </Flex>
+          <Center>
+            <Text color={headerColor} fontWeight={"bold"}>
+              REQUIRED
+            </Text>
           </Center>
           <Center>
-              <Text color={"gray.600"} fontWeight={"bold"}>IS REQUIRED</Text>
+            <Text color={headerColor} fontWeight={"bold"}>
+              TYPE
+            </Text>
           </Center>
           <Center>
-              <Text color={"gray.600"} fontWeight={"bold"}>TYPE</Text>
+            <Text color={headerColor} fontWeight={"bold"}>
+              MOCK
+            </Text>
           </Center>
           <Center>
-              <Text color={"gray.600"} fontWeight={"bold"}>MOCK</Text>
+            <Text color={headerColor} fontWeight={"bold"}>
+              DESCRIPTION
+            </Text>
           </Center>
-          <Center>
-              <Text color={"gray.600"} fontWeight={"bold"}>DESCRIPTION</Text>
-          </Center>
-      </Grid>}
-      <Grid templateColumns={"1fr 120px 1fr 1fr 1fr"} py={3} hidden={hidden} w="full" {...rest} borderBottomWidth={1} borderColor={"blackAlpha"}>
-        <Center pl={`${depth * 24}px`} flex="0 0 320px">
+        </Grid>
+      )}
+      <Grid
+        templateColumns={"1fr 120px 1fr 1fr 1fr"}
+        py={3}
+        hidden={hidden}
+        w="full"
+        {...rest}
+        borderBottomWidth={1}
+        borderColor={"blackAlpha"}
+      >
+        <Flex pl={`${depth * 24}px`} flex="0 0 320px">
           <Center cursor="pointer" onClick={onToggle}>
-            {defaultValues?.type === ParamType.OBJECT || defaultValues?.type === ParamType.ARRAY ? (
+            {defaultValues?.type === ParamType.OBJECT ||
+            defaultValues?.type === ParamType.ARRAY ? (
               <Icon
                 fontSize={10}
                 mr={2}
@@ -208,35 +311,46 @@ const JsonRow = ({
               />
             ) : undefined}
           </Center>
-          <Text fontSize={"sm"}>{isRoot ? "Root" : isArrayElem ? "Items" : defaultValues?.name}</Text>
+          <Text fontSize={"sm"}>
+            {isRoot ? "Root" : isArrayElem ? "Items" : defaultValues?.name}
+          </Text>
+        </Flex>
+        <Center>
+          <Text fontSize={"sm"}>
+            {defaultValues?.isRequired ? "YES" : "NO"}
+          </Text>
         </Center>
         <Center>
-          <Text fontSize={"sm"}>{defaultValues?.isRequired ? "YES" : "NO"}</Text>
+          <Text fontSize={"sm"}>{defaultValues?.type.toLowerCase()}</Text>
         </Center>
-        <Center><Text fontSize={"sm"}>{defaultValues?.type.toLowerCase()}</Text></Center>
-        <Center><Text fontSize={"sm"}>{isRoot || isArrayElem ? "Mock" : defaultValues?.mock}</Text></Center>
-        <Center><Text fontSize={"sm"}>{defaultValues?.description}</Text></Center>
+        <Center>
+          <Text fontSize={"sm"}>
+            {isRoot || isArrayElem ? "Mock" : defaultValues?.mock}
+          </Text>
+        </Center>
+        <Center>
+          <Text fontSize={"sm"}>{defaultValues?.description}</Text>
+        </Center>
       </Grid>
-      {defaultValues?.type === "ARRAY" && <JsonRow
-          hidden={
-            hidden || !isParentOpen || !isOpen
-          }
+      {defaultValues?.type === "ARRAY" && (
+        <JsonRow
+          hidden={hidden || !isParentOpen || !isOpen}
           isParentOpen={isParentOpen && isOpen}
           depth={depth + 1}
           defaultValues={defaultValues.arrayElem}
-      />}
-      {defaultValues?.type === "OBJECT" && defaultValues?.children?.map((child, i) => (
-        <JsonRow
-          key={i}
-          keyId={i}
-          hidden={
-            hidden || !isParentOpen || !isOpen
-          }
-          isParentOpen={isParentOpen && isOpen}
-          depth={depth + 1}
-          defaultValues={child}
         />
-      ))}
+      )}
+      {defaultValues?.type === "OBJECT" &&
+        defaultValues?.children?.map((child, i) => (
+          <JsonRow
+            key={i}
+            keyId={i}
+            hidden={hidden || !isParentOpen || !isOpen}
+            isParentOpen={isParentOpen && isOpen}
+            depth={depth + 1}
+            defaultValues={child}
+          />
+        ))}
     </>
   );
 };
@@ -246,30 +360,44 @@ const BodyEditor = ({
   bodyJson,
   bodyForm,
   bodyRaw,
+  ...rest
 }: {
   bodyForm: RequestParam[];
   type: RequestBodyType;
-  bodyJson?: ResponseData;
-  bodyRaw?: RequestBodyRaw
-}) => {
-  return <>
-    <Flex mb={2}>
-      <Text width={120}>Content-Type:</Text>
-      {type}
-    </Flex>
-    {type === "FORM" && <ParamTable defaultValue={bodyForm} />}
-    {type === "JSON" && <JsonRow depth={0} isParentOpen={true} defaultValues={bodyJson} />}
-    {type === "RAW" && <>
-        <Flex mt={3}>
+  bodyJson?: JsonNode;
+  bodyRaw?: RequestBodyRaw;
+} & BoxProps) => {
+  return (
+    <Box {...rest}>
+      {type === "FORM" &&
+        (bodyForm.length > 0 ? (
+          <ParamTable defaultValue={bodyForm} />
+        ) : (
+          <Box py={6}>
+            <Text color="gray" textAlign={"center"}>
+              No Data
+            </Text>
+          </Box>
+        ))}
+      {type === "JSON" && (
+        <Box p={4}>
+          <JsonRow depth={0} isParentOpen={true} defaultValues={bodyJson} />
+        </Box>
+      )}
+      {type === "RAW" && (
+        <>
+          <Flex mt={3}>
             <Text width={120}>Example:</Text>
-          {bodyRaw?.example}
-        </Flex>
-        <Flex mt={3}>
+            {bodyRaw?.example}
+          </Flex>
+          <Flex mt={3}>
             <Text width={120}>Description:</Text>
-          {bodyRaw?.description}
-        </Flex>
-    </>}
-  </>;
+            {bodyRaw?.description}
+          </Flex>
+        </>
+      )}
+    </Box>
+  );
 };
 
 export default Api;

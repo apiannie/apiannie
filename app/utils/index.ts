@@ -82,3 +82,23 @@ export const methodContainsBody = (method: string) => {
     method === "PATCH"
   );
 };
+
+export const parsePath = (path: string) => {
+  let params = [] as string[];
+  let val = path;
+  if (!val.startsWith("/")) {
+    val = "/" + val;
+  }
+  let url = new URL("http://localhost" + val);
+  val = url.pathname;
+  val = encodeURI(val);
+
+  let encodedPath = val.replace(/%257B(.+?)%257D/g, (str, match) => {
+    if (params.indexOf(match) === -1) {
+      params.push(match);
+    }
+    return `{${match}}`;
+  });
+
+  return { params, encodedPath };
+};

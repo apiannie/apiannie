@@ -1,3 +1,4 @@
+import { parsePath } from "./index";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const useIds = (
@@ -79,23 +80,9 @@ export const usePath = (initial?: string) => {
   let [params, setParams] = useState<string[]>([]);
   let [encodedPath, setEncodedPath] = useState<string | null>(null);
   useEffect(() => {
-    let params = [] as string[];
-    let val = path || "/";
-    if (!val.startsWith("/")) {
-      val = "/" + val;
-    }
-    let url = new URL("http://localhost" + val);
-    val = url.pathname;
-    val = encodeURI(val);
-
-    encodedPath = val.replace(/%257B(.+?)%257D/g, (str, match) => {
-      if (params.indexOf(match) === -1) {
-        params.push(match);
-      }
-      return `{${match}}`;
-    });
-    setParams(params);
-    setEncodedPath(encodedPath);
+    let parsed = parsePath(path || "");
+    setParams(parsed.params);
+    setEncodedPath(parsed.encodedPath);
   }, [path]);
 
   return { path, setPath, params, encodedPath };

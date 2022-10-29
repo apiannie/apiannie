@@ -454,13 +454,7 @@ const FileNavbar = () => {
   );
 };
 
-const FolderIcon = ({
-  isExpanded,
-  onClick,
-}: {
-  isExpanded: boolean;
-  onClick: (e: any) => void;
-}) => {
+const FolderIcon = ({ isExpanded }: { isExpanded: boolean }) => {
   const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
   return (
     <Center
@@ -469,7 +463,6 @@ const FolderIcon = ({
       h="4"
       borderRadius={"full"}
       _groupHover={{ background: "blackAlpha.50" }}
-      onClick={onClick}
     >
       <Icon
         as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
@@ -535,19 +528,12 @@ const Folder = ({
               ? isOpen
                 ? onDelete(group.id)
                 : onAdd(group.id)
-              : undefined
+              : isOpen
+              ? undefined
+              : onAdd(group.id)
           }
         >
-          <FolderIcon
-            isExpanded={isOpen}
-            onClick={(e) =>
-              !isActive
-                ? isOpen
-                  ? onDelete(group.id)
-                  : onAdd(group.id)
-                : undefined
-            }
-          />
+          <FolderIcon isExpanded={isOpen} />
           <Box
             as={RemixLink}
             flexGrow={1}
