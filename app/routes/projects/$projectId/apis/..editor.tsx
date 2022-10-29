@@ -52,12 +52,19 @@ import {
 } from "@prisma/client";
 import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  PropsWithoutRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import { FiEye, FiMinus, FiPlus, FiSettings, FiTrash2 } from "react-icons/fi";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { z, ZodTypeDef } from "zod";
+import { string, z, ZodTypeDef } from "zod";
 import { saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
 import {
@@ -67,8 +74,10 @@ import {
   Header,
   PathInput,
 } from "~/ui";
+import { FormInputProps } from "~/ui/Form/FormHInput";
 import ModalInput from "~/ui/Form/ModalInput";
-import { useIds } from "~/utils";
+import { PathInputProps } from "~/ui/Form/PathInput";
+import { useIds, usePath } from "~/utils";
 import { loader } from "./details.$apiId";
 
 type JsonNodeFormElem = Omit<
@@ -98,6 +107,7 @@ export const saveApiAction = async (apiId: string, formData: FormData) => {
 
   let data = result.data;
 
+  let pathParams: RequestParam[] = formatZodParam(data.pathParams);
   let queryParams: RequestParam[] = formatZodParam(data.queryParams);
   let headers: RequestParam[] = formatZodParam(data.headers);
   let bodyForm: RequestParam[] = formatZodParam(data.bodyForm);
@@ -109,7 +119,7 @@ export const saveApiAction = async (apiId: string, formData: FormData) => {
     path: data.path,
     method: data.method,
     description: data.description || null,
-    pathParams: [],
+    pathParams: pathParams,
     queryParams: queryParams,
     headers: headers,
     bodyType: data.bodyType,
@@ -279,6 +289,126 @@ const jsonNodeToForm = (json: JsonNode) => {
   return retval;
 };
 
+const FormPathInput = ({
+  labelWidth,
+  method,
+  bg,
+  onMethodChange,
+  defaultValue,
+  defaultParams,
+}: Partial<FormInputProps> &
+  PathInputProps & {
+    defaultParams?: RequestParam[];
+  }) => {
+  let { path, setPath, params } = usePath(
+    typeof defaultValue === "string" ? defaultValue : ""
+  );
+  labelWidth ||= 0;
+  let prefix = "pathParams";
+
+  return (
+    <Box>
+      <FormHInput
+        isRequired
+        bg={bg}
+        labelWidth={labelWidth}
+        name="path"
+        label="Path"
+        as={PathInput}
+        autoComplete="off"
+        size="sm"
+        method={method}
+        onMethodChange={onMethodChange}
+        value={path}
+        onChange={(e) => setPath(e.target.value)}
+      />
+      {params.length > 0 && (
+        <TableContainer mt={1} ml={labelWidth}>
+          <Table variant="unstyled" size={"sm"} colorScheme="teal">
+            <Tbody verticalAlign={"baseline"}>
+              {params.map((param, i) => {
+                let defaultValues = defaultParams?.find(
+                  (elem) => elem.name === param
+                );
+                return (
+                  <Tr key={param}>
+                    <Td p={1} width="25%" pl={0}>
+                      <HStack alignItems={"flex-start"}>
+                        <Input
+                          bg={bg}
+                          size="sm"
+                          value={param}
+                          id={`${prefix}-${param}-name`}
+                          name={`${prefix}[${i}].name`}
+                          readOnly
+                          cursor={"not-allowed"}
+                        />
+                        <Tooltip label="Required">
+                          <Center h={8}>
+                            <Checkbox
+                              id={`${prefix}-${param}-required`}
+                              name={`${prefix}[${i}].isRequired`}
+                              bg={bg}
+                              isChecked
+                              type="hidden"
+                              readOnly
+                              cursor={"not-allowed"}
+                            />
+                          </Center>
+                        </Tooltip>
+                      </HStack>
+                    </Td>
+                    <Td p={1}>
+                      <Select
+                        bg={bg}
+                        size="sm"
+                        name={`${prefix}[${i}].type`}
+                        defaultValue={defaultValues?.type || undefined}
+                      >
+                        {[ParamType.STRING, ParamType.INT, ParamType.FLOAT].map(
+                          (type) => (
+                            <option key={type} value={type}>
+                              {type.toLowerCase()}
+                            </option>
+                          )
+                        )}
+                      </Select>
+                    </Td>
+                    <Td p={1}>
+                      <FormInput
+                        id={`${prefix}-${param}-example`}
+                        bg={bg}
+                        size="sm"
+                        name={`${prefix}[${i}].example`}
+                        placeholder="Example"
+                        defaultValue={defaultValues?.example || undefined}
+                      />
+                    </Td>
+                    <Td p={1} pr={0}>
+                      <HStack>
+                        <FormInput
+                          id={`${prefix}-${param}-description`}
+                          bg={bg}
+                          size="sm"
+                          name={`${prefix}[${i}].description`}
+                          as={ModalInput}
+                          modal={{ title: "Description" }}
+                          placeholder="Description"
+                          defaultValue={defaultValues?.description || undefined}
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
+  );
+};
+
 const Editor = () => {
   const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
@@ -304,15 +434,17 @@ const Editor = () => {
     }
   }, [requestHasBody]);
 
-  let defaultValues = {
-    ...rest,
-    response: response200
-      ? jsonNodeToForm(response200 as unknown as JsonNode)
-      : undefined,
-    bodyJson: bodyJson
-      ? jsonNodeToForm(bodyJson as unknown as JsonNode)
-      : undefined,
-  };
+  let defaultValues = useMemo(() => {
+    return {
+      ...rest,
+      response: response200
+        ? jsonNodeToForm(response200 as unknown as JsonNode)
+        : undefined,
+      bodyJson: bodyJson
+        ? jsonNodeToForm(bodyJson as unknown as JsonNode)
+        : undefined,
+    };
+  }, [api]);
 
   const onMethodChange: React.ChangeEventHandler<HTMLSelectElement> =
     useCallback(
@@ -369,18 +501,12 @@ const Editor = () => {
             />
           </Box>
           <Box py={2}>
-            <FormHInput
-              isRequired
-              bg={bgBW}
+            <FormPathInput
               labelWidth={labelWidth}
-              name="path"
-              label="Path"
-              as={PathInput}
-              autoComplete="off"
-              size="sm"
-              method={method}
+              bg={bgBW}
               onMethodChange={onMethodChange}
               defaultValue={defaultValues.path}
+              defaultParams={defaultValues.pathParams}
             />
           </Box>
           <Box py={2}>
@@ -462,443 +588,454 @@ const Editor = () => {
   );
 };
 
-const BodyEditor = ({
-  type,
-  bodyJson,
-  bodyForm,
-  bodyRaw,
-}: {
-  bodyForm: RequestParam[];
-  type: RequestBodyType;
-  bodyJson?: JsonNodeForm;
-  bodyRaw: {
-    example: string | null;
-    description: string | null;
-  } | null;
-}) => {
-  const bgBW = useColorModeValue("white", "gray.900");
-  return (
-    <Tabs
-      defaultIndex={[
-        RequestBodyType.FORM,
-        RequestBodyType.JSON,
-        RequestBodyType.RAW,
-      ].indexOf(type)}
-    >
-      <RadioGroup px={4} defaultValue={type}>
-        <TabList border={"none"} display={"flex"} gap={4}>
-          <RadioTab name="bodyType" value={RequestBodyType.FORM}>
-            form-data
-          </RadioTab>
-          <RadioTab name="bodyType" value={RequestBodyType.JSON}>
-            json
-          </RadioTab>
-          <RadioTab name="bodyType" value={RequestBodyType.RAW}>
-            raw
-          </RadioTab>
-        </TabList>
-      </RadioGroup>
-      <TabPanels mt={4}>
-        <TabPanel p={0}>
-          <ParamTable
-            defaultValue={bodyForm}
-            prefix="bodyForm"
-            types={[ParamType.STRING, ParamType.FILE]}
-          />
-        </TabPanel>
-        <TabPanel>
-          <JsonEditor
-            defaultValues={bodyJson}
-            prefix="bodyJson"
-            isMock={false}
-          />
-        </TabPanel>
-        <TabPanel>
-          <Box>
-            <FormInput
-              bg={bgBW}
-              as={Textarea}
-              name="bodyRaw.example"
-              label="Example"
-              container={{
-                mb: 6,
-              }}
-              defaultValue={bodyRaw?.example || undefined}
+const BodyEditor = React.memo(
+  ({
+    type,
+    bodyJson,
+    bodyForm,
+    bodyRaw,
+  }: {
+    bodyForm: RequestParam[];
+    type: RequestBodyType;
+    bodyJson?: JsonNodeForm;
+    bodyRaw: {
+      example: string | null;
+      description: string | null;
+    } | null;
+  }) => {
+    const bgBW = useColorModeValue("white", "gray.900");
+    return (
+      <Tabs
+        defaultIndex={[
+          RequestBodyType.FORM,
+          RequestBodyType.JSON,
+          RequestBodyType.RAW,
+        ].indexOf(type)}
+      >
+        <RadioGroup px={4} defaultValue={type}>
+          <TabList border={"none"} display={"flex"} gap={4}>
+            <RadioTab name="bodyType" value={RequestBodyType.FORM}>
+              form-data
+            </RadioTab>
+            <RadioTab name="bodyType" value={RequestBodyType.JSON}>
+              json
+            </RadioTab>
+            <RadioTab name="bodyType" value={RequestBodyType.RAW}>
+              raw
+            </RadioTab>
+          </TabList>
+        </RadioGroup>
+        <TabPanels mt={4}>
+          <TabPanel p={0}>
+            <ParamTable
+              defaultValue={bodyForm}
+              prefix="bodyForm"
+              types={[ParamType.STRING, ParamType.FILE]}
             />
-            <FormInput
-              bg={bgBW}
-              as={Textarea}
-              name="bodyRaw.description"
-              label="Description"
-              defaultValue={bodyRaw?.description || undefined}
+          </TabPanel>
+          <TabPanel>
+            <JsonEditor
+              defaultValues={bodyJson}
+              prefix="bodyJson"
+              isMock={false}
             />
-          </Box>
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
-  );
-};
-
-const ParamTable = ({
-  prefix,
-  types,
-  defaultValue,
-}: {
-  prefix: string;
-  types?: string[];
-  defaultValue: RequestParam[];
-}) => {
-  const bgBW = useColorModeValue("white", "gray.900");
-  const { ids, pushId, removeId } = useIds(Math.max(defaultValue.length, 1), 1);
-  return (
-    <TableContainer>
-      <Table size={"sm"} colorScheme="teal">
-        <Thead>
-          <Tr>
-            <Th width={"20%"}>Name</Th>
-            {types && <Th>Type</Th>}
-            <Th width={"25%"}>Example</Th>
-            <Th>Description</Th>
-          </Tr>
-        </Thead>
-        <Tbody verticalAlign={"baseline"}>
-          {ids.map((id, i) => (
-            <Tr key={id}>
-              <Td>
-                <HStack alignItems={"flex-start"}>
-                  <FormInput
-                    id={`${prefix}-${id}-name`}
-                    bg={bgBW}
-                    size="sm"
-                    name={`${prefix}[${i}].name`}
-                    defaultValue={defaultValue[id]?.name}
-                  />
-                  <Tooltip label="Required">
-                    <Center h={8}>
-                      <FormInput
-                        as={Checkbox}
-                        id={`${prefix}-${id}-required`}
-                        bg={bgBW}
-                        name={`${prefix}[${i}].isRequired`}
-                        defaultChecked={defaultValue[id]?.isRequired}
-                      />
-                    </Center>
-                  </Tooltip>
-                </HStack>
-              </Td>
-              {types && (
-                <Td>
-                  <Select
-                    bg={bgBW}
-                    size="sm"
-                    name={`${prefix}[${i}].type`}
-                    defaultValue={defaultValue[id]?.type}
-                  >
-                    {types.map((type) => (
-                      <option key={type} value={type}>
-                        {type.toLowerCase()}
-                      </option>
-                    ))}
-                  </Select>
-                </Td>
-              )}
-              <Td>
-                <FormInput
-                  id={`${prefix}-${id}-example`}
-                  bg={bgBW}
-                  size="sm"
-                  name={`${prefix}[${i}].example`}
-                />
-              </Td>
-              <Td>
-                <HStack>
-                  <FormInput
-                    id={`${prefix}-${id}-description`}
-                    bg={bgBW}
-                    size="sm"
-                    name={`${prefix}[${i}].description`}
-                    as={ModalInput}
-                    modal={{ title: "Description" }}
-                    defaultValue={defaultValue[id]?.description || ""}
-                  />
-                  <Button size="sm" onClick={() => removeId(id)}>
-                    <Icon as={FiTrash2} />
-                  </Button>
-                </HStack>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-      <Box textAlign={"center"} mt={4}>
-        <Button
-          size="sm"
-          colorScheme="blue"
-          variant={"outline"}
-          onClick={pushId}
-        >
-          <Icon as={FiPlus} /> Add
-        </Button>
-      </Box>
-    </TableContainer>
-  );
-};
-
-const JsonEditor = ({
-  prefix,
-  isMock,
-  defaultValues,
-}: {
-  prefix: string;
-  isMock: boolean;
-  defaultValues?: JsonNodeForm;
-}) => {
-  return (
-    <Box>
-      <VStack>
-        <JsonRow
-          depth={0}
-          isParentOpen={true}
-          prefix={prefix}
-          isMock={isMock}
-          defaultValues={defaultValues}
-        />
-      </VStack>
-      <Center mt={8}>
-        <Button colorScheme={"blue"} variant="outline" size="sm">
-          <Icon as={FiEye} />
-          <Text ml={2}>View Example</Text>
-        </Button>
-      </Center>
-    </Box>
-  );
-};
-
-const JsonRow = ({
-  depth,
-  isParentOpen,
-  isArrayElem,
-  keyId,
-  onAddSibling,
-  onDelete,
-  prefix,
-  isMock,
-  defaultValues,
-  hidden,
-  ...rest
-}: {
-  depth: number;
-  isParentOpen?: boolean;
-  isArrayElem?: boolean;
-  onAddSibling?: (id: number) => void;
-  onDelete?: (id: number) => void;
-  prefix: string;
-  keyId?: number;
-  isMock: boolean;
-  defaultValues?: JsonNodeForm;
-} & BoxProps) => {
-  const types = [
-    ParamType.OBJECT,
-    ParamType.ARRAY,
-    ParamType.STRING,
-    ParamType.INT,
-    ParamType.FLOAT,
-    ParamType.BOOLEAN,
-  ];
-  const bgBW = useColorModeValue("white", "gray.900");
-  const { isOpen, onToggle } = useDisclosure({
-    defaultIsOpen: true,
-  });
-  const isRoot = depth === 0;
-  const [type, setType] = useState<ParamType>(
-    defaultValues?.type || (isRoot ? ParamType.OBJECT : ParamType.STRING)
-  );
-  const [touched, setTouched] = useBoolean(isRoot || !!defaultValues?.name);
-  const { ids, pushId, removeId, insertAfterId } = useIds(
-    defaultValues?.children?.length || 1,
-    1
-  );
-  const blue = useColorModeValue("blue.500", "blue.200");
-  const value = isRoot ? "root" : isArrayElem ? "items" : undefined;
-  const readOnly = isRoot || isArrayElem;
-  return (
-    <>
-      <HStack hidden={hidden} w="full" {...rest} alignItems="flex-start">
-        <Center pl={`${depth * 24}px`} flex="0 0 320px">
-          <Center w={4} h={4} cursor="pointer" onClick={onToggle}>
-            {type === ParamType.OBJECT || type === ParamType.ARRAY ? (
-              <Icon
-                fontSize={10}
-                as={isOpen ? BsFillCaretDownFill : BsFillCaretRightFill}
-              />
-            ) : undefined}
-          </Center>
-          <FormInput
-            minW={16}
-            size="sm"
-            name={`${prefix}.name`}
-            placeholder="Name"
-            cursor={readOnly ? "not-allowed" : undefined}
-            bg={readOnly ? undefined : bgBW}
-            readOnly={readOnly}
-            value={value}
-            defaultValue={!!value ? undefined : defaultValues?.name || ""}
-          />
-        </Center>
-        <Box>
-          <Tooltip label="Required">
-            <Center h={8}>
+          </TabPanel>
+          <TabPanel>
+            <Box>
               <FormInput
-                as={Checkbox}
-                name={`${prefix}.isRequired`}
                 bg={bgBW}
-                isChecked={isArrayElem ? false : undefined}
-                isDisabled={isArrayElem}
-                // value="true"
-              />
-            </Center>
-          </Tooltip>
-        </Box>
-        <Select
-          onChange={(e) => {
-            setTouched.on();
-            setType(e.target.value as ParamType);
-          }}
-          bg={bgBW}
-          size="sm"
-          flex="0 0 100px"
-          defaultValue={type}
-          name={`${prefix}.type`}
-        >
-          {types.map((type) => (
-            <option key={type} value={type}>
-              {type.toLowerCase()}
-            </option>
-          ))}
-        </Select>
-        {isMock ? (
-          <FormInput
-            bg={bgBW}
-            size="sm"
-            name={`${prefix}.mock`}
-            placeholder={"Mock"}
-            as={ModalInput}
-            modal={{ title: "Mock" }}
-            isDisabled={type === "ARRAY" || type === "OBJECT"}
-            defaultValue={defaultValues?.mock}
-          />
-        ) : (
-          <FormInput
-            bg={bgBW}
-            size="sm"
-            name={`${prefix}.example`}
-            placeholder={"Example"}
-            as={ModalInput}
-            modal={{ title: "Example" }}
-            isDisabled={type === "ARRAY" || type === "OBJECT"}
-            defaultValue={defaultValues?.example}
-          />
-        )}
-
-        <FormInput
-          bg={bgBW}
-          size="sm"
-          name={`${prefix}.description`}
-          placeholder="Description"
-          as={ModalInput}
-          modal={{ title: "Description" }}
-          defaultValue={defaultValues?.description}
-        />
-        {isArrayElem ? (
-          <Box flexBasis={"64px"} flexShrink={0} flexGrow={0} />
-        ) : (
-          <Flex flexBasis={"64px"} flexShrink={0} flexGrow={0}>
-            {isRoot ? (
-              <Button p={0} size="sm" colorScheme={"green"} variant="ghost">
-                <Icon as={FiSettings} />
-              </Button>
-            ) : (
-              <Button
-                p={0}
-                size="sm"
-                colorScheme={"red"}
-                variant="ghost"
-                onClick={(e) => onDelete?.(keyId as number)}
-              >
-                <Icon as={FiMinus} />
-              </Button>
-            )}
-            {depth === 0 || type !== ParamType.OBJECT ? (
-              <Button
-                p={0}
-                size="sm"
-                colorScheme={"blue"}
-                variant="ghost"
-                onClick={(e) => {
-                  if (depth === 0) {
-                    pushId();
-                  } else {
-                    onAddSibling?.(keyId as number);
-                  }
+                as={Textarea}
+                name="bodyRaw.example"
+                label="Example"
+                container={{
+                  mb: 6,
                 }}
-              >
-                <Icon as={FiPlus} />
-              </Button>
-            ) : (
-              <Menu size={"sm"} colorScheme={"blue"}>
-                <MenuButton
-                  p={0}
-                  as={IconButton}
-                  icon={<FiPlus />}
-                  colorScheme="blue"
-                  size="sm"
-                  variant={"ghost"}
-                />
-                <MenuList zIndex={5}>
-                  <MenuItem onClick={pushId}>Add child node</MenuItem>
-                  <MenuItem onClick={(e) => onAddSibling?.(keyId as number)}>
-                    Add sibling node
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            )}
-          </Flex>
-        )}
-      </HStack>
-      {touched && (
-        <JsonRow
-          isParentOpen={isParentOpen && isOpen}
-          depth={depth + 1}
-          hidden={
-            hidden || !isParentOpen || !isOpen || type !== ParamType.ARRAY
-          }
-          isArrayElem
-          onAddSibling={insertAfterId}
-          onDelete={removeId}
-          prefix={`${prefix}.arrayElem`}
-          isMock={isMock}
-          defaultValues={defaultValues?.arrayElem}
-        />
-      )}
-      {touched &&
-        ids.map((id, i) => (
+                defaultValue={bodyRaw?.example || undefined}
+              />
+              <FormInput
+                bg={bgBW}
+                as={Textarea}
+                name="bodyRaw.description"
+                label="Description"
+                defaultValue={bodyRaw?.description || undefined}
+              />
+            </Box>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    );
+  }
+);
+
+const ParamTable = React.memo(
+  ({
+    prefix,
+    types,
+    defaultValue,
+  }: {
+    prefix: string;
+    types?: string[];
+    defaultValue: RequestParam[];
+  }) => {
+    const bgBW = useColorModeValue("white", "gray.900");
+    const { ids, pushId, removeId } = useIds(
+      Math.max(defaultValue.length, 1),
+      1
+    );
+    return (
+      <TableContainer>
+        <Table size={"sm"} colorScheme="teal">
+          <Thead>
+            <Tr>
+              <Th width={"20%"}>Name</Th>
+              {types && <Th>Type</Th>}
+              <Th width={"25%"}>Example</Th>
+              <Th>Description</Th>
+            </Tr>
+          </Thead>
+          <Tbody verticalAlign={"baseline"}>
+            {ids.map((id, i) => (
+              <Tr key={id}>
+                <Td>
+                  <HStack alignItems={"flex-start"}>
+                    <FormInput
+                      id={`${prefix}-${id}-name`}
+                      bg={bgBW}
+                      size="sm"
+                      name={`${prefix}[${i}].name`}
+                      defaultValue={defaultValue[id]?.name}
+                    />
+                    <Tooltip label="Required">
+                      <Center h={8}>
+                        <FormInput
+                          as={Checkbox}
+                          id={`${prefix}-${id}-required`}
+                          bg={bgBW}
+                          name={`${prefix}[${i}].isRequired`}
+                          defaultChecked={defaultValue[id]?.isRequired}
+                        />
+                      </Center>
+                    </Tooltip>
+                  </HStack>
+                </Td>
+                {types && (
+                  <Td>
+                    <Select
+                      bg={bgBW}
+                      size="sm"
+                      name={`${prefix}[${i}].type`}
+                      defaultValue={defaultValue[id]?.type}
+                    >
+                      {types.map((type) => (
+                        <option key={type} value={type}>
+                          {type.toLowerCase()}
+                        </option>
+                      ))}
+                    </Select>
+                  </Td>
+                )}
+                <Td>
+                  <FormInput
+                    id={`${prefix}-${id}-example`}
+                    bg={bgBW}
+                    size="sm"
+                    name={`${prefix}[${i}].example`}
+                  />
+                </Td>
+                <Td>
+                  <HStack>
+                    <FormInput
+                      id={`${prefix}-${id}-description`}
+                      bg={bgBW}
+                      size="sm"
+                      name={`${prefix}[${i}].description`}
+                      as={ModalInput}
+                      modal={{ title: "Description" }}
+                      defaultValue={defaultValue[id]?.description || ""}
+                    />
+                    <Button size="sm" onClick={() => removeId(id)}>
+                      <Icon as={FiTrash2} />
+                    </Button>
+                  </HStack>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+        <Box textAlign={"center"} mt={4}>
+          <Button
+            size="sm"
+            colorScheme="blue"
+            variant={"outline"}
+            onClick={pushId}
+          >
+            <Icon as={FiPlus} /> Add
+          </Button>
+        </Box>
+      </TableContainer>
+    );
+  }
+);
+
+const JsonEditor = React.memo(
+  ({
+    prefix,
+    isMock,
+    defaultValues,
+  }: {
+    prefix: string;
+    isMock: boolean;
+    defaultValues?: JsonNodeForm;
+  }) => {
+    return (
+      <Box>
+        <VStack>
           <JsonRow
-            key={id}
-            keyId={id}
+            depth={0}
+            isParentOpen={true}
+            prefix={prefix}
+            isMock={isMock}
+            defaultValues={defaultValues}
+          />
+        </VStack>
+        <Center mt={8}>
+          <Button colorScheme={"blue"} variant="outline" size="sm">
+            <Icon as={FiEye} />
+            <Text ml={2}>View Example</Text>
+          </Button>
+        </Center>
+      </Box>
+    );
+  }
+);
+
+const JsonRow = React.memo(
+  ({
+    depth,
+    isParentOpen,
+    isArrayElem,
+    keyId,
+    onAddSibling,
+    onDelete,
+    prefix,
+    isMock,
+    defaultValues,
+    hidden,
+    ...rest
+  }: {
+    depth: number;
+    isParentOpen?: boolean;
+    isArrayElem?: boolean;
+    onAddSibling?: (id: number) => void;
+    onDelete?: (id: number) => void;
+    prefix: string;
+    keyId?: number;
+    isMock: boolean;
+    defaultValues?: JsonNodeForm;
+  } & BoxProps) => {
+    const types = [
+      ParamType.OBJECT,
+      ParamType.ARRAY,
+      ParamType.STRING,
+      ParamType.INT,
+      ParamType.FLOAT,
+      ParamType.BOOLEAN,
+    ];
+    const bgBW = useColorModeValue("white", "gray.900");
+    const { isOpen, onToggle } = useDisclosure({
+      defaultIsOpen: true,
+    });
+    const isRoot = depth === 0;
+    const [type, setType] = useState<ParamType>(
+      defaultValues?.type || (isRoot ? ParamType.OBJECT : ParamType.STRING)
+    );
+    const [touched, setTouched] = useBoolean(isRoot || !!defaultValues?.name);
+    const { ids, pushId, removeId, insertAfterId } = useIds(
+      defaultValues?.children?.length || 1,
+      1
+    );
+    const blue = useColorModeValue("blue.500", "blue.200");
+    const value = isRoot ? "root" : isArrayElem ? "items" : undefined;
+    const readOnly = isRoot || isArrayElem;
+    return (
+      <>
+        <HStack hidden={hidden} w="full" {...rest} alignItems="flex-start">
+          <Center pl={`${depth * 24}px`} flex="0 0 320px">
+            <Center w={4} h={4} cursor="pointer" onClick={onToggle}>
+              {type === ParamType.OBJECT || type === ParamType.ARRAY ? (
+                <Icon
+                  fontSize={10}
+                  as={isOpen ? BsFillCaretDownFill : BsFillCaretRightFill}
+                />
+              ) : undefined}
+            </Center>
+            <FormInput
+              minW={16}
+              size="sm"
+              name={`${prefix}.name`}
+              placeholder="Name"
+              cursor={readOnly ? "not-allowed" : undefined}
+              bg={readOnly ? undefined : bgBW}
+              readOnly={readOnly}
+              value={value}
+              defaultValue={!!value ? undefined : defaultValues?.name || ""}
+            />
+          </Center>
+          <Box>
+            <Tooltip label="Required">
+              <Center h={8}>
+                <FormInput
+                  as={Checkbox}
+                  name={`${prefix}.isRequired`}
+                  bg={bgBW}
+                  isChecked={isArrayElem ? false : undefined}
+                  isDisabled={isArrayElem}
+                  // value="true"
+                />
+              </Center>
+            </Tooltip>
+          </Box>
+          <Select
+            onChange={(e) => {
+              setTouched.on();
+              setType(e.target.value as ParamType);
+            }}
+            bg={bgBW}
+            size="sm"
+            flex="0 0 100px"
+            defaultValue={type}
+            name={`${prefix}.type`}
+          >
+            {types.map((type) => (
+              <option key={type} value={type}>
+                {type.toLowerCase()}
+              </option>
+            ))}
+          </Select>
+          {isMock ? (
+            <FormInput
+              bg={bgBW}
+              size="sm"
+              name={`${prefix}.mock`}
+              placeholder={"Mock"}
+              as={ModalInput}
+              modal={{ title: "Mock" }}
+              isDisabled={type === "ARRAY" || type === "OBJECT"}
+              defaultValue={defaultValues?.mock}
+            />
+          ) : (
+            <FormInput
+              bg={bgBW}
+              size="sm"
+              name={`${prefix}.example`}
+              placeholder={"Example"}
+              as={ModalInput}
+              modal={{ title: "Example" }}
+              isDisabled={type === "ARRAY" || type === "OBJECT"}
+              defaultValue={defaultValues?.example}
+            />
+          )}
+
+          <FormInput
+            bg={bgBW}
+            size="sm"
+            name={`${prefix}.description`}
+            placeholder="Description"
+            as={ModalInput}
+            modal={{ title: "Description" }}
+            defaultValue={defaultValues?.description}
+          />
+          {isArrayElem ? (
+            <Box flexBasis={"64px"} flexShrink={0} flexGrow={0} />
+          ) : (
+            <Flex flexBasis={"64px"} flexShrink={0} flexGrow={0}>
+              {isRoot ? (
+                <Button p={0} size="sm" colorScheme={"green"} variant="ghost">
+                  <Icon as={FiSettings} />
+                </Button>
+              ) : (
+                <Button
+                  p={0}
+                  size="sm"
+                  colorScheme={"red"}
+                  variant="ghost"
+                  onClick={(e) => onDelete?.(keyId as number)}
+                >
+                  <Icon as={FiMinus} />
+                </Button>
+              )}
+              {depth === 0 || type !== ParamType.OBJECT ? (
+                <Button
+                  p={0}
+                  size="sm"
+                  colorScheme={"blue"}
+                  variant="ghost"
+                  onClick={(e) => {
+                    if (depth === 0) {
+                      pushId();
+                    } else {
+                      onAddSibling?.(keyId as number);
+                    }
+                  }}
+                >
+                  <Icon as={FiPlus} />
+                </Button>
+              ) : (
+                <Menu size={"sm"} colorScheme={"blue"}>
+                  <MenuButton
+                    p={0}
+                    as={IconButton}
+                    icon={<FiPlus />}
+                    colorScheme="blue"
+                    size="sm"
+                    variant={"ghost"}
+                  />
+                  <MenuList zIndex={5}>
+                    <MenuItem onClick={pushId}>Add child node</MenuItem>
+                    <MenuItem onClick={(e) => onAddSibling?.(keyId as number)}>
+                      Add sibling node
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              )}
+            </Flex>
+          )}
+        </HStack>
+        {touched && (
+          <JsonRow
             isParentOpen={isParentOpen && isOpen}
             depth={depth + 1}
             hidden={
-              hidden || !isParentOpen || !isOpen || type !== ParamType.OBJECT
+              hidden || !isParentOpen || !isOpen || type !== ParamType.ARRAY
             }
+            isArrayElem
             onAddSibling={insertAfterId}
             onDelete={removeId}
-            prefix={`${prefix}.children[${i}]`}
+            prefix={`${prefix}.arrayElem`}
             isMock={isMock}
-            defaultValues={defaultValues?.children?.[id]}
+            defaultValues={defaultValues?.arrayElem}
           />
-        ))}
-    </>
-  );
-};
+        )}
+        {touched &&
+          ids.map((id, i) => (
+            <JsonRow
+              key={id}
+              keyId={id}
+              isParentOpen={isParentOpen && isOpen}
+              depth={depth + 1}
+              hidden={
+                hidden || !isParentOpen || !isOpen || type !== ParamType.OBJECT
+              }
+              onAddSibling={insertAfterId}
+              onDelete={removeId}
+              prefix={`${prefix}.children[${i}]`}
+              isMock={isMock}
+              defaultValues={defaultValues?.children?.[id]}
+            />
+          ))}
+      </>
+    );
+  }
+);
 
 export default Editor;

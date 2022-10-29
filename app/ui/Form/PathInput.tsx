@@ -8,16 +8,18 @@ import {
 import { RequestMethod } from "@prisma/client";
 import { RequestMethods } from "~/models/type";
 
+export interface PathInputProps extends InputProps {
+  method?: RequestMethod;
+  onMethodChange?: React.ChangeEventHandler<HTMLSelectElement>;
+}
+
 const PathInput = ({
   size,
   bg,
   method,
   onMethodChange,
   ...rest
-}: InputProps & {
-  method?: RequestMethod;
-  onMethodChange?: React.ChangeEventHandler<HTMLSelectElement>;
-}) => {
+}: PathInputProps) => {
   return (
     <InputGroup size={size} bg={bg}>
       <InputLeftAddon

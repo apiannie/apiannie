@@ -71,7 +71,6 @@ export const action = async ({ request, params }: ActionArgs) => {
   let { projectId } = params;
   invariant(projectId);
   let action = formData.get("_action");
-  console.log({ action });
   switch (action) {
     case "addMember":
       return addMemberAction(projectId, formData);
