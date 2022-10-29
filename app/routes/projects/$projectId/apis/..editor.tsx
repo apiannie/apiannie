@@ -504,6 +504,7 @@ const Editor = () => {
             <FormPathInput
               labelWidth={labelWidth}
               bg={bgBW}
+              method={method}
               onMethodChange={onMethodChange}
               defaultValue={defaultValues.path}
               defaultParams={defaultValues.pathParams}
@@ -849,7 +850,9 @@ const JsonRow = React.memo(
     const [type, setType] = useState<ParamType>(
       defaultValues?.type || (isRoot ? ParamType.OBJECT : ParamType.STRING)
     );
-    const [touched, setTouched] = useBoolean(isRoot || !!defaultValues?.name);
+    const [touched, setTouched] = useBoolean(
+      type === ParamType.OBJECT || type === ParamType.ARRAY
+    );
     const { ids, pushId, removeId, insertAfterId } = useIds(
       defaultValues?.children?.length || 1,
       1
