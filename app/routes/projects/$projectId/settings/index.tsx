@@ -19,7 +19,7 @@ import {
   Divider, Alert, AlertIcon,
 } from "@chakra-ui/react";
 import {ActionArgs, redirect} from "@remix-run/node";
-import {Form, useFetcher, useMatches, useTransition} from "@remix-run/react";
+import {Form, useMatches, useTransition} from "@remix-run/react";
 import {withZod} from "@remix-validated-form/with-zod";
 import {useEffect, useState} from "react";
 import {json} from "remix-utils";
@@ -60,18 +60,28 @@ const dialogValidator = withZod(
 const TransferDialog: React.FC<{
   isOpen: boolean;
   onClose: () => any;
-}> = ({isOpen, onClose}) => {
+  project: Project;
+}> = ({isOpen, onClose, project}) => {
+  const [isDisabled, setIsDisabled] = useState(true);
+  const bgBW = useColorModeValue("white", "gray.900");
   return <Modal size={"lg"} isOpen={isOpen} onClose={onClose}>
     <ModalOverlay />
     <ModalContent>
       <ModalHeader>Transfer Project</ModalHeader>
       <ModalCloseButton />
       <ModalBody pb={6}>
-        <Text>Transferring may be delayed until the new owner approves the transfer.</Text>
+        This action <Text display={"inline-block"} fontWeight={"bold"} mx={1}>cannot</Text> be undone.
         <Text mt={5} fontSize={"xl"}>New owner’s user name</Text>
         <Input mt={1} placeholder="User name" />
-        <Text mt={5}>Type jianbing-wang/jxxx to confirm.</Text>
-        <Input mt={1} placeholder="" />
+        <FormInput
+          isRequired
+          label="User name"
+          name="userName"
+          bg={bgBW}
+          defaultValue={project.name}
+        />
+        <Text mt={5}>Type {project.name} to confirm.</Text>
+        <Input mt={1} bg={bgBW} onChange={(e) => setIsDisabled(e.target.value !== project.name)}/>
         <Divider orientation="horizontal" />
         <Center mt={10}>
           <Button colorScheme={"red"}>I understand, transfer this project.</Button>
@@ -86,9 +96,8 @@ const DeleteDialog: React.FC<{
   onClose: () => any;
   project: Project
 }> = ({isOpen, onClose, project}) => {
-  console.info("project:", project)
   const [isDisabled, setIsDisabled] = useState(true);
-  const fetcher = useFetcher();
+  const bgBW = useColorModeValue("white", "gray.900");
   return <Modal
     size={"lg"}
     isOpen={isOpen}
@@ -113,7 +122,7 @@ const DeleteDialog: React.FC<{
         </Box>
         <Flex mt={5}>Please type <Text fontWeight={"bold"} mx={2}>{project.name}</Text> to
           confirm.</Flex>
-        <Input mt={2} onChange={(e) => setIsDisabled(e.target.value !== project.name)} />
+        <Input mt={2} bg={bgBW} onChange={(e) => setIsDisabled(e.target.value !== project.name)} />
         <Center mt={10} as={ValidatedForm} replace method="patch" resetAfterSubmit validator={dialogValidator}>
           <FormSubmitButton colorScheme="red" isDisabled={isDisabled}  name="_action" value="deleteProject" ml={3}>
             I understand the consequences, delete this project
@@ -207,10 +216,9 @@ export default function () {
               <Text w="full">Transfer this project to another user</Text>
             </Flex>
             <Spacer />
-            <Button px={6} variant={"outline"} colorScheme={"red"}>
+            <Button px={6} variant={"outline"} colorScheme={"red"} onClick={() => setTransferVisible(true)}>
               Transfer
-              <TransferDialog isOpen={false} onClose={() => {
-              }} />
+              <TransferDialog isOpen={transferVisible} onClose={() => setTransferVisible(false)} project={project} />
             </Button>
           </HStack>
           <HStack mt={6} as={Form} replace method="patch">
