@@ -1,7 +1,4 @@
-import {
-  TabPanel,
-  TabPanels,
-} from "@chakra-ui/react";
+import { TabPanel, TabPanels } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
 import { useParams } from "@remix-run/react";
 import invariant from "tiny-invariant";
@@ -45,11 +42,11 @@ export const action = async ({ request, params }: ActionArgs) => {
 export default function ApiInfo() {
   const { apiId } = useParams();
   return (
-    <TabPanels h="full" overflowY={"auto"} key={apiId}>
-      <TabPanel>
+    <TabPanels h="full" overflowY={"hidden"} key={apiId}>
+      <TabPanel h="full" overflowY={"auto"}>
         <Api />
       </TabPanel>
-      <TabPanel>
+      <TabPanel h="full" overflow={"auto"}>
         <Editor />
       </TabPanel>
       <TabPanel h="full" p={0}>

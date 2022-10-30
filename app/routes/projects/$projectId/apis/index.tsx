@@ -21,6 +21,8 @@ import {
   Tfoot,
   useColorModeValue,
   Link,
+  TabPanels,
+  TabPanel,
 } from "@chakra-ui/react";
 import { RequestMethod } from "@prisma/client";
 import { Link as RemixLink, useMatches, useParams } from "@remix-run/react";
@@ -70,50 +72,52 @@ export default function ApiOverview() {
   }
 
   return (
-    <Box py={8} px={12} fontSize="sm">
-      <Flex>
-        <Header>{apis.length} API definition</Header>
-        <Spacer />
-        <Button size="sm" colorScheme={"blue"} onClick={onOpen}>
-          <Icon as={FiPlus} mr={1} /> New API
-        </Button>
-        <NewApiModal isOpen={isOpen} onClose={onClose} />
-      </Flex>
-      <Divider />
-      <TableContainer mt={4}>
-        <Table variant="striped">
-          <Thead>
-            <Tr>
-              <Th>Name</Th>
-              <Th>Path</Th>
-              <Th isNumeric>Group</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {apis.map((api) => (
-              <Tr key={api.id}>
-                <Td>
-                  <Link
-                    color={blue}
-                    as={RemixLink}
-                    to={`/projects/${projectId}/apis/details/${api.id}`}
-                  >
-                    {api.data.name}
-                  </Link>
-                </Td>
-                <Td>
-                  <Flex alignItems={"center"}>
-                    <MethodTag method={api.data.method} />
-                    <Text ml={2}>{api.data.path}</Text>
-                  </Flex>
-                </Td>
-                <Td isNumeric>{groupMap.get(api.groupId || "")?.name}</Td>
+    <TabPanels h="full" overflowY={"auto"} py={8} px={12} fontSize="sm">
+      <TabPanel>
+        <Flex>
+          <Header>{apis.length} API definition</Header>
+          <Spacer />
+          <Button size="sm" colorScheme={"blue"} onClick={onOpen}>
+            <Icon as={FiPlus} mr={1} /> New API
+          </Button>
+          <NewApiModal isOpen={isOpen} onClose={onClose} />
+        </Flex>
+        <Divider />
+        <TableContainer mt={4}>
+          <Table variant="striped">
+            <Thead>
+              <Tr>
+                <Th>Name</Th>
+                <Th>Path</Th>
+                <Th isNumeric>Group</Th>
               </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </TableContainer>
-    </Box>
+            </Thead>
+            <Tbody>
+              {apis.map((api) => (
+                <Tr key={api.id}>
+                  <Td>
+                    <Link
+                      color={blue}
+                      as={RemixLink}
+                      to={`/projects/${projectId}/apis/details/${api.id}`}
+                    >
+                      {api.data.name}
+                    </Link>
+                  </Td>
+                  <Td>
+                    <Flex alignItems={"center"}>
+                      <MethodTag method={api.data.method} />
+                      <Text ml={2}>{api.data.path}</Text>
+                    </Flex>
+                  </Td>
+                  <Td isNumeric>{groupMap.get(api.groupId || "")?.name}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+    </TabPanels>
   );
 }
 

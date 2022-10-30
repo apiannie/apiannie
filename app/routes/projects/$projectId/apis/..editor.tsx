@@ -54,6 +54,7 @@ import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import React, {
   PropsWithoutRef,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -409,12 +410,31 @@ const FormPathInput = ({
   );
 };
 
+const HeaderWithSubmission = ({
+  children,
+  ...rest
+}: { children: ReactNode } & BoxProps) => {
+  return (
+    <Flex justifyContent={"space-between"} alignItems="baseline" {...rest}>
+      <Header>{children}</Header>
+      <FormSubmitButton
+        name="_action"
+        value="saveApi"
+        type="submit"
+        colorScheme="blue"
+        size="sm"
+      >
+        Save
+      </FormSubmitButton>
+    </Flex>
+  );
+};
+
 const Editor = () => {
   const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
   const gray = useColorModeValue("gray.300", "gray.600");
   const labelWidth = "100px";
-  const ref = useRef<HTMLFormElement>(null);
   const { api } = useLoaderData<typeof loader>();
   let { response, bodyJson, ...rest } = api.data;
   let response200 = response ? (response as any)["200"] : undefined;
@@ -477,14 +497,12 @@ const Editor = () => {
       position={"relative"}
       as={ValidatedForm}
       method="patch"
-      p={2}
-      pb={10}
       validator={withZod(z.object({}))}
-      formRef={ref}
       replace={true}
       resetAfterSubmit
+      p={2}
     >
-      <Header>General</Header>
+      <HeaderWithSubmission>General</HeaderWithSubmission>
       <Box bg={bg} p={4}>
         <Container maxW="container.lg">
           <Box py={2}>
@@ -526,7 +544,7 @@ const Editor = () => {
         </Container>
       </Box>
 
-      <Header mt={6}>Request</Header>
+      <HeaderWithSubmission mt={10}>Request</HeaderWithSubmission>
       <Box bg={bg} py={4}>
         <Tabs
           index={bodyTabIndex}
@@ -566,7 +584,7 @@ const Editor = () => {
           </TabPanels>
         </Tabs>
       </Box>
-      <Header mt={6}>Response</Header>
+      <HeaderWithSubmission mt={10}>Response</HeaderWithSubmission>
       <Box bg={bg} p={8}>
         <JsonEditor
           prefix="response"
@@ -574,17 +592,6 @@ const Editor = () => {
           defaultValues={defaultValues.response}
         />
       </Box>
-      <Center mt={12}>
-        <FormSubmitButton
-          name="_action"
-          value="saveApi"
-          w="240px"
-          type="submit"
-          colorScheme="blue"
-        >
-          Save
-        </FormSubmitButton>
-      </Center>
     </Box>
   );
 };
