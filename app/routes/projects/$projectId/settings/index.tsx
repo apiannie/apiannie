@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Center,
   Container,
   Flex,
   HStack,
@@ -9,33 +8,43 @@ import {
   Spacer,
   useColorModeValue,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalCloseButton,
+  ModalHeader,
+  ModalBody,
+  Input,
+  Center,
+  Divider, Alert, AlertIcon,
 } from "@chakra-ui/react";
-import { ActionArgs } from "@remix-run/node";
-import { Form, useMatches, useTransition } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { useEffect } from "react";
-import { json } from "remix-utils";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import {ActionArgs, redirect} from "@remix-run/node";
+import {Form, useFetcher, useMatches, useTransition} from "@remix-run/react";
+import {withZod} from "@remix-validated-form/with-zod";
+import {useEffect, useState} from "react";
+import {json} from "remix-utils";
+import {ValidatedForm, validationError} from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { z } from "zod";
-import { Project, updateProject } from "~/models/project.server";
-import { FormHInput, FormInput, FormSubmitButton, Header } from "~/ui";
+import {z} from "zod";
+import {Project, updateProject} from "~/models/project.server";
+import {FormInput, FormSubmitButton, Header} from "~/ui";
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({params, request}: ActionArgs) => {
   let formData = await request.formData();
-  let { projectId } = params;
+  let {projectId} = params;
   invariant(projectId);
   let action = formData.get("_action");
-
+  console.info("action:", action)
   if (action === "renameProject") {
     let result = await renameValidator.validate(formData);
     if (result.error) {
       return validationError(result.error);
     }
-    await updateProject(projectId, { name: result.data.projectName });
+    await updateProject(projectId, {name: result.data.projectName});
+  }else if (action === "deleteProject") {
+    await updateProject(projectId, {isDelete: true});
   }
-
-  return json({ success: true });
+  return json({success: true});
 };
 
 const renameValidator = withZod(
@@ -44,12 +53,85 @@ const renameValidator = withZod(
   })
 );
 
+const dialogValidator = withZod(
+  z.object({})
+);
+
+const TransferDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => any;
+}> = ({isOpen, onClose}) => {
+  return <Modal size={"lg"} isOpen={isOpen} onClose={onClose}>
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader>Transfer Project</ModalHeader>
+      <ModalCloseButton />
+      <ModalBody pb={6}>
+        <Text>Transferring may be delayed until the new owner approves the transfer.</Text>
+        <Text mt={5} fontSize={"xl"}>New owner’s user name</Text>
+        <Input mt={1} placeholder="User name" />
+        <Text mt={5}>Type jianbing-wang/jxxx to confirm.</Text>
+        <Input mt={1} placeholder="" />
+        <Divider orientation="horizontal" />
+        <Center mt={10}>
+          <Button colorScheme={"red"}>I understand, transfer this project.</Button>
+        </Center>
+      </ModalBody>
+    </ModalContent>
+  </Modal>
+}
+
+const DeleteDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => any;
+  project: Project
+}> = ({isOpen, onClose, project}) => {
+  console.info("project:", project)
+  const [isDisabled, setIsDisabled] = useState(true);
+  const fetcher = useFetcher();
+  return <Modal
+    size={"lg"}
+    isOpen={isOpen}
+    onClose={onClose}
+  >
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader fontSize="lg" fontWeight="bold">
+        Are you absolutely sure?
+      </ModalHeader>
+      <ModalCloseButton />
+      <ModalBody pb={10}>
+        <Alert status="warning">
+          <AlertIcon />
+          Unexpected bad things will happen if you don’t read this!
+        </Alert>
+        <Box mt={5}>
+          This action <Text display={"inline-block"} fontWeight={"bold"} mx={1}>cannot</Text> be undone. This will
+          permanently delete
+          the
+          <Text display={"inline-block"} fontWeight={"bold"} mx={1}>{project.name}</Text> project and remove all data.
+        </Box>
+        <Flex mt={5}>Please type <Text fontWeight={"bold"} mx={2}>{project.name}</Text> to
+          confirm.</Flex>
+        <Input mt={2} onChange={(e) => setIsDisabled(e.target.value !== project.name)} />
+        <Center mt={10} as={ValidatedForm} replace method="patch" resetAfterSubmit validator={dialogValidator}>
+          <FormSubmitButton colorScheme="red" isDisabled={isDisabled}  name="_action" value="deleteProject" ml={3}>
+            I understand the consequences, delete this project
+          </FormSubmitButton>
+        </Center>
+      </ModalBody>
+    </ModalContent>
+  </Modal>
+}
+
 export default function () {
   const matches = useMatches();
   const project = matches[1].data.project as Project;
   invariant(project);
   const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [transferVisible, setTransferVisible] = useState(false);
   const transition = useTransition();
   const toast = useToast();
 
@@ -70,6 +152,14 @@ export default function () {
           position: "top",
           isClosable: true,
         });
+      }else if (action === "deleteProject") {
+        toast({
+          title: "Project successfully deleted",
+          status: "success",
+          position: "top",
+          isClosable: true,
+        });
+        redirect("/projects")
       }
     }
   }, [transition.state]);
@@ -119,6 +209,8 @@ export default function () {
             <Spacer />
             <Button px={6} variant={"outline"} colorScheme={"red"}>
               Transfer
+              <TransferDialog isOpen={false} onClose={() => {
+              }} />
             </Button>
           </HStack>
           <HStack mt={6} as={Form} replace method="patch">
@@ -130,8 +222,9 @@ export default function () {
               </Text>
             </Flex>
             <Spacer />
-            <Button px={6} variant={"outline"} colorScheme={"red"}>
+            <Button px={6} variant={"outline"} colorScheme={"red"} onClick={() => setDeleteVisible(true)}>
               Delete
+              <DeleteDialog isOpen={deleteVisible} onClose={() => setDeleteVisible(false)} project={project} />
             </Button>
           </HStack>
         </Box>

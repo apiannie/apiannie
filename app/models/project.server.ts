@@ -140,7 +140,7 @@ export const getProjectById = async (id: string) => {
 
 export type Project = NonNullable<Awaited<ReturnType<typeof getProjectById>>>;
 
-export const updateProject = async (id: string, data: { name?: string }) => {
+export const updateProject = async (id: string, data: { name?: string, isDelete?: boolean }) => {
   return await prisma.project.update({
     where: { id: id },
     data: data,

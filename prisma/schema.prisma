@@ -35,6 +35,7 @@ model Project {
 
   groups Group[]
   apis   Api[]
+  isDelete  Boolean  @default(false)
 }
 
 type ProjectTag {
