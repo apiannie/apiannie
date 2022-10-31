@@ -28,7 +28,7 @@ import {
 import { Link as RemixLink } from "@remix-run/react";
 import { PropsWithChildren, ReactNode } from "react";
 import { FaGithub, FaTwitter } from "react-icons/fa";
-import logo from "~/images/logo.png";
+import logo from "~/images/logo_banner_sm.png";
 import { useOptionalUser } from "~/utils";
 import ColorModeButton from "./ColorModeButton";
 import UserMenuButton from "./UserMenuButton";

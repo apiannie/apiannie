@@ -32,7 +32,7 @@ import { useRef } from "react";
 import { FiFile, FiPlus, FiSearch, FiUsers } from "react-icons/fi";
 import { validationError } from "remix-validated-form";
 import { z } from "zod";
-import logo from "~/images/logo.png";
+import logo from "~/images/logo_banner_sm.png";
 import { createProject, getProjectByIds } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import { FormCancelButton, FormInput, FormModal, FormSubmitButton } from "~/ui";
