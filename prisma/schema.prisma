@@ -30,12 +30,13 @@ model Project {
   isMockOpen Boolean       @default(false)
   strice     Boolean       @default(false)
   isJson5    Boolean       @default(true)
+  isDeleted  Boolean       @default(false)
   tags       ProjectTag[]
   members    ProjectUser[]
 
   groups Group[]
   apis   Api[]
-  isDelete  Boolean  @default(false)
+
 }
 
 type ProjectTag {

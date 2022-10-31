@@ -1,6 +1,6 @@
-import { ProjectUserRole, User } from "@prisma/client";
-import invariant from "tiny-invariant";
-import { prisma } from "./prisma.server";
+import { ProjectUserRole, User } from '@prisma/client';
+import invariant from 'tiny-invariant';
+import { prisma } from './prisma.server';
 
 export const createProject = async (user: User, name: string) => {
   let project = await prisma.project.create({
@@ -31,6 +31,7 @@ export const getProjectByIds = async (ids: string[]) => {
       id: {
         in: ids,
       },
+      isDeleted: false
     },
     select: {
       id: true,
@@ -48,6 +49,7 @@ const findProjectById = async (id: string) => {
   let project = await prisma.project.findFirst({
     where: {
       id: id,
+      isDeleted: false
     },
     include: {
       groups: {
@@ -76,12 +78,8 @@ const findProjectById = async (id: string) => {
   return project;
 };
 
-export type Api = NonNullable<
-  Awaited<ReturnType<typeof findProjectById>>
->["apis"][0];
-export type PlainGroup = NonNullable<
-  Awaited<ReturnType<typeof findProjectById>>
->["groups"][0];
+export type Api = NonNullable<Awaited<ReturnType<typeof findProjectById>>>['apis'][0];
+export type PlainGroup = NonNullable<Awaited<ReturnType<typeof findProjectById>>>['groups'][0];
 export type Group = PlainGroup & {
   apis: Api[];
   groups: Group[];
@@ -102,8 +100,8 @@ export const getProjectById = async (id: string) => {
   }));
 
   let root: Group = {
-    id: "root",
-    name: "root",
+    id: 'root',
+    name: 'root',
     parentId: null,
     apis: [],
     groups: [],
@@ -115,7 +113,7 @@ export const getProjectById = async (id: string) => {
   for (let group of groups) {
     if (group.parentId) {
       let parent = groupMap.get(group.parentId);
-      invariant(parent, "parent is null");
+      invariant(parent, 'parent is null');
       parent.groups.push(group);
     } else {
       root.groups.push(group);
@@ -140,7 +138,7 @@ export const getProjectById = async (id: string) => {
 
 export type Project = NonNullable<Awaited<ReturnType<typeof getProjectById>>>;
 
-export const updateProject = async (id: string, data: { name?: string, isDelete?: boolean }) => {
+export const updateProject = async (id: string, data: { name?: string, isDeleted?: boolean }) => {
   return await prisma.project.update({
     where: { id: id },
     data: data,
@@ -173,4 +171,64 @@ export const addMemberToProject = async (
       },
     }),
   ]);
+};
+
+export const findProjectMembersById = async (id: string) => {
+  let project = await prisma.project.findFirst({
+    where: {
+      id: id,
+    },
+    select: {
+      id: true,
+      members: true,
+    }
+  });
+
+  return project;
+};
+
+export const transferProject = async (
+  project: NonNullable<Awaited<ReturnType<typeof findProjectMembersById>>>,
+  transferUser: User,
+  currentUser: User,
+) => {
+  const transaction = [prisma.project.update({
+    where: { id: project.id },
+    data: {
+      members: {
+        deleteMany: {
+          where: { id: currentUser.id }
+        }
+      },
+    },
+  }), prisma.user.update({
+    where: { id: currentUser.id },
+    data: {
+      projectIds: currentUser.projectIds.filter(id => id !== project.id),
+    },
+  })];
+  if (project.members.every(member => member.id !== transferUser.id)) {
+    transaction.push(prisma.project.update({
+      where: { id: project.id },
+      data: {
+        members: {
+          push: {
+            id: transferUser.id,
+            role: ProjectUserRole.ADMIN,
+          }
+        },
+      },
+    }));
+  }
+  if (!transferUser.projectIds.includes(project.id)) {
+    transaction.push(prisma.user.update({
+      where: { id: transferUser.id },
+      data: {
+        projectIds: {
+          push: project.id
+        }
+      },
+    }));
+  }
+  return await prisma.$transaction(transaction);
 };
