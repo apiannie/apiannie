@@ -15,6 +15,13 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Radio,
   RadioGroup,
   RadioProps,
@@ -50,6 +57,7 @@ import {
   RequestMethod,
   RequestParam,
 } from "@prisma/client";
+import { json } from "@remix-run/node";
 import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import React, {
@@ -63,12 +71,17 @@ import React, {
 } from "react";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import { FiEye, FiMinus, FiPlus, FiSettings, FiTrash2 } from "react-icons/fi";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import {
+  useFormContext,
+  ValidatedForm,
+  validationError,
+} from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { string, z, ZodTypeDef } from "zod";
 import { saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
 import {
+  AceEditor,
   FormHInput,
   FormInput,
   FormSubmitButton,
@@ -79,6 +92,7 @@ import { FormInputProps } from "~/ui/Form/FormHInput";
 import ModalInput from "~/ui/Form/ModalInput";
 import { PathInputProps } from "~/ui/Form/PathInput";
 import { useIds, usePath } from "~/utils";
+import { mockJson } from "~/utils/mock";
 import { loader } from "./details.$apiId";
 
 type JsonNodeFormElem = Omit<
@@ -135,7 +149,8 @@ export const saveApiAction = async (apiId: string, formData: FormData) => {
     },
   };
 
-  return saveApiData(apiId, apiData);
+  await saveApiData(apiId, apiData);
+  return json({});
 };
 
 const JsonNodeZod: z.ZodType<
@@ -493,6 +508,7 @@ const Editor = () => {
 
   return (
     <Box
+      id="api-form"
       key={`${api.id}-${api.updatedAt}`}
       position={"relative"}
       as={ValidatedForm}
@@ -795,6 +811,7 @@ const JsonEditor = React.memo(
     isMock: boolean;
     defaultValues?: JsonNodeForm;
   }) => {
+    const { isOpen, onOpen, onClose } = useDisclosure();
     return (
       <Box>
         <VStack>
@@ -807,15 +824,106 @@ const JsonEditor = React.memo(
           />
         </VStack>
         <Center mt={8}>
-          <Button colorScheme={"blue"} variant="outline" size="sm">
+          <Button
+            onClick={onOpen}
+            colorScheme={"blue"}
+            variant="outline"
+            size="sm"
+          >
             <Icon as={FiEye} />
             <Text ml={2}>View Example</Text>
           </Button>
+          <JsonExampleModal isOpen={isOpen} onClose={onClose} prefix={prefix} />
         </Center>
       </Box>
     );
   }
 );
+
+const JsonExampleModal = ({
+  isOpen,
+  onClose,
+  prefix,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  prefix: string;
+}) => {
+  const form = useFormContext();
+  let [data, setData] = useState<string | undefined>(undefined);
+
+  const generateData = useCallback(async () => {
+    if (!isOpen) {
+      return;
+    }
+    let node: JsonNode | null = null;
+    if (prefix === "bodyJson") {
+      const result = await withZod(
+        z.object({
+          bodyJson: JsonNodeZod,
+        })
+      ).validate(form.getValues());
+      if (result.data) {
+        node = formatZodJson(result.data.bodyJson);
+      }
+    } else if (prefix === "response") {
+      const result = await withZod(
+        z.object({
+          response: JsonNodeZod,
+        })
+      ).validate(form.getValues());
+      if (result.data) {
+        node = formatZodJson(result.data.response);
+      }
+    }
+    let jsonString = "null";
+    if (node) {
+      let mock = mockJson(node);
+      jsonString = JSON.stringify(mock, null, 2);
+    }
+    setData(jsonString);
+  }, [isOpen]);
+
+  useEffect(() => {
+    generateData();
+  }, [isOpen]);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Example</ModalHeader>
+        <ModalCloseButton />
+        <Divider />
+        <ModalBody p={0}>
+          <AceEditor
+            mode={"json"}
+            editorProps={{ $blockScrolling: true }}
+            showGutter={true}
+            showPrintMargin={false}
+            value={data}
+            tabSize={2}
+            height="500px"
+            width="100%"
+            readOnly
+          />
+        </ModalBody>
+        <Divider />
+        <ModalFooter>
+          <Button
+            onClick={generateData}
+            m="auto"
+            size="sm"
+            variant="outline"
+            colorScheme={"blue"}
+          >
+            <Icon as={FiEye} mr={2} /> Generate
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
 const JsonRow = React.memo(
   ({
@@ -867,6 +975,7 @@ const JsonRow = React.memo(
     const blue = useColorModeValue("blue.500", "blue.200");
     const value = isRoot ? "root" : isArrayElem ? "items" : undefined;
     const readOnly = isRoot || isArrayElem;
+
     return (
       <>
         <HStack hidden={hidden} w="full" {...rest} alignItems="flex-start">
@@ -898,8 +1007,10 @@ const JsonRow = React.memo(
                   as={Checkbox}
                   name={`${prefix}.isRequired`}
                   bg={bgBW}
-                  isChecked={isArrayElem ? false : undefined}
                   isDisabled={isArrayElem}
+                  defaultChecked={
+                    isArrayElem || !defaultValues || !!defaultValues?.isRequired
+                  }
                   // value="true"
                 />
               </Center>
@@ -955,7 +1066,7 @@ const JsonRow = React.memo(
             modal={{ title: "Description" }}
             defaultValue={defaultValues?.description}
           />
-          {isArrayElem ? (
+          {isArrayElem && type !== "OBJECT" ? (
             <Box flexBasis={"64px"} flexShrink={0} flexGrow={0} />
           ) : (
             <Flex flexBasis={"64px"} flexShrink={0} flexGrow={0}>
@@ -963,6 +1074,8 @@ const JsonRow = React.memo(
                 <Button p={0} size="sm" colorScheme={"green"} variant="ghost">
                   <Icon as={FiSettings} />
                 </Button>
+              ) : isArrayElem ? (
+                <Box w={8} h={8}></Box>
               ) : (
                 <Button
                   p={0}
@@ -974,14 +1087,14 @@ const JsonRow = React.memo(
                   <Icon as={FiMinus} />
                 </Button>
               )}
-              {depth === 0 || type !== ParamType.OBJECT ? (
+              {depth === 0 || isArrayElem || type !== ParamType.OBJECT ? (
                 <Button
                   p={0}
                   size="sm"
                   colorScheme={"blue"}
                   variant="ghost"
                   onClick={(e) => {
-                    if (depth === 0) {
+                    if (depth === 0 || isArrayElem) {
                       pushId();
                     } else {
                       onAddSibling?.(keyId as number);

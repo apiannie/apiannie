@@ -8,7 +8,8 @@ import {
   Flex,
   FormControl,
   FormLabel,
-  Grid, GridItem,
+  Grid,
+  GridItem,
   Heading,
   HStack,
   Icon,
@@ -39,7 +40,7 @@ import {
 } from "@chakra-ui/react";
 import { useLoaderData, useMatches, useParams } from "@remix-run/react";
 import invariant from "tiny-invariant";
-import { FormInput, ModalInput } from "~/ui";
+import { AceEditor, FormInput, ModalInput } from "~/ui";
 import { loader } from "./details.$apiId";
 import { SlRocket } from "react-icons/sl";
 import { methodContainsBody, useIds } from "~/utils";
@@ -52,16 +53,28 @@ import {
 import { withZod } from "@remix-validated-form/with-zod";
 import { any, z } from "zod";
 import { ClientOnly } from "remix-utils";
-import { lazy, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-const AceEditor = lazy(() => import("~/ui/AceEditor"));
-
-const zodParam = z.object({
-  checked: z.string().optional().transform((v) => v !== undefined),
-  name: z.string().optional(),
-  value: z.string().optional(),
-}).array().default([]);
+const zodParam = z
+  .object({
+    checked: z
+      .string()
+      .optional()
+      .transform((v) => v !== undefined),
+    name: z.string().optional(),
+    value: z.string().optional(),
+  })
+  .array()
+  .default([]);
 
 const validator = withZod(
   z.object({
@@ -97,9 +110,13 @@ const Postman = () => {
         return;
       }
 
-      let query = Array<typeof data.query[0]>().concat(data.query, data.query_ext).filter((param) => param.checked && !!param.name);
+      let query = Array<typeof data.query[0]>()
+        .concat(data.query, data.query_ext)
+        .filter((param) => param.checked && !!param.name);
 
-      let header = Array<typeof data.header[0]>().concat(data.header, data.header_ext).filter((param) => param.checked && !!param.name);
+      let header = Array<typeof data.header[0]>()
+        .concat(data.header, data.header_ext)
+        .filter((param) => param.checked && !!param.name);
 
       let config: AxiosRequestConfig = {
         method: api.data.method,
@@ -125,7 +142,9 @@ const Postman = () => {
 
       if (methodHasBody) {
         if (api.data.bodyType === "FORM") {
-          let bodyForm = Array<typeof data.header[0]>().concat(data.bodyForm, data.bodyForm_ext).filter((param) => param.checked && !!param.name);
+          let bodyForm = Array<typeof data.header[0]>()
+            .concat(data.bodyForm, data.bodyForm_ext)
+            .filter((param) => param.checked && !!param.name);
           let formD = new FormData();
           for (let elem of bodyForm) {
             invariant(elem.name);
@@ -155,7 +174,8 @@ const Postman = () => {
       }
       lastClientY.current = e.clientY;
       const handleMove = ({ clientY }: { clientY: number }) => {
-        const height = lastResponseHeight.current - clientY + lastClientY.current;
+        const height =
+          lastResponseHeight.current - clientY + lastClientY.current;
         lastClientY.current = clientY;
         lastResponseHeight.current = height < 0 ? 0 : height;
         if (gridContainerRef.current) {
@@ -223,44 +243,44 @@ const Postman = () => {
            </Tab> */}
         </TabList>
       </Box>
-        <TabPanels
-          id="postman-form"
-          as={ValidatedForm}
-          validator={validator}
-          bg={bg}
-          overflowY={"auto"}
-        >
-          {api.data.pathParams.length > 0 && (
-            <TabPanel overflowY="auto">
-              <ParamTable prefix="path" data={api.data.pathParams} />
-            </TabPanel>
-          )}
-          {methodHasBody && (
-            <TabPanel h="full" p={0}>
-              {api.data.bodyType === "FORM" ? (
-                <Box p={4} h="full" overflowY="auto">
-                  <ParamTable prefix="bodyForm" data={api.data.bodyForm} />
-                </Box>
-              ) : (
-                <BodyEditor
-                  value={bodyRaw}
-                  onChange={setBodyRaw}
-                  description={api.data.bodyRaw?.description || ""}
-                  isJson={api.data.bodyType === "JSON"}
-                />
-              )}
-            </TabPanel>
-          )}
-          <TabPanel maxH="full" overflowY="auto">
-            <ParamTable prefix="query" data={api.data.queryParams} />
+      <TabPanels
+        id="postman-form"
+        as={ValidatedForm}
+        validator={validator}
+        bg={bg}
+        overflowY={"auto"}
+      >
+        {api.data.pathParams.length > 0 && (
+          <TabPanel overflowY="auto">
+            <ParamTable prefix="path" data={api.data.pathParams} />
           </TabPanel>
-          <TabPanel maxH="full" overflowY="auto">
-            <ParamTable prefix="header" data={api.data.headers} />
+        )}
+        {methodHasBody && (
+          <TabPanel h="full" p={0}>
+            {api.data.bodyType === "FORM" ? (
+              <Box p={4} h="full" overflowY="auto">
+                <ParamTable prefix="bodyForm" data={api.data.bodyForm} />
+              </Box>
+            ) : (
+              <BodyEditor
+                value={bodyRaw}
+                onChange={setBodyRaw}
+                description={api.data.bodyRaw?.description || ""}
+                isJson={api.data.bodyType === "JSON"}
+              />
+            )}
           </TabPanel>
-          <TabPanel maxH="full" overflowY="auto">
-            <ParamTable prefix="cookies" data={[]} />
-          </TabPanel>
-        </TabPanels>
+        )}
+        <TabPanel maxH="full" overflowY="auto">
+          <ParamTable prefix="query" data={api.data.queryParams} />
+        </TabPanel>
+        <TabPanel maxH="full" overflowY="auto">
+          <ParamTable prefix="header" data={api.data.headers} />
+        </TabPanel>
+        <TabPanel maxH="full" overflowY="auto">
+          <ParamTable prefix="cookies" data={[]} />
+        </TabPanel>
+      </TabPanels>
       <Box bg={useColorModeValue("gray.100", "gray.700")} position={"relative"}>
         <Box
           ref={responseDragRef as RefObject<HTMLDivElement>}
@@ -273,9 +293,15 @@ const Postman = () => {
           cursor={"ns-resize"}
           zIndex={100}
         >
-          <Box _groupHover={{ opacity: 1 }} opacity={0} height={"1px"} width={"100%"} bgColor={"blue.500"} />
+          <Box
+            _groupHover={{ opacity: 1 }}
+            opacity={0}
+            height={"1px"}
+            width={"100%"}
+            bgColor={"blue.500"}
+          />
         </Box>
-        <Box h={'full'} overflowY={'auto'}>
+        <Box h={"full"} overflowY={"auto"}>
           {error ? (
             <ErrorEesponse err={error} />
           ) : response ? (
@@ -537,8 +563,8 @@ const Response = ({ response }: { response: AxiosResponse }) => {
   let mode = contentType.startsWith("text/html")
     ? "html"
     : contentType.startsWith("application/json")
-      ? "json"
-      : "plain_text";
+    ? "json"
+    : "plain_text";
 
   return (
     <Tabs size={"sm"} h="full">

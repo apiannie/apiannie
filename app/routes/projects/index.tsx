@@ -3,16 +3,12 @@ import {
   Button,
   Container,
   Divider,
-  Flex,
-  Grid,
   Heading,
   HStack,
   Icon,
-  IconButton,
   Image,
   Input,
   InputGroup,
-  InputLeftAddon,
   InputLeftElement,
   InputRightAddon,
   Link,
@@ -23,43 +19,26 @@ import {
   ModalHeader,
   ModalOverlay,
   ModalProps,
-  SimpleGrid,
   Spacer,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
   Text,
   useColorModeValue,
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import {
-  useLoaderData,
-  useTransition,
-  Link as RemixLink,
-} from "@remix-run/react";
+import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { useRef } from "react";
-import {
-  FiBell,
-  FiFile,
-  FiList,
-  FiPlus,
-  FiSearch,
-  FiUsers,
-} from "react-icons/fi";
+import { FiFile, FiPlus, FiSearch, FiUsers } from "react-icons/fi";
 import { validationError } from "remix-validated-form";
 import { z } from "zod";
+import logo from "~/images/logo.png";
 import { createProject, getProjectByIds } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import { FormCancelButton, FormInput, FormModal, FormSubmitButton } from "~/ui";
 import ColorModeButton from "../home/..lib/ColorModeButton";
-import UserMenuButton from "../home/..lib/UserMenuButton";
-import logo from "~/images/logo.png";
 import NotificationButton from "../home/..lib/NotificationButton";
+import UserMenuButton from "../home/..lib/UserMenuButton";
 
 export const loader = async ({ request }: LoaderArgs) => {
   let user = await requireUser(request);
@@ -197,7 +176,7 @@ const ProjectItem = ({
       <HStack spacing={8}>
         <HStack>
           <Box w={3} h={3} bg="blue.500" borderRadius={"full"} />
-          <Text>OpenAPI</Text>
+          <Text>REST</Text>
         </HStack>
         <HStack>
           <Icon as={FiUsers} />

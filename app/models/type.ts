@@ -11,6 +11,7 @@ export const JsonNodeType = [
   ParamType.STRING,
   ParamType.FLOAT,
   ParamType.INT,
+  ParamType.BOOLEAN,
 ] as const;
 
 export const RequestMethods = [

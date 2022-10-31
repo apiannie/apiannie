@@ -34,9 +34,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     throw httpResponse.NotFound;
   }
 
-  await saveApiAction(apiId, formData);
-
-  return json({});
+  return await saveApiAction(apiId, formData);
 };
 
 export default function ApiInfo() {
