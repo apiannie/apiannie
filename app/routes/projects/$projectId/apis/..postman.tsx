@@ -117,11 +117,16 @@ const Postman = () => {
     );
   }, [api]);
   const form = useFormContext("postman-form");
-  const [location, setLocation] = useState(`${url.origin}/mock/${projectId}`);
+  const [location, setLocation] = useState("");
   const [response, setResponse] = useState<AxiosResponse | null>(null);
   const [error, setError] = useState<any>(null);
   const methodHasBody = methodContainsBody(api.data.method);
   const toast = useToast();
+
+  useEffect(() => {
+    setLocation(`${url.origin}/mock/${projectId}`);
+  }, [url]);
+
   const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
     useCallback(async () => {
       let formData = form.getValues();

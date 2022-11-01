@@ -75,7 +75,6 @@ export function useUrl() {
   useEffect(() => {
     if (href) {
       setUrl(new URL(href));
-      console.log("setUrl", href);
     }
   }, [href]);
   return url;
