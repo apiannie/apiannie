@@ -3,6 +3,7 @@ import {
   ChakraProvider,
   cookieStorageManagerSSR,
   localStorageManager,
+  useConst,
 } from "@chakra-ui/react";
 import { withEmotionCache } from "@emotion/react";
 import { json, LinksFunction, LoaderArgs, MetaFunction } from "@remix-run/node"; // Depends on the runtime you choose
@@ -98,14 +99,13 @@ const Document = withEmotionCache(
 
 export default function App() {
   const { cookies } = useLoaderData<typeof loader>();
+  const cookieManager = useConst(cookieStorageManagerSSR(cookies));
   return (
     <Document>
       <ChakraProvider
-      // colorModeManager={
-      //   typeof cookies === "string"
-      //     ? cookieStorageManagerSSR(cookies)
-      //     : localStorageManager
-      // }
+        colorModeManager={
+          typeof cookies === "string" ? cookieManager : localStorageManager
+        }
       >
         <Outlet />
       </ChakraProvider>
