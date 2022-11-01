@@ -7,10 +7,10 @@ import FormSubmitButton from "./Form/FormSubmitButton";
 import ModalInput from "./Form/ModalInput";
 import PathInput from "./Form/PathInput";
 import Header from "./Header";
-
-export const AceEditor = lazy(() => import("./AceEditor"));
+import AceEditor from "./AceEditor";
 
 export {
+  AceEditor,
   FormCancelButton,
   FormHInput,
   FormInput,

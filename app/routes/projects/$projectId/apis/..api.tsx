@@ -109,18 +109,25 @@ const Api = () => {
       </Box>
 
       <Header mt={12}>Request</Header>
-      {api.data.headers && api.data.headers.length > 0 && (
-        <Box p={4}>
-          <Text as="strong" size={"sm"} mb={5}>
-            Headers:
-          </Text>
+
+      <Box p={4}>
+        <Text as="strong" size={"sm"} mb={5}>
+          Headers:
+        </Text>
+        {api.data.headers && api.data.headers.length > 0 ? (
           <ParamTable
             mt={1}
             borderWidth="1px"
             defaultValue={api.data.headers}
           />
-        </Box>
-      )}
+        ) : (
+          <Box mt={1} borderWidth={1} borderRadius={5} py={6}>
+            <Text color="gray" textAlign={"center"}>
+              No Data
+            </Text>
+          </Box>
+        )}
+      </Box>
       {api.data.queryParams && api.data.queryParams.length > 0 && (
         <Box mt={3} p={4}>
           <Text as={"strong"} size={"sm"} mb={5}>
@@ -149,12 +156,16 @@ const Api = () => {
       <Header mt={12}>Response</Header>
       <Box p={4}>
         <Box borderWidth={"1px"} p={4} borderRadius={5}>
-          {api.data.response && (
+          {response200 ? (
             <JsonRow
               depth={0}
               isParentOpen={true}
               defaultValues={response200 || undefined}
             />
+          ) : (
+            <Text color="gray" textAlign={"center"}>
+              No Data
+            </Text>
           )}
         </Box>
       </Box>
@@ -367,6 +378,7 @@ const BodyEditor = ({
   bodyJson?: JsonNode;
   bodyRaw?: RequestBodyRaw;
 } & BoxProps) => {
+  console.log({ type });
   return (
     <Box {...rest}>
       {type === "FORM" &&
