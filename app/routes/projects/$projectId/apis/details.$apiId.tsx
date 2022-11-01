@@ -22,7 +22,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     throw httpResponse.BadRequest;
   }
 
-  return json({ api, url: request.url });
+  return json({ api });
 };
 
 export const action = async ({ request, params }: ActionArgs) => {

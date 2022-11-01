@@ -1,6 +1,6 @@
 import { json } from "@remix-run/node";
 import { useMatches } from "@remix-run/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { User } from "~/models/user.server";
 
 export * from "./hooks";
@@ -70,8 +70,14 @@ export function useUser(): User {
 
 export function useUrl() {
   let matches = useMatches();
-  let url = matches[0].data.url as string;
-  return new URL(url);
+  let [url, setUrl] = useState(new URL(matches[0].data.url as string));
+  useEffect(() => {
+    let url = window?.location.href;
+    if (url) {
+      setUrl(new URL(url));
+    }
+  }, [window?.location.href]);
+  return url;
 }
 
 export const httpResponse = {

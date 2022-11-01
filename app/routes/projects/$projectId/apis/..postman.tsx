@@ -44,7 +44,7 @@ import invariant from "tiny-invariant";
 import { AceEditor, FormInput, ModalInput } from "~/ui";
 import { loader } from "./details.$apiId";
 import { SlRocket } from "react-icons/sl";
-import { methodContainsBody, useIds } from "~/utils";
+import { methodContainsBody, useIds, useUrl } from "~/utils";
 import { FiAlertOctagon, FiPlus, FiRepeat, FiTrash2 } from "react-icons/fi";
 import {
   useFormContext,
@@ -96,8 +96,8 @@ const Postman = () => {
   invariant(projectId);
   let tabWidth = "150px";
   const bg = useColorModeValue("gray.50", "gray.800");
-  const { api, url } = useLoaderData<typeof loader>();
-  const origin = new URL(url).origin;
+  const { api } = useLoaderData<typeof loader>();
+  const url = useUrl();
   const [bodyValue, setBodyValue] = useState(
     api.data.bodyType === "RAW"
       ? api.data.bodyRaw?.example
@@ -117,7 +117,7 @@ const Postman = () => {
     );
   }, [api]);
   const form = useFormContext("postman-form");
-  const [location, setLocation] = useState(`${origin}/mock/${projectId}`);
+  const [location, setLocation] = useState(`${url.origin}/mock/${projectId}`);
   const [response, setResponse] = useState<AxiosResponse | null>(null);
   const [error, setError] = useState<any>(null);
   const methodHasBody = methodContainsBody(api.data.method);
