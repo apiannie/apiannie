@@ -71,12 +71,12 @@ export function useUser(): User {
 export function useUrl() {
   let matches = useMatches();
   let [url, setUrl] = useState(new URL(matches[0].data.url as string));
+  let href = typeof document === "undefined" ? undefined : window.location.href;
   useEffect(() => {
-    let url = window?.location.href;
-    if (url) {
-      setUrl(new URL(url));
+    if (href) {
+      setUrl(new URL(href));
     }
-  }, [window?.location.href]);
+  }, [href]);
   return url;
 }
 
