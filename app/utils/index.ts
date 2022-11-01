@@ -68,6 +68,12 @@ export function useUser(): User {
   return maybeUser;
 }
 
+export function useUrl() {
+  let matches = useMatches();
+  let url = matches[0].data.url as string;
+  return new URL(url);
+}
+
 export const httpResponse = {
   OK: new Response("OK", { status: 200 }),
   BadRequest: new Response("Bad Request", { status: 400 }),

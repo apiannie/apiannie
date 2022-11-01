@@ -31,7 +31,10 @@ const mockJsonHelper = (node: JsonNode): any => {
   }
 };
 
-export const mockJson = (node: JsonNode): unknown => {
+export const mockJson = (node: JsonNode | undefined): unknown => {
+  if (!node) {
+    return undefined;
+  }
   if (!node.isRequired && Math.random() < 0.5) {
     return undefined;
   }

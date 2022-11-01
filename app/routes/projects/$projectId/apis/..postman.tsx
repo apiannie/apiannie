@@ -36,6 +36,7 @@ import {
   Tooltip,
   Tr,
   useColorModeValue,
+  useToast,
   VStack,
 } from "@chakra-ui/react";
 import { useLoaderData, useMatches, useParams } from "@remix-run/react";
@@ -52,7 +53,7 @@ import {
 } from "remix-validated-form";
 import { withZod } from "@remix-validated-form/with-zod";
 import { any, z } from "zod";
-import { ClientOnly } from "remix-utils";
+import { ClientOnly, json } from "remix-utils";
 import {
   lazy,
   RefObject,
@@ -63,6 +64,8 @@ import {
   useState,
 } from "react";
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import { mockJson } from "~/utils/mock";
+import { JsonNode } from "~/models/type";
 
 const zodParam = z
   .object({
@@ -78,6 +81,7 @@ const zodParam = z
 
 const validator = withZod(
   z.object({
+    path: zodParam,
     query: zodParam,
     query_ext: zodParam,
     header: zodParam,
@@ -94,12 +98,30 @@ const Postman = () => {
   const bg = useColorModeValue("gray.50", "gray.800");
   const { api, url } = useLoaderData<typeof loader>();
   const origin = new URL(url).origin;
-  const [bodyRaw, setBodyRaw] = useState(api.data.bodyRaw?.example || "");
+  const [bodyValue, setBodyValue] = useState(
+    api.data.bodyType === "RAW"
+      ? api.data.bodyRaw?.example
+      : JSON.stringify(
+          mockJson(api.data.bodyJson as unknown as JsonNode),
+          null,
+          2
+        )
+  );
+  const regenerateJson = useCallback(() => {
+    setBodyValue(
+      JSON.stringify(
+        mockJson(api.data.bodyJson as unknown as JsonNode),
+        null,
+        2
+      )
+    );
+  }, [api]);
   const form = useFormContext("postman-form");
   const [location, setLocation] = useState(`${origin}/mock/${projectId}`);
   const [response, setResponse] = useState<AxiosResponse | null>(null);
   const [error, setError] = useState<any>(null);
   const methodHasBody = methodContainsBody(api.data.method);
+  const toast = useToast();
   const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
     useCallback(async () => {
       let formData = form.getValues();
@@ -108,6 +130,27 @@ const Postman = () => {
       if (!data) {
         // TODO
         return;
+      }
+
+      let paths = data.path;
+
+      for (let path of paths) {
+        if (!path.value || !path.value.trim()) {
+          toast({
+            title: "Could not send.",
+            description: `Path param {${path.name}} is required`,
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            position: "top",
+          });
+        }
+      }
+
+      let finalPath = api.data.path;
+      for (let path of paths) {
+        invariant(path.value);
+        finalPath = finalPath.replace(`{${path.name}}`, path.value);
       }
 
       let query = Array<typeof data.query[0]>()
@@ -120,7 +163,7 @@ const Postman = () => {
 
       let config: AxiosRequestConfig = {
         method: api.data.method,
-        url: location + api.data.path,
+        url: location + finalPath,
         maxRedirects: 0,
         validateStatus: () => true,
       };
@@ -139,7 +182,6 @@ const Postman = () => {
 
       config.headers = headers;
       config.params = queries;
-
       if (methodHasBody) {
         if (api.data.bodyType === "FORM") {
           let bodyForm = Array<typeof data.header[0]>()
@@ -151,6 +193,31 @@ const Postman = () => {
             formD.append(elem.name, elem.value || "");
           }
           config.data = formD;
+        } else if (api.data.bodyType === "RAW") {
+          config.data = bodyValue;
+        } else if (api.data.bodyType === "JSON") {
+          try {
+            let data = JSON.parse(bodyValue ?? "");
+            config.data = data;
+          } catch (err) {
+            let errMsg = "";
+            if (typeof err === "string") {
+              errMsg = err;
+            } else if (err instanceof Error) {
+              errMsg = err.message;
+            }
+            toast({
+              title: "Could not send.",
+              description:
+                "An error happened when parsing request body to JSON: " +
+                errMsg,
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+              position: "top",
+            });
+            return;
+          }
         }
       }
 
@@ -161,7 +228,7 @@ const Postman = () => {
       } catch (err: any) {
         setError(err);
       }
-    }, [form, location]);
+    }, [form, location, bodyValue]);
   const responseDragRef = useRef<HTMLDivElement>();
   const gridContainerRef = useRef<HTMLDivElement>();
   const lastClientY = useRef(0);
@@ -263,10 +330,11 @@ const Postman = () => {
               </Box>
             ) : (
               <BodyEditor
-                value={bodyRaw}
-                onChange={setBodyRaw}
+                value={bodyValue ?? undefined}
+                onChange={setBodyValue}
                 description={api.data.bodyRaw?.description || ""}
                 isJson={api.data.bodyType === "JSON"}
+                onRegenerate={regenerateJson}
               />
             )}
           </TabPanel>
@@ -441,14 +509,16 @@ const ParamTable = ({
 
 const BodyEditor = ({
   description,
-  value,
   onChange,
   isJson,
+  value,
+  onRegenerate,
 }: {
   onChange?: (value: string, event?: any) => void;
   value?: string;
   description?: string;
   isJson?: boolean;
+  onRegenerate?: () => void;
 }) => {
   const bgBW = useColorModeValue("white", "gray.900");
   const [mode, setMode] = useState(isJson ? "json" : "plain_text");
@@ -482,7 +552,12 @@ const BodyEditor = ({
           </HStack>
           <Divider />
           <Center h="calc(100% - 32px)">
-            <Button size="sm" variant={"outline"} colorScheme="blue">
+            <Button
+              size="sm"
+              variant={"outline"}
+              colorScheme="blue"
+              onClick={onRegenerate}
+            >
               <Icon as={FiRepeat} mr={2} />
               Generate
             </Button>
@@ -566,6 +641,15 @@ const Response = ({ response }: { response: AxiosResponse }) => {
     ? "json"
     : "plain_text";
 
+  let value = "";
+  if (response.data) {
+    if (typeof response.data === "object") {
+      value = JSON.stringify(response.data, null, 2);
+    } else {
+      value = response.data;
+    }
+  }
+
   return (
     <Tabs size={"sm"} h="full">
       <TabList px={2} as={HStack} gap={0}>
@@ -583,7 +667,7 @@ const Response = ({ response }: { response: AxiosResponse }) => {
 
       <TabPanels h="calc(100% - 33px)" overflowY={"auto"}>
         <TabPanel h="full" p={0}>
-          {response.data ? (
+          {value ? (
             <AceEditor
               mode={mode}
               editorProps={{ $blockScrolling: true }}
@@ -591,7 +675,7 @@ const Response = ({ response }: { response: AxiosResponse }) => {
               width="100%"
               showGutter={true}
               showPrintMargin={false}
-              value={response.data}
+              value={value}
               tabSize={2}
               readOnly
             />

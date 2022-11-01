@@ -107,3 +107,27 @@ export const saveApiData = async (id: string, data: ApiData) => {
     },
   });
 };
+
+export const findApisForMock = async (
+  projectId: string,
+  method: RequestMethod
+) => {
+  return prisma.api.findMany({
+    where: {
+      projectId: projectId,
+      data: {
+        is: {
+          method: method,
+        },
+      },
+    },
+    select: {
+      id: true,
+      data: {
+        select: {
+          path: true,
+        },
+      },
+    },
+  });
+};

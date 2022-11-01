@@ -20,15 +20,12 @@ import React, { useContext, useEffect } from "react";
 import { ClientStyleContext, ServerStyleContext } from "./context";
 import { getUser } from "./session.server";
 
-// Typescript
-// This will return cookies
 export const loader = async ({ request }: LoaderArgs) => {
-  // first time users will not have any cookies and you may not return
-  // undefined here, hence ?? is necessary
   let user = await getUser(request);
   return json({
     cookies: request.headers.get("cookie") ?? "",
     user: { ...user },
+    url: request.url,
   });
 };
 

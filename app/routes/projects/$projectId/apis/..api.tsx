@@ -6,6 +6,7 @@ import {
   Grid,
   Heading,
   Icon,
+  Link,
   Table,
   TableContainer,
   Tbody,
@@ -23,16 +24,20 @@ import {
   RequestBodyType,
   RequestParam,
 } from "@prisma/client";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useParams } from "@remix-run/react";
 import React, { useEffect, useState } from "react";
 import { loader } from "./details.$apiId";
 import { Header } from "~/ui";
 import { useMethodTag } from "../apis";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import { JsonNode } from "~/models/type";
-import { methodContainsBody, parsePath } from "~/utils";
+import { methodContainsBody, parsePath, useUrl } from "~/utils";
+import invariant from "tiny-invariant";
 
 const Api = () => {
+  let { projectId } = useParams();
+  let url = useUrl();
+  invariant(projectId);
   const bg = useColorModeValue("gray.100", "gray.700");
   const fontColor = useColorModeValue("gray.600", "whiteAlpha.700");
   const labelWidth = "120px";
@@ -98,6 +103,18 @@ const Api = () => {
             />
           </Flex>
         )}
+        <Flex mt={5}>
+          <Text as="strong" width={labelWidth}>
+            Mock Server:
+          </Text>
+          <Link
+            color={useColorModeValue("blue.700", "blue.200")}
+            isExternal
+            href={`/mock/${projectId}${api.data.path}`}
+          >
+            {`${url.origin}/mock/${projectId}${api.data.path}`}
+          </Link>
+        </Flex>
         {api.data.description && (
           <Flex mt={5}>
             <Text as="strong" width={labelWidth}>
@@ -378,7 +395,6 @@ const BodyEditor = ({
   bodyJson?: JsonNode;
   bodyRaw?: RequestBodyRaw;
 } & BoxProps) => {
-  console.log({ type });
   return (
     <Box {...rest}>
       {type === "FORM" &&
