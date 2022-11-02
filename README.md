@@ -6,7 +6,9 @@
     <small>A lightweight web tool for API documentation and development</small>
 </h1>
 
-> ℹ️ Api Annie is currently still in pre-release mode, some potential security issues still need to be fixed. Don't use it with your confidential data for now.ℹ️
+> ℹ️ Api Annie is currently still in pre-release mode.
+> 
+> ℹ️ Consider carefully if you are using it with your confidential data.
 
 Api Annie helps your team to co-ordinate easier when developing a product which needs API comunication, by going through the following steps:
 1. **[Define]** Define your API structure.
