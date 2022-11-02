@@ -16,7 +16,7 @@ Api Annie helps your team to co-ordinate easier when developing a product which 
 
 ## Installation
 ### Cloud service
-We recommend using our [cloud service](https://apiannie.com), where you can always access to the latest features.
+We recommend using our [cloud service](https://apiannie.com), where you can always get access to the latest features.
 
 ### Manual installation
 If you prefer deploying Api Annie in your own machine, run:
@@ -59,6 +59,14 @@ or if you are using yarn
 yarn build
 yarn start
 ```
+
+## Tech stack
+- [Remix](https://github.com/remix-run/remix) as the primary full stack web framework
+- Database ORM with [Prisma](https://github.com/prisma/prisma)
+- Static Types with [TypeScript](https://www.typescriptlang.org/)
+- UI components built with [Chakra-UI](https://github.com/chakra-ui/chakra-ui)
+- Form validation with [remix-validated-form](https://github.com/airjp73/remix-validated-form) and [Zod](https://github.com/colinhacks/zod)
+- [Chance.js](https://github.com/chancejs/chancejs) for random data generate in mock server
 
 ## License
 This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/apiannie/apiannie/blob/readme-update/LICENSE) file for details.
