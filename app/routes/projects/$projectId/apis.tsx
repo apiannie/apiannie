@@ -10,6 +10,7 @@ import {
   Icon,
   IconButton,
   Input,
+  ListItem,
   ModalBody,
   ModalCloseButton,
   ModalContent,
@@ -20,6 +21,7 @@ import {
   Spacer,
   Text,
   Tooltip,
+  UnorderedList,
   useColorMode,
   useColorModeValue,
   useDisclosure,
@@ -181,14 +183,14 @@ function SideNav() {
           </Heading>
           <Spacer />
           <Box>
-            <Tooltip label="Clone">
+            {/* <Tooltip label="Clone">
               <IconButton
                 aria-label="clone"
                 icon={<FiCopy />}
                 variant="ghost"
                 colorScheme="gray"
               />
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip label="New group">
               <IconButton
                 aria-label="add group"
@@ -312,10 +314,12 @@ export const NewApiModal = ({
   onClose: ModalProps["onClose"];
 }) => {
   const params = useParams();
+  const gray = useColorModeValue("gray.200", "gray.700");
   let groupId = "";
   if (params.groupId) {
     groupId = params.groupId;
   }
+  let labelWidth = "60px";
   return (
     <FormModal
       isOpen={isOpen}
@@ -334,7 +338,7 @@ export const NewApiModal = ({
         <ModalBody pb={6}>
           <VStack spacing={5}>
             <FormHInput
-              labelWidth="60px"
+              labelWidth={labelWidth}
               name="name"
               label="Name"
               size="sm"
@@ -342,13 +346,29 @@ export const NewApiModal = ({
               autoComplete="off"
             />
             <FormHInput
-              labelWidth="60px"
+              labelWidth={labelWidth}
               name="path"
               label="Path"
               as={PathInput}
               autoComplete="off"
               size="sm"
             />
+            <Flex width={"full"} pl={labelWidth} flexDir={"row"}>
+              <UnorderedList fontSize={"sm"}>
+                <ListItem>
+                  The API path starts with{" "}
+                  <Text borderRadius={4} px={1} as="span" bg={gray}>
+                    /
+                  </Text>
+                </ListItem>
+                <ListItem>
+                  Use curly braces to indicate Path Params, such as
+                  <Text borderRadius={4} px={1} as="span" bg={gray}>
+                    {"/users/{id}"}
+                  </Text>
+                </ListItem>
+              </UnorderedList>
+            </Flex>
           </VStack>
 
           <input type={"hidden"} name="groupId" value={groupId} />

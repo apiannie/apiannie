@@ -9,7 +9,7 @@ import Postman from "./..postman";
 import Api from "./..api";
 
 export const handle = {
-  tabs: ["Api", "Edit", "Run"],
+  tabs: ["Api", "Edit", "Exec"],
 };
 
 export const loader = async ({ request, params }: LoaderArgs) => {
