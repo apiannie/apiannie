@@ -1,8 +1,6 @@
 <h1 align="center">
     <a href="https://apiannie.com">
-        <picture>
-          <img alt="ApiAnnie" src="https://user-images.githubusercontent.com/4088232/199437591-23d65512-2d66-4ba6-ae77-5f1748e5bdca.png" width="500">
-        </picture>
+       <img alt="ApiAnnie" src="https://user-images.githubusercontent.com/4088232/199437591-23d65512-2d66-4ba6-ae77-5f1748e5bdca.png" width="500">
     </a>
     <br><br>
     <small>A lightweight web tool for API documentation and development</small>
