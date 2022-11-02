@@ -27,7 +27,7 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { RequestMethod } from "@prisma/client";
+import { ProjectUserRole, RequestMethod } from "@prisma/client";
 import { ActionArgs, redirect } from "@remix-run/node";
 import {
   Link as RemixLink,
@@ -42,15 +42,7 @@ import {
   BsFillCaretRightFill,
   BsFolder2Open,
 } from "react-icons/bs";
-import {
-  FiAirplay,
-  FiChevronDown,
-  FiCopy,
-  FiFilePlus,
-  FiFolder,
-  FiFolderPlus,
-  FiChevronRight,
-} from "react-icons/fi";
+import { FiAirplay, FiFilePlus, FiFolder, FiFolderPlus } from "react-icons/fi";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
@@ -61,16 +53,16 @@ import {
   updateApi,
   updateGroup,
 } from "~/models/api.server";
-import { Api, Group, Project } from "~/models/project.server";
-import { requireUser } from "~/session.server";
+import { Api, checkAuthority, Group, Project } from "~/models/project.server";
+import { RequestMethods } from "~/models/type";
+import { requireUser, requireUserId } from "~/session.server";
+import { PathInput } from "~/ui";
 import FormCancelButton from "~/ui/Form/FormCancelButton";
 import FormHInput from "~/ui/Form/FormHInput";
 import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
-import { RequestMethods } from "~/models/type";
-import { PathInput } from "~/ui";
 import { ProjecChangeButton } from "../$projectId";
 
 export const handle = {
@@ -85,10 +77,15 @@ enum Action {
 }
 
 export const action = async ({ request, params }: ActionArgs) => {
+  let userId = await requireUserId(request);
   let formData = await request.formData();
   let { projectId } = params;
   invariant(projectId);
-  await requireUser(request);
+
+  if (!(await checkAuthority(userId, projectId, ProjectUserRole.WRITE))) {
+    return httpResponse.Forbidden;
+  }
+
   switch (formData.get("_action")) {
     case Action.NEW_GROUP:
       return await newGroupAction(formData, projectId);
@@ -100,7 +97,7 @@ export const action = async ({ request, params }: ActionArgs) => {
       return await updateApiAction(formData);
     default:
       console.info("_action:", formData.get("_action"));
-      throw httpResponse.NotFound;
+      return httpResponse.NotFound;
   }
 };
 

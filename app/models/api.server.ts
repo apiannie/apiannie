@@ -1,4 +1,4 @@
-import { ApiData, ParamType, RequestMethod } from "@prisma/client";
+import { ApiData, ParamType, Prisma, RequestMethod } from "@prisma/client";
 import { prisma } from "./prisma.server";
 
 export const createGroup = async ({
@@ -80,6 +80,19 @@ export const getApiById = async (id: string) => {
   return prisma.api.findFirst({
     where: { id },
   });
+};
+
+export const getApiProjectId = async (apiId: string) => {
+  let api = await prisma.api.findFirst({
+    where: {
+      id: apiId,
+    },
+    select: {
+      projectId: true,
+    },
+  });
+
+  return api?.projectId;
 };
 
 export const updateApi = async (

@@ -16,6 +16,8 @@ import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { getGroupById, updateGroup } from "~/models/api.server";
+import { checkAuthority } from "~/models/project.server";
+import { requireUserId } from "~/session.server";
 import FormHInput from "~/ui/Form/FormHInput";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
 import { httpResponse } from "~/utils";
@@ -24,9 +26,9 @@ export const handle = {
   tabs: ["Edit Group"],
 };
 
-export const loader = async ({ params }: LoaderArgs) => {
+export const loader = async ({ request, params }: LoaderArgs) => {
+  let userId = await requireUserId(request);
   let { groupId } = params;
-
   if (!groupId) {
     throw httpResponse.NotFound;
   }
@@ -35,15 +37,29 @@ export const loader = async ({ params }: LoaderArgs) => {
 
   invariant(group);
 
+  if (!checkAuthority(userId, group.projectId, "READ")) {
+    throw httpResponse.Forbidden;
+  }
+
   return json({ group: group });
 };
 
 export const action = async ({ request, params }: ActionArgs) => {
+  let { groupId } = params;
+  invariant(groupId);
+  let userId = await requireUserId(request);
+
+  let group = await getGroupById(groupId);
+  if (!group) {
+    return httpResponse.BadRequest;
+  }
+
+  if (!checkAuthority(userId, group.projectId, "WRITE")) {
+    return httpResponse.Forbidden;
+  }
+
   let formData = await request.formData();
   let result = await validator.validate(formData);
-  let { groupId } = params;
-
-  invariant(groupId);
 
   if (result.error) {
     throw validationError(result.error);

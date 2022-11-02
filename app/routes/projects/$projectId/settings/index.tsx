@@ -33,16 +33,24 @@ import {
   updateProject,
   findProjectMembersById,
   transferProject,
+  checkAuthority,
 } from "~/models/project.server";
 import { FormInput, FormSubmitButton, Header } from "~/ui";
 import { getUserById, getUserByName } from "~/models/user.server";
 import { requireUserId } from "~/session.server";
 import { httpResponse } from "~/utils";
+import { ProjectUserRole } from "@prisma/client";
 
 export const action = async ({ params, request }: ActionArgs) => {
   let formData = await request.formData();
   let { projectId } = params;
+  let userId = await requireUserId(request);
   invariant(projectId);
+
+  if (!checkAuthority(userId, projectId, ProjectUserRole.ADMIN)) {
+    return httpResponse.Forbidden;
+  }
+
   let action = formData.get("_action");
   if (action === "renameProject") {
     let result = await renameValidator.validate(formData);
@@ -56,7 +64,6 @@ export const action = async ({ params, request }: ActionArgs) => {
       return validationError(result.error);
     }
     const transferUser = await getUserByName(result.data.userName);
-    console.info("transferUser:", transferUser);
     if (!transferUser) {
       return validationError(
         { fieldErrors: { userName: "User does not exist" } },
@@ -68,7 +75,6 @@ export const action = async ({ params, request }: ActionArgs) => {
     if (!project) {
       return httpResponse.BadRequest;
     }
-    let userId = await requireUserId(request);
     if (userId === transferUser.id) {
       return validationError(
         { fieldErrors: { userName: "You can't choose yourself" } },

@@ -1,3 +1,4 @@
+import { ProjectUserRole } from "@prisma/client";
 import { json } from "@remix-run/node";
 import { useMatches } from "@remix-run/react";
 import { useEffect, useMemo, useState } from "react";
@@ -83,6 +84,7 @@ export function useUrl() {
 export const httpResponse = {
   OK: new Response("OK", { status: 200 }),
   BadRequest: new Response("Bad Request", { status: 400 }),
+  Forbidden: new Response("Forbidden", { status: 403 }),
   NotFound: new Response("Not Found", { status: 404 }),
 };
 
@@ -113,4 +115,17 @@ export const parsePath = (path: string) => {
   });
 
   return { params, encodedPath };
+};
+
+export const checkRole = (
+  userRole: ProjectUserRole,
+  requiredRole: ProjectUserRole
+) => {
+  let roles = [
+    ProjectUserRole.READ,
+    ProjectUserRole.WRITE,
+    ProjectUserRole.ADMIN,
+  ];
+
+  return roles.indexOf(userRole) >= roles.indexOf(requiredRole);
 };

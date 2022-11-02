@@ -2,16 +2,13 @@ import {
   Box,
   BoxProps,
   Button,
-  Center,
   Divider,
   Flex,
-  FlexProps,
   Grid,
   GridItem,
   Heading,
   HStack,
   Icon,
-  IconButton,
   Image,
   List,
   ListIcon,
@@ -41,16 +38,13 @@ import {
   useLoaderData,
   useMatches,
 } from "@remix-run/react";
-import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
+import { ReactNode, RefObject, useEffect, useRef } from "react";
 import { IconType } from "react-icons";
 import {
-  FiActivity,
-  FiBell,
   FiChevronDown,
   FiChevronUp,
   FiGrid,
   FiList,
-  FiMenu,
   FiSettings,
 } from "react-icons/fi";
 import logo from "~/images/logo_64.png";
@@ -85,8 +79,15 @@ export const loader = async ({ request, params, context }: LoaderArgs) => {
   if (!project) {
     throw httpResponse.NotFound;
   }
+
+  let role = project.members.find((member) => member.id === user.id)?.role;
+
+  if (!role) {
+    return httpResponse.Forbidden;
+  }
+
   context.project = project;
-  return json({ user: user, project: project });
+  return json({ user: user, project: project, role: role });
 };
 
 export const action = async ({ request }: ActionArgs) => {
