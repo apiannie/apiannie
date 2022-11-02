@@ -53,7 +53,7 @@ import {
   FiMenu,
   FiSettings,
 } from "react-icons/fi";
-import logo from "~/images/logo_128.png";
+import logo from "~/images/logo_64.png";
 import { getProjectById, getProjectByIds } from "~/models/project.server";
 import { requireUser } from "~/session.server";
 import { httpResponse, useUser } from "~/utils";

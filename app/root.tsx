@@ -41,7 +41,7 @@ export let links: LinksFunction = () => {
     { rel: "preconnect", href: "https://fonts.gstatic.com" },
     {
       rel: "icon",
-      href: "/favicon.png",
+      href: "/favicon.ico",
       type: "image/png",
     },
   ];
