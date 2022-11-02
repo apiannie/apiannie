@@ -26,7 +26,7 @@ export async function loader({ request }: LoaderArgs) {
 export default function () {
   return (
     <Layout>
-      <Container minH={"100vh"} maxW={"4xl"}>
+      <Container maxW={"4xl"}>
         <Stack
           as={Box}
           textAlign={"center"}
@@ -67,9 +67,9 @@ export default function () {
               </Button>
             </RemixLink>
 
-            <Button variant={"link"} colorScheme={"blue"} size={"sm"}>
+            {/* <Button variant={"link"} colorScheme={"blue"} size={"sm"}>
               Learn more
-            </Button>
+            </Button> */}
           </Stack>
         </Stack>
       </Container>

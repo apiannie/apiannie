@@ -35,7 +35,7 @@ import UserMenuButton from "./UserMenuButton";
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <Grid templateRows="auto 1fr auto" minH="100vh">
+    <Grid templateRows="73px 1fr 73px" minH="100vh">
       <Header />
       {children}
       <Footer />
@@ -309,11 +309,10 @@ const SocialButton = ({
     <Button
       bg={useColorModeValue("blackAlpha.100", "whiteAlpha.100")}
       rounded={"full"}
-      w={8}
-      h={8}
       cursor={"pointer"}
-      as={"a"}
+      as={Link}
       href={href}
+      isExternal
       display={"inline-flex"}
       alignItems={"center"}
       justifyContent={"center"}
@@ -348,14 +347,17 @@ function Footer() {
           justify={{ base: "center", md: "space-between" }}
           align={{ base: "center", md: "center" }}
         >
-          <Text>© 2022 SidneyLab. All rights reserved</Text>
+          <Text>© 2022 Api Annie. All rights reserved</Text>
           <Stack direction={"row"} spacing={6}>
-            <SocialButton label={"Github"} href={"#"}>
-              <FaGithub />
+            <SocialButton
+              label={"Github"}
+              href={"https://github.com/apiannie/apiannie"}
+            >
+              <Icon as={FaGithub} w={4} h={4} />
             </SocialButton>
-            <SocialButton label={"Twitter"} href={"#"}>
+            {/* <SocialButton label={"Twitter"} href={"#"}>
               <FaTwitter />
-            </SocialButton>
+            </SocialButton> */}
           </Stack>
         </Container>
       </Box>
