@@ -8,8 +8,9 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
+import { ProjectUserRole } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { useLoaderData, useTransition } from "@remix-run/react";
+import { useLoaderData, useMatches, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { useEffect, useRef } from "react";
 import { ValidatedForm, validationError } from "remix-validated-form";
@@ -37,7 +38,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
 
   invariant(group);
 
-  if (!checkAuthority(userId, group.projectId, "READ")) {
+  if (!(await checkAuthority(userId, group.projectId, "READ"))) {
     throw httpResponse.Forbidden;
   }
 
@@ -54,7 +55,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     return httpResponse.BadRequest;
   }
 
-  if (!checkAuthority(userId, group.projectId, "WRITE")) {
+  if (!(await checkAuthority(userId, group.projectId, "WRITE"))) {
     return httpResponse.Forbidden;
   }
 
@@ -82,6 +83,9 @@ const validator = withZod(
 );
 
 export default function ApiGroup() {
+  const matches = useMatches();
+  const role = matches[1].data.role as ProjectUserRole;
+  const readOnly = role === "READ";
   let { group } = useLoaderData<typeof loader>();
   let defaultValue = {
     name: group.name,
@@ -125,12 +129,14 @@ export default function ApiGroup() {
               label="Group name"
               isRequired
               as={Input}
+              readOnly={readOnly}
             />
             <FormHInput
               labelWidth="200px"
               name="description"
               label="Description"
               as={Textarea}
+              readOnly={readOnly}
             />
             <Center>
               <FormSubmitButton
@@ -138,6 +144,7 @@ export default function ApiGroup() {
                 value="saveGroup"
                 colorScheme="blue"
                 px={12}
+                disabled={readOnly}
               >
                 Save
               </FormSubmitButton>

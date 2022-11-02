@@ -24,23 +24,35 @@ import {
   RadioGroup,
   VStack,
   Radio,
+  useToast,
+  Spinner,
 } from "@chakra-ui/react";
-import { ProjectUserRole } from "@prisma/client";
+import { ProjectUser, ProjectUserRole, RequestMethod } from "@prisma/client";
 import { ActionArgs, json, LoaderArgs, LoaderFunction } from "@remix-run/node";
-import { useLoaderData, useMatches } from "@remix-run/react";
+import {
+  FormMethod,
+  useCatch,
+  useFetcher,
+  useLoaderData,
+  useMatches,
+} from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { FiBook, FiPlus, FiTrash } from "react-icons/fi";
+import { useEffect } from "react";
+import { FiBook, FiChevronDown, FiPlus, FiTrash } from "react-icons/fi";
 import { validationError, ValidatorError } from "remix-validated-form";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { string, z } from "zod";
 import { prisma } from "~/models/prisma.server";
 import {
   addMemberToProject,
+  changeProjectRole,
+  findProjectMembersById,
   getProjectById,
   Project,
 } from "~/models/project.server";
 import { ProjectUserRoles } from "~/models/type";
 import { getUserByEmail, getUserInfoByIds } from "~/models/user.server";
+import { requireUserId } from "~/session.server";
 import { FormInput, FormModal, FormSubmitButton, Header } from "~/ui";
 import { httpResponse } from "~/utils";
 
@@ -67,35 +79,44 @@ export const loader = async ({ params }: LoaderArgs) => {
 };
 
 export const action = async ({ request, params }: ActionArgs) => {
+  let userId = await requireUserId(request);
   let formData = await request.formData();
   let { projectId } = params;
   invariant(projectId);
+
+  let project = await findProjectMembersById(projectId);
+  if (!project) {
+    return httpResponse.BadRequest;
+  }
+
+  if (
+    project.members.find((member) => member.id === userId)?.role !== "ADMIN"
+  ) {
+    return httpResponse.Forbidden;
+  }
+
   let action = formData.get("_action");
   switch (action) {
     case "addMember":
-      return addMemberAction(projectId, formData);
+      return addMemberAction(project, formData);
+    case "changeRole":
+      return changeRoleAction(project, formData);
     default:
       return httpResponse.BadRequest;
   }
 };
 
-const addMemberAction = async (projectId: string, formData: FormData) => {
+const addMemberAction = async (
+  project: {
+    id: string;
+    members: ProjectUser[];
+    name: string;
+  },
+  formData: FormData
+) => {
   let result = await addMemberValidator.validate(formData);
   if (result.error) {
     return validationError(result.error);
-  }
-  let project = await prisma.project.findFirst({
-    where: {
-      id: projectId,
-    },
-    select: {
-      id: true,
-      name: true,
-      members: true,
-    },
-  });
-  if (!project) {
-    return httpResponse.BadRequest;
   }
 
   let user = await getUserByEmail(result.data.email);
@@ -124,17 +145,126 @@ const addMemberAction = async (projectId: string, formData: FormData) => {
   return httpResponse.OK;
 };
 
+const changeRoleAction = async (
+  project: {
+    id: string;
+    members: ProjectUser[];
+  },
+  formData: FormData
+) => {
+  let result = await withZod(
+    z.object({
+      id: z.string(),
+      role: z.enum(ProjectUserRoles),
+      _action: z.string(),
+    })
+  ).validate(formData);
+
+  if (result.error) {
+    return validationError(result.error);
+  }
+
+  let data = result.data;
+
+  let numOfAdmins = project.members.filter((member) =>
+    member.id === data.id ? data.role === "ADMIN" : member.role === "ADMIN"
+  ).length;
+
+  if (numOfAdmins === 0) {
+    return validationError(
+      {
+        formId: result.formId,
+        fieldErrors: {
+          role: `Project should have at least 1 admin`,
+        },
+      },
+      data
+    );
+  }
+
+  await changeProjectRole(project.id, data.id, data.role);
+  return json(result.data);
+};
+
+export function CatchBoundary() {
+  const caught = useCatch();
+
+  return (
+    <>
+      <div>
+        ERROR: {caught.statusText} {caught.status}
+      </div>
+      <div>{caught.data.message}</div>
+    </>
+  );
+}
+
 export default function () {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const matches = useMatches();
   const project = matches[1].data.project as Project;
+  const role = matches[1].data.role as ProjectUserRole;
   let { members } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
+  const toast = useToast();
+  const isAdmin = role === "ADMIN";
+
+  const onRoleChange = (id: string, role: ProjectUserRole) => {
+    fetcher.submit(
+      {
+        id: id,
+        role: role,
+        _action: "changeRole",
+      },
+      {
+        method: "patch",
+        replace: true,
+      }
+    );
+  };
+
+  const isLoading = fetcher.state !== "idle";
+
+  useEffect(() => {
+    if (fetcher.type === "done") {
+      let errMsg = fetcher.data?.fieldErrors?.role;
+      if (errMsg) {
+        toast({
+          title: "Could not change role.",
+          description: errMsg,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "top",
+        });
+      } else {
+        const { id, role, _action } = fetcher.data;
+        if (_action === "changeRole") {
+          const member = members.find((elem) => elem.id === id);
+          toast({
+            title: "Action Succeed",
+            description: `User ${member?.name} changed to ${role}`,
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+            position: "top",
+          });
+        }
+      }
+    }
+  }, [fetcher.type]);
+
   return (
     <Box h="100%" overflowY={"auto"} px={12} py={9} fontSize="sm">
       <Flex>
         <Header>{1} Members</Header>
         <Spacer />
-        <Button size="sm" colorScheme={"blue"} onClick={onOpen}>
+        <Button
+          disabled={!isAdmin}
+          size="sm"
+          colorScheme={"blue"}
+          onClick={onOpen}
+        >
           <Icon as={FiPlus} mr={1} /> Member
         </Button>
         <AddMemberModal isOpen={isOpen} onClose={onClose} project={project} />
@@ -160,14 +290,29 @@ export default function () {
                   <Text>{member.email}</Text>
                 </Td>
                 <Td isNumeric>
-                  <Select size="sm">
-                    <option>Admin</option>
-                    <option>Write</option>
-                    <option>Read</option>
+                  <Select
+                    value={member.role}
+                    onChange={(e) =>
+                      onRoleChange(member.id, e.target.value as ProjectUserRole)
+                    }
+                    size="sm"
+                    icon={
+                      isLoading ? <Spinner size={"sm"} /> : <FiChevronDown />
+                    }
+                    disabled={!isAdmin || isLoading}
+                  >
+                    <option value={ProjectUserRole.ADMIN}>Admin</option>
+                    <option value={ProjectUserRole.WRITE}>Write</option>
+                    <option value={ProjectUserRole.READ}>Read</option>
                   </Select>
                 </Td>
                 <Td px={0}>
-                  <Button colorScheme={"red"} size="sm" variant={"ghost"}>
+                  <Button
+                    disabled={!isAdmin}
+                    colorScheme={"red"}
+                    size="sm"
+                    variant={"ghost"}
+                  >
                     <Icon as={FiTrash} />
                   </Button>
                 </Td>

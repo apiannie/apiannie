@@ -1,6 +1,6 @@
 import { TabPanel, TabPanels } from "@chakra-ui/react";
 import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
-import { useParams } from "@remix-run/react";
+import { RouteMatch, useMatches, useParams } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import { getApiById, getApiProjectId } from "~/models/api.server";
 import { httpResponse } from "~/utils";
@@ -12,7 +12,11 @@ import { checkAuthority } from "~/models/project.server";
 import { ProjectUserRole } from "@prisma/client";
 
 export const handle = {
-  tabs: ["Api", "Edit", "Exec"],
+  tabs: (matches: RouteMatch[]) => {
+    const role = matches[1].data.role as ProjectUserRole;
+    const readOnly = role === "READ";
+    return readOnly ? ["Api", "Exec"] : ["Api", "Edit", "Exec"];
+  },
 };
 
 export const loader = async ({ request, params }: LoaderArgs) => {
@@ -26,7 +30,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     throw httpResponse.BadRequest;
   }
 
-  if (!checkAuthority(userId, api.projectId, ProjectUserRole.READ)) {
+  if (!(await checkAuthority(userId, api.projectId, ProjectUserRole.READ))) {
     throw httpResponse.Forbidden;
   }
   return json({ api });
@@ -42,7 +46,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     return httpResponse.BadRequest;
   }
 
-  if (!checkAuthority(userId, projectId, "WRITE")) {
+  if (!(await checkAuthority(userId, projectId, "WRITE"))) {
     return httpResponse.Forbidden;
   }
 
@@ -56,15 +60,20 @@ export const action = async ({ request, params }: ActionArgs) => {
 };
 
 export default function ApiInfo() {
+  const matches = useMatches();
+  const role = matches[1].data.role as ProjectUserRole;
+  const readOnly = role === "READ";
   const { apiId } = useParams();
   return (
     <TabPanels h="full" overflowY={"hidden"} key={apiId}>
       <TabPanel h="full" overflowY={"auto"}>
         <Api />
       </TabPanel>
-      <TabPanel h="full" overflow={"auto"}>
-        <Editor />
-      </TabPanel>
+      {!readOnly && (
+        <TabPanel h="full" overflow={"auto"}>
+          <Editor />
+        </TabPanel>
+      )}
       <TabPanel h="full" p={0}>
         <Postman />
       </TabPanel>

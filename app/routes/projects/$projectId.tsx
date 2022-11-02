@@ -118,7 +118,10 @@ const SidebarContent = ({ ...rest }: SidebarProps) => {
   let tabs: string[] = [];
   for (let i = matches.length - 1; i >= 0; i--) {
     if (matches[i]?.handle?.tabs) {
-      tabs = matches[i]?.handle?.tabs;
+      let handleTabs = matches[i]?.handle?.tabs;
+      if (typeof handleTabs === "function") {
+        tabs = handleTabs(matches);
+      }
     }
   }
 

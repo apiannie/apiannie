@@ -1,4 +1,3 @@
-import { ProjectUserRole } from "@prisma/client";
 import { ProjectUserRole, User } from "@prisma/client";
 import invariant from "tiny-invariant";
 import { checkRole } from "~/utils";
@@ -189,6 +188,7 @@ export const findProjectMembersById = async (id: string) => {
     },
     select: {
       id: true,
+      name: true,
       members: true,
     },
   });
@@ -277,4 +277,28 @@ export const checkAuthority = async (
   }
 
   return checkRole(memberRole, requiredRole);
+};
+
+export const changeProjectRole = async (
+  projectId: string,
+  userId: string,
+  role: ProjectUserRole
+) => {
+  return await prisma.project.update({
+    where: {
+      id: projectId,
+    },
+    data: {
+      members: {
+        updateMany: {
+          where: {
+            id: userId,
+          },
+          data: {
+            role: role,
+          },
+        },
+      },
+    },
+  });
 };

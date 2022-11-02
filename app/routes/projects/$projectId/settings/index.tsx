@@ -47,7 +47,7 @@ export const action = async ({ params, request }: ActionArgs) => {
   let userId = await requireUserId(request);
   invariant(projectId);
 
-  if (!checkAuthority(userId, projectId, ProjectUserRole.ADMIN)) {
+  if (!(await checkAuthority(userId, projectId, ProjectUserRole.ADMIN))) {
     return httpResponse.Forbidden;
   }
 
@@ -238,6 +238,8 @@ export default function () {
   const matches = useMatches();
   const project = matches[1].data.project as Project;
   invariant(project);
+  const role = matches[1].data.role as ProjectUserRole;
+  const isAdmin = role === "ADMIN";
   const bg = useColorModeValue("gray.100", "gray.700");
   const bgBW = useColorModeValue("white", "gray.900");
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -301,6 +303,7 @@ export default function () {
               name="projectName"
               bg={bgBW}
               defaultValue={project.name}
+              readOnly={!isAdmin}
             />
             <Spacer />
             <Box>
@@ -309,6 +312,7 @@ export default function () {
                 name="_action"
                 value="renameProject"
                 colorScheme={"blue"}
+                disabled={!isAdmin}
               >
                 Rename
               </FormSubmitButton>
@@ -329,6 +333,7 @@ export default function () {
               variant={"outline"}
               colorScheme={"red"}
               onClick={() => setTransferVisible(true)}
+              disabled={!isAdmin}
             >
               Transfer
               <TransferDialog
@@ -352,6 +357,7 @@ export default function () {
               variant={"outline"}
               colorScheme={"red"}
               onClick={() => setDeleteVisible(true)}
+              disabled={!isAdmin}
             >
               Delete
               <DeleteDialog
