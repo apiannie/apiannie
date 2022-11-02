@@ -1,5 +1,6 @@
 import { RequestMethod } from "@prisma/client";
-import { ActionArgs, json, LoaderArgs } from "@remix-run/node";
+import { ActionArgs, json, LoaderArgs, Response } from "@remix-run/node";
+import { cors } from "remix-utils";
 import invariant from "tiny-invariant";
 import { findApisForMock, getApiById } from "~/models/api.server";
 import { JsonNode } from "~/models/type";
@@ -11,6 +12,10 @@ export const loader = (args: LoaderArgs) => {
 };
 
 export const action = async ({ params, request }: ActionArgs) => {
+  if (request.method === RequestMethod.OPTIONS) {
+    return await cors(request, new Response());
+  }
+
   let projectId = params.projectId as string;
   let path = "/" + params["*"];
   let method = request.method as RequestMethod;
@@ -31,7 +36,7 @@ export const action = async ({ params, request }: ActionArgs) => {
   let response: JsonNode | undefined = (api.data.response as any)?.["200"];
   let mocked = mockJson(response);
 
-  return json(mocked);
+  return await cors(request, json(mocked));
 };
 
 function findPathForRule(path: string, rules: string[]) {

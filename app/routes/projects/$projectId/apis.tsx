@@ -630,7 +630,7 @@ export const useMethodTag = (method: string) => {
       case RequestMethod.HEAD:
         color = "purple";
         break;
-      case RequestMethod.OPTION:
+      case RequestMethod.OPTIONS:
         color = "cyan";
     }
 

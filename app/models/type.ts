@@ -20,8 +20,6 @@ export const RequestMethods = [
   RequestMethod.PUT,
   RequestMethod.PATCH,
   RequestMethod.DELETE,
-  RequestMethod.OPTION,
-  RequestMethod.HEAD,
 ] as const;
 
 export interface JsonNode {
