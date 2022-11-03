@@ -26,35 +26,36 @@ import {
   Radio,
   useToast,
   Spinner,
-} from "@chakra-ui/react";
-import { ProjectUser, ProjectUserRole, RequestMethod } from "@prisma/client";
-import { ActionArgs, json, LoaderArgs, LoaderFunction } from "@remix-run/node";
+  AlertDialog,
+  AlertDialogOverlay, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogBody,
+} from '@chakra-ui/react';
+import { ProjectUser, ProjectUserRole, User } from '@prisma/client';
+import { ActionArgs, json, LoaderArgs } from '@remix-run/node';
 import {
-  FormMethod,
   useCatch,
   useFetcher,
   useLoaderData,
   useMatches,
-} from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { useEffect } from "react";
-import { FiBook, FiChevronDown, FiPlus, FiTrash } from "react-icons/fi";
-import { validationError, ValidatorError } from "remix-validated-form";
-import invariant from "tiny-invariant";
-import { string, z } from "zod";
-import { prisma } from "~/models/prisma.server";
+} from '@remix-run/react';
+import { withZod } from '@remix-validated-form/with-zod';
+import React, { RefObject, useEffect, useRef, useState } from 'react';
+import { FiBook, FiChevronDown, FiPlus, FiTrash } from 'react-icons/fi';
+import { validationError, } from 'remix-validated-form';
+import invariant from 'tiny-invariant';
+import { z } from 'zod';
 import {
-  addMemberToProject,
+  addMemberToProject, changeProjectMembers,
   changeProjectRole,
   findProjectMembersById,
   getProjectById,
   Project,
-} from "~/models/project.server";
-import { ProjectUserRoles } from "~/models/type";
-import { getUserByEmail, getUserInfoByIds } from "~/models/user.server";
-import { requireUserId } from "~/session.server";
-import { FormInput, FormModal, FormSubmitButton, Header } from "~/ui";
-import { httpResponse } from "~/utils";
+} from '~/models/project.server';
+import { ProjectUserRoles } from '~/models/type';
+import { getUserByEmail, getUserInfoByIds } from '~/models/user.server';
+import { requireUserId } from '~/session.server';
+import { FormInput, FormModal, FormSubmitButton, Header } from '~/ui';
+import { httpResponse } from '~/utils';
+import { FocusableElement } from '@chakra-ui/utils';
 
 export const loader = async ({ params }: LoaderArgs) => {
   let { projectId } = params;
@@ -90,17 +91,19 @@ export const action = async ({ request, params }: ActionArgs) => {
   }
 
   if (
-    project.members.find((member) => member.id === userId)?.role !== "ADMIN"
+    project.members.find((member) => member.id === userId)?.role !== 'ADMIN'
   ) {
     return httpResponse.Forbidden;
   }
 
-  let action = formData.get("_action");
+  let action = formData.get('_action');
   switch (action) {
-    case "addMember":
+    case 'addMember':
       return addMemberAction(project, formData);
-    case "changeRole":
+    case 'changeRole':
       return changeRoleAction(project, formData);
+    case 'deleteMember':
+      return deleteMemberAction(project, formData);
     default:
       return httpResponse.BadRequest;
   }
@@ -167,7 +170,7 @@ const changeRoleAction = async (
   let data = result.data;
 
   let numOfAdmins = project.members.filter((member) =>
-    member.id === data.id ? data.role === "ADMIN" : member.role === "ADMIN"
+    member.id === data.id ? data.role === 'ADMIN' : member.role === 'ADMIN'
   ).length;
 
   if (numOfAdmins === 0) {
@@ -183,6 +186,45 @@ const changeRoleAction = async (
   }
 
   await changeProjectRole(project.id, data.id, data.role);
+  return json(result.data);
+};
+
+const deleteMemberAction = async (
+  project: {
+    id: string;
+    members: ProjectUser[];
+  },
+  formData: FormData
+) => {
+  let result = await withZod(
+    z.object({
+      id: z.string(),
+      _action: z.string(),
+    })
+  ).validate(formData);
+
+  if (result.error) {
+    return validationError(result.error);
+  }
+
+  let data = result.data;
+
+  let numOfAdmins = project.members.filter((member) =>
+    member.id !== data.id && member.role === 'ADMIN'
+  ).length;
+
+  if (numOfAdmins === 0) {
+    return validationError(
+      {
+        formId: result.formId,
+        fieldErrors: {
+          role: `Project should have at least 1 admin`,
+        },
+      },
+      data
+    );
+  }
+  await changeProjectMembers(project.id, data.id);
   return json(result.data);
 };
 
@@ -207,47 +249,71 @@ export default function () {
   let { members } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const toast = useToast();
-  const isAdmin = role === "ADMIN";
-
+  const isAdmin = role === 'ADMIN';
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const deleteMember = useRef<{id: string; name: string}>();
   const onRoleChange = (id: string, role: ProjectUserRole) => {
     fetcher.submit(
       {
         id: id,
         role: role,
-        _action: "changeRole",
+        _action: 'changeRole',
       },
       {
-        method: "patch",
+        method: 'patch',
         replace: true,
       }
     );
   };
 
-  const isLoading = fetcher.state !== "idle";
+  const onDelete = () => {
+    fetcher.submit(
+      {
+        id: deleteMember.current!.id,
+        _action: 'deleteMember',
+      },
+      {
+        method: 'patch',
+        replace: true,
+      }
+    );
+  };
+
+  const isLoading = fetcher.state !== 'idle';
 
   useEffect(() => {
-    if (fetcher.type === "done") {
+    if (fetcher.type === 'done') {
       let errMsg = fetcher.data?.fieldErrors?.role;
       if (errMsg) {
         toast({
-          title: "Could not change role.",
+          title: 'Could not change role.',
           description: errMsg,
-          status: "error",
+          status: 'error',
           duration: 5000,
           isClosable: true,
-          position: "top",
+          position: 'top',
         });
       } else {
         const { id, role, _action } = fetcher.data;
-        if (_action === "changeRole") {
+        if (_action === 'changeRole') {
           const member = members.find((elem) => elem.id === id);
           toast({
-            title: "Action Succeed",
+            title: 'Action Succeed',
             description: `User ${member?.name} changed to ${role}`,
-            status: "success",
+            status: 'success',
             duration: 5000,
             isClosable: true,
-            position: "top",
+            position: 'top',
+          });
+        }else if (_action === 'deleteMember') {
+          setDeleteDialogVisible(false);
+          toast({
+            title: 'Action Succeed',
+            description: `User ${deleteMember.current?.name} is deleted`,
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+            position: 'top',
           });
         }
       }
@@ -255,14 +321,14 @@ export default function () {
   }, [fetcher.type]);
 
   return (
-    <Box h="100%" overflowY={"auto"} px={12} py={9} fontSize="sm">
+    <Box h="100%" overflowY={'auto'} px={12} py={9} fontSize="sm">
       <Flex>
         <Header>{1} Members</Header>
         <Spacer />
         <Button
           disabled={!isAdmin}
           size="sm"
-          colorScheme={"blue"}
+          colorScheme={'blue'}
           onClick={onOpen}
         >
           <Icon as={FiPlus} mr={1} /> Member
@@ -270,8 +336,8 @@ export default function () {
         <AddMemberModal isOpen={isOpen} onClose={onClose} project={project} />
       </Flex>
       <Divider />
-      <TableContainer mt={"10px"}>
-        <Table size={"sm"}>
+      <TableContainer mt={'10px'}>
+        <Table size={'sm'}>
           <Thead>
             <Tr>
               <Th>Name</Th>
@@ -297,7 +363,7 @@ export default function () {
                     }
                     size="sm"
                     icon={
-                      isLoading ? <Spinner size={"sm"} /> : <FiChevronDown />
+                      isLoading ? <Spinner size={'sm'} /> : <FiChevronDown />
                     }
                     disabled={!isAdmin || isLoading}
                   >
@@ -309,9 +375,13 @@ export default function () {
                 <Td px={0}>
                   <Button
                     disabled={!isAdmin}
-                    colorScheme={"red"}
+                    colorScheme={'red'}
                     size="sm"
-                    variant={"ghost"}
+                    variant={'ghost'}
+                    onClick={() => {
+                      setDeleteDialogVisible(true);
+                      deleteMember.current = member;
+                    }}
                   >
                     <Icon as={FiTrash} />
                   </Button>
@@ -321,17 +391,47 @@ export default function () {
           </Tbody>
         </Table>
       </TableContainer>
+      <DeleteDialog isLoading={isLoading} isOpen={deleteDialogVisible} onClose={() => setDeleteDialogVisible(false)} onDelete={onDelete} />
     </Box>
   );
 }
 
+const DeleteDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => any;
+  onDelete: () => any;
+  isLoading: boolean;
+}> = ({ isOpen, onClose, onDelete, isLoading }) => {
+  const cancelRef = useRef<FocusableElement>();
+  return <AlertDialog
+    isOpen={isOpen}
+    onClose={onClose}
+    leastDestructiveRef={cancelRef as RefObject<FocusableElement>}
+  >
+    <AlertDialogOverlay>
+      <AlertDialogContent>
+        <AlertDialogHeader fontSize="lg" fontWeight="bold">
+          Delete Confirm
+        </AlertDialogHeader>
+        <AlertDialogBody>
+          Are you sure? You can't undo this action afterwards.
+        </AlertDialogBody>
+        <AlertDialogFooter>
+          <Button ref={cancelRef as RefObject<HTMLButtonElement>} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme="red" isLoading={isLoading} ml={3} onClick={onDelete}>
+            Delete
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialogOverlay>
+  </AlertDialog>;
+};
+
 const addMemberValidator = withZod(
   z.object({
-    email: z
-      .string()
-      .trim()
-      .min(1, "Please input the email address of the member to invite.")
-      .email("Invalid email format"),
+    email: z.string().trim().min(1, 'Please input the email address of the member to invite.').email('Invalid email format'),
     role: z.enum(ProjectUserRoles),
   })
 );
@@ -357,11 +457,11 @@ const AddMemberModal = ({
       <ModalOverlay />
       <ModalContent>
         <ModalCloseButton />
-        <Center pt={20} pb={12} flexDir={"column"}>
+        <Center pt={20} pb={12} flexDir={'column'}>
           <Icon as={FiBook} display="block" w={12} h={12} color="gray.500" />
           <Text fontSize="lg" mt={4}>
-            Add people to{" "}
-            <Text as="b" fontWeight={"bold"}>
+            Add people to{' '}
+            <Text as="b" fontWeight={'bold'}>
               {project.name}
             </Text>
           </Text>
@@ -370,15 +470,15 @@ const AddMemberModal = ({
           <Box px={8}>
             <FormInput name="email" placeholder="Email" />
           </Box>
-          <Text fontSize={"sm"} px={8} mt={8} color="gray.500">
+          <Text fontSize={'sm'} px={8} mt={8} color="gray.500">
             Choose a role
           </Text>
           <Divider />
-          <RadioGroup size={"sm"} defaultValue={ProjectUserRole.READ}>
-            <VStack alignItems={"baseline"}>
+          <RadioGroup size={'sm'} defaultValue={ProjectUserRole.READ}>
+            <VStack alignItems={'baseline'}>
               <Radio px={8} py={2} name="role" value={ProjectUserRole.READ}>
-                <Flex flexDir={"column"}>
-                  <Text fontWeight={"bold"}>Read</Text>
+                <Flex flexDir={'column'}>
+                  <Text fontWeight={'bold'}>Read</Text>
                   <Text>
                     Recommended for non-code contributors who want to view or
                     discuss your project.
@@ -387,8 +487,8 @@ const AddMemberModal = ({
               </Radio>
               <Divider style={{ marginTop: 0 }} />
               <Radio px={8} py={2} name="role" value={ProjectUserRole.WRITE}>
-                <Flex flexDir={"column"}>
-                  <Text fontWeight={"bold"}>Write</Text>
+                <Flex flexDir={'column'}>
+                  <Text fontWeight={'bold'}>Write</Text>
                   <Text>
                     Recommended for contributors who actively edit to your
                     project.
@@ -397,8 +497,8 @@ const AddMemberModal = ({
               </Radio>
               <Divider style={{ marginTop: 0 }} />
               <Radio px={8} py={2} name="role" value={ProjectUserRole.ADMIN}>
-                <Flex flexDir={"column"}>
-                  <Text fontWeight={"bold"}>Admin</Text>
+                <Flex flexDir={'column'}>
+                  <Text fontWeight={'bold'}>Admin</Text>
                   <Text>
                     Recommended for people who need full access to the project,
                     including sensitive and destructive actions like managing
@@ -410,7 +510,7 @@ const AddMemberModal = ({
             </VStack>
           </RadioGroup>
         </ModalBody>
-        <ModalFooter mb={6} justifyContent={"center"}>
+        <ModalFooter mb={6} justifyContent={'center'}>
           <FormSubmitButton
             px={12}
             type="submit"
