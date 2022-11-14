@@ -1,3 +1,4 @@
+import { RequestParam } from ".prisma/client";
 import { ApiData, ParamType, Prisma, RequestMethod } from "@prisma/client";
 import { prisma } from "./prisma.server";
 
@@ -61,7 +62,12 @@ export const getGroupById = async (id: string) => {
 export const createApi = async (
   projectId: string,
   groupId: string | undefined,
-  data: { name: string; path: string; method: RequestMethod }
+  data: {
+    name: string;
+    path: string;
+    method: RequestMethod;
+    pathParams: RequestParam[];
+  }
 ) => {
   if (groupId === "") {
     groupId = undefined;

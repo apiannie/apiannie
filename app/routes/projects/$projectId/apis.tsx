@@ -27,7 +27,7 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { ProjectUserRole, RequestMethod } from "@prisma/client";
+import { ProjectUserRole, RequestMethod, RequestParam } from "@prisma/client";
 import { ActionArgs, redirect } from "@remix-run/node";
 import {
   Link as RemixLink,
@@ -62,7 +62,7 @@ import FormHInput from "~/ui/Form/FormHInput";
 import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
-import { httpResponse } from "~/utils";
+import { httpResponse, parsePath } from "~/utils";
 import { ProjecChangeButton } from "../$projectId";
 
 export const handle = {
@@ -157,10 +157,20 @@ const newApiAction = async (formData: FormData, projectId: string) => {
   }
 
   const { name, path, method, groupId } = result.data;
+
+  let { params } = parsePath(path);
+
   let api = await createApi(projectId, groupId, {
     name,
     path,
     method,
+    pathParams: params.map<RequestParam>((param) => ({
+      name: param,
+      example: "",
+      description: "",
+      isRequired: true,
+      type: "STRING",
+    })),
   });
 
   return redirect(`/projects/${projectId}/apis/details/${api.id}`);
@@ -310,12 +320,16 @@ export const NewApiModal = ({
   isOpen: ModalProps["isOpen"];
   onClose: ModalProps["onClose"];
 }) => {
+  const matches = useMatches();
   const params = useParams();
   const gray = useColorModeValue("gray.200", "gray.700");
   let groupId = "";
   if (params.groupId) {
     groupId = params.groupId;
+  } else if (params.apiId) {
+    groupId = matches?.[3].data?.api?.groupId;
   }
+
   let labelWidth = "60px";
   return (
     <FormModal
