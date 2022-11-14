@@ -102,7 +102,9 @@ const Postman = () => {
     api.data.bodyType === "RAW"
       ? api.data.bodyRaw?.example
       : JSON.stringify(
-          mockJson(api.data.bodyJson as unknown as JsonNode),
+          mockJson(api.data.bodyJson as unknown as JsonNode, {
+            useExample: true,
+          }),
           null,
           2
         )
@@ -124,7 +126,12 @@ const Postman = () => {
   const toast = useToast();
 
   useEffect(() => {
-    setLocation(`${url.origin}/mock/${projectId}`);
+    let lastExecLocation = localStorage.getItem("postman.lastExeclocation");
+    if (lastExecLocation) {
+      setLocation(lastExecLocation);
+    } else {
+      setLocation(`${url.origin}/mock/${projectId}`);
+    }
   }, [url]);
 
   const onSubmit: React.MouseEventHandler<HTMLButtonElement> =
@@ -136,6 +143,8 @@ const Postman = () => {
         // TODO
         return;
       }
+
+      localStorage.setItem("postman.lastExeclocation", location);
 
       let paths = data.path;
 
@@ -233,7 +242,7 @@ const Postman = () => {
       } catch (err: any) {
         setError(err);
       }
-    }, [form, location, bodyValue]);
+    }, [form, location, bodyValue, api]);
   const responseDragRef = useRef<HTMLDivElement>();
   const gridContainerRef = useRef<HTMLDivElement>();
   const lastClientY = useRef(0);
