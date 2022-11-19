@@ -51,12 +51,11 @@ export const action = async ({ request, params }: ActionArgs) => {
   }
 
   let formData = await request.formData();
-
-  if (formData.get("_action") === "test") {
-    throw httpResponse.NotFound;
+  let action = formData.get("_action");
+  if (action === "saveApi") {
+    return await saveApiAction(apiId, formData);
   }
-
-  return await saveApiAction(apiId, formData);
+  throw httpResponse.NotFound;
 };
 
 export default function ApiInfo() {

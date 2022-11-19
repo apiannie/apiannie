@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Center,
   Divider,
   Flex,
@@ -11,6 +12,7 @@ import {
   IconButton,
   Input,
   ListItem,
+  Modal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
@@ -42,27 +44,35 @@ import {
   BsFillCaretRightFill,
   BsFolder2Open,
 } from "react-icons/bs";
-import { FiAirplay, FiFilePlus, FiFolder, FiFolderPlus } from "react-icons/fi";
+import {
+  FiAirplay,
+  FiFilePlus,
+  FiFolder,
+  FiFolderPlus,
+  FiTrash,
+} from "react-icons/fi";
 import { NavLink, Outlet, useParams } from "react-router-dom";
-import { validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import {
   createApi,
   createGroup,
+  deleteApi,
+  deleteGroup,
   updateApi,
   updateGroup,
 } from "~/models/api.server";
 import { Api, checkAuthority, Group, Project } from "~/models/project.server";
 import { RequestMethods } from "~/models/type";
-import { requireUser, requireUserId } from "~/session.server";
+import { requireUserId } from "~/session.server";
 import { PathInput } from "~/ui";
 import FormCancelButton from "~/ui/Form/FormCancelButton";
 import FormHInput from "~/ui/Form/FormHInput";
 import FormInput from "~/ui/Form/FormInput";
 import FormModal from "~/ui/Form/FormModal";
 import FormSubmitButton from "~/ui/Form/FormSubmitButton";
-import { httpResponse, parsePath } from "~/utils";
+import { httpResponse, parsePath, useUrl } from "~/utils";
 import { ProjecChangeButton } from "../$projectId";
 
 export const handle = {
@@ -74,6 +84,8 @@ enum Action {
   NEW_API = "NEW_API",
   UPDATE_API = "UPDATE_API",
   UPDATE_GROUP = "UPDATE_GROUP",
+  DELETE_API = "DELETE_API",
+  DELETE_GROUP = "DELETE_GROUP",
 }
 
 export const action = async ({ request, params }: ActionArgs) => {
@@ -95,6 +107,11 @@ export const action = async ({ request, params }: ActionArgs) => {
       return await newApiAction(formData, projectId);
     case Action.UPDATE_API:
       return await updateApiAction(formData);
+    case Action.DELETE_API:
+      return await deleteApiAction(formData);
+    case Action.DELETE_GROUP:
+      return await deleteGroupAction(formData);
+
     default:
       console.info("_action:", formData.get("_action"));
       return httpResponse.NotFound;
@@ -174,6 +191,59 @@ const newApiAction = async (formData: FormData, projectId: string) => {
   });
 
   return redirect(`/projects/${projectId}/apis/details/${api.id}`);
+};
+
+export const deleteApiAction = async (formData: FormData) => {
+  let id = formData.get("id")?.toString();
+  let apiId = formData.get("apiId")?.toString();
+  if (!id) {
+    return httpResponse.BadRequest;
+  }
+  let url = formData.get("url")?.toString() ?? "/";
+  let api = await deleteApi(id);
+  if (apiId === id) {
+    if (api?.groupId) {
+      return redirect(`/projects/${api.projectId}/apis/groups/${api.groupId}`);
+    } else if (api?.projectId) {
+      return redirect(`/projects/${api.projectId}/apis`);
+    } else {
+      return redirect(`/projects`);
+    }
+  }
+  return redirect(url);
+};
+
+export const deleteGroupAction = async (formData: FormData) => {
+  let id = formData.get("id")?.toString();
+  let apiId = formData.get("apiId")?.toString();
+  let groupId = formData.get("groupId")?.toString();
+  if (!id) {
+    return httpResponse.BadRequest;
+  }
+  let url = formData.get("url")?.toString() ?? "/";
+
+  let data = await deleteGroup(id);
+
+  if (!data) {
+    return httpResponse.BadRequest;
+  }
+
+  let { group, groupsToDelete, apisToDelete } = data;
+
+  if (
+    (groupId && groupsToDelete.indexOf(groupId) !== -1) ||
+    (apiId && apisToDelete.indexOf(apiId) !== -1)
+  ) {
+    if (group.parentId) {
+      return redirect(
+        `/projects/${group.projectId}/apis/groups/${group.parentId}`
+      );
+    } else {
+      return redirect(`/projects/${group.projectId}/apis`);
+    }
+  }
+
+  return redirect(url);
 };
 
 function SideNav() {
@@ -458,10 +528,19 @@ const useAccordion = (initialValue?: string[] | null | undefined) => {
     setAccordionMap(clone);
   };
 
+  const onReset = (value: string[]) => {
+    let initial: { [key: string]: boolean } = {};
+    for (let v of value) {
+      initial[v] = true;
+    }
+    setAccordionMap(initial);
+  };
+
   return {
     accordionMap,
     onAdd,
     onDelete,
+    onReset,
   };
 };
 
@@ -471,7 +550,25 @@ const FileNavbar = () => {
   const project = matches[1].data.project as Project;
   const fetcher = useFetcher();
   invariant(project);
-  const { accordionMap, onAdd, onDelete } = useAccordion(["root"]);
+
+  const { accordionMap, onAdd, onDelete, onReset } = useAccordion(["root"]);
+
+  useEffect(() => {
+    let initialAccord = ["root"];
+    let parentId: string | null = null;
+    if (matches[3]?.data?.group) {
+      parentId = matches[3]?.data?.group?.id;
+    } else if (matches[3]?.data?.api) {
+      parentId = matches[3]?.data?.api?.groupId;
+    }
+    if (parentId) {
+      let path: string[] = [];
+      groupDFS(matches[1].data.project.root, parentId, path);
+      initialAccord = initialAccord.concat(path);
+    }
+    onReset(initialAccord);
+  }, [params.apiId, params.groupId]);
+
   return (
     <Flex flexDir={"column"}>
       <Folder
@@ -527,6 +624,7 @@ const Folder = ({
   const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
   const hoverColor = useColorModeValue("blue.100", "blue.800");
   const isOpen = accordionMap[group.id];
+  const deleteModal = useDisclosure();
   return (
     <Flex border={"none"} flexDir="column">
       {depth === -1 ? (
@@ -547,6 +645,7 @@ const Folder = ({
       ) : (
         <HStack
           spacing={0}
+          pr={2}
           w="full"
           pl={`${8 + depth * 16}px`}
           _hover={{ background: isActive ? undefined : hoverColor }}
@@ -582,6 +681,15 @@ const Folder = ({
               {group.name}
             </Text>
           </Box>
+          <Spacer />
+          <DeleteButton onOpen={deleteModal.onOpen} />
+          <DeleteApiDialog
+            isOpen={deleteModal.isOpen}
+            onClose={deleteModal.onClose}
+            name={group.name}
+            id={group.id}
+            isGroup={true}
+          />
         </HStack>
       )}
       <Flex
@@ -680,12 +788,35 @@ export function CatchBoundary() {
   );
 }
 
+const DeleteButton = ({ onOpen }: { onOpen: () => void }) => {
+  return (
+    <Button
+      display="none"
+      _groupHover={{
+        display: "inline-flex",
+      }}
+      colorScheme={"teal"}
+      variant={"ghost"}
+      p={0}
+      size="xs"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onOpen();
+      }}
+    >
+      <Icon as={FiTrash} />
+    </Button>
+  );
+};
+
 const File = ({ api, depth, ...rest }: { api: Api; depth: number }) => {
   const { projectId, apiId } = useParams();
   const bg = useColorModeValue("blue.200", "blue.600");
   const isActive = api.id === apiId;
   invariant(projectId);
   const hoverColor = useColorModeValue("blue.100", "blue.800");
+  const deleteModal = useDisclosure();
   return (
     <Flex
       as={RemixLink}
@@ -695,13 +826,80 @@ const File = ({ api, depth, ...rest }: { api: Api; depth: number }) => {
       _hover={{ background: isActive ? undefined : hoverColor }}
       bg={isActive ? bg : undefined}
       cursor="pointer"
+      role={"group"}
       {...rest}
     >
-      <HStack w="full" spacing={0}>
+      <HStack w="full" spacing={0} pr={2}>
         <MethodTag method={api.data.method} />
         <Text noOfLines={1}>{api.data.name}</Text>
+        <Spacer />
+        <DeleteButton onOpen={deleteModal.onOpen} />
+        <DeleteApiDialog
+          isOpen={deleteModal.isOpen}
+          onClose={deleteModal.onClose}
+          name={api.data.name}
+          id={api.id}
+          isGroup={false}
+        />
       </HStack>
     </Flex>
+  );
+};
+
+const deleteValidator = withZod(z.object({}));
+const DeleteApiDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => any;
+  name: string;
+  id: string;
+  isGroup: boolean;
+}> = ({ isOpen, onClose, name, id, isGroup }) => {
+  const params = useParams();
+  const url = useUrl();
+  return (
+    <Modal size={"lg"} isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Please confirm</ModalHeader>
+        <ModalCloseButton />
+        <Divider />
+        <ModalBody py={8} textAlign={"center"}>
+          <Text>
+            Are you sure to delete '<strong>{name}</strong>'
+            {isGroup && <span> and it's contents</span>}？
+          </Text>
+          <Text>
+            This action <strong>cannot</strong> be undone
+          </Text>
+        </ModalBody>
+        <Divider />
+        <ModalFooter
+          as={ValidatedForm}
+          method="delete"
+          resetAfterSubmit
+          validator={deleteValidator}
+          action={`/projects/${params.projectId}/apis`}
+        >
+          <input type="hidden" name="id" value={id} />
+          <input type="hidden" name="url" value={url.href} />
+          <input
+            type="hidden"
+            name={isGroup ? "groupId" : "apiId"}
+            value={id}
+          />
+          <FormCancelButton onClick={onClose} mr={3}>
+            Cancel
+          </FormCancelButton>
+          <FormSubmitButton
+            colorScheme="red"
+            name="_action"
+            value={isGroup ? Action.DELETE_GROUP : Action.DELETE_API}
+          >
+            Delete
+          </FormSubmitButton>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };
 

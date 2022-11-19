@@ -57,7 +57,7 @@ import {
   RequestMethod,
   RequestParam,
 } from "@prisma/client";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useTransition } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import React, {
@@ -78,10 +78,11 @@ import {
 } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { string, z, ZodTypeDef } from "zod";
-import { saveApiData } from "~/models/api.server";
+import { deleteApi, saveApiData } from "~/models/api.server";
 import { JsonNode, JsonNodeType, RequestMethods } from "~/models/type";
 import {
   AceEditor,
+  FormCancelButton,
   FormHInput,
   FormInput,
   FormSubmitButton,
@@ -152,6 +153,8 @@ export const saveApiAction = async (apiId: string, formData: FormData) => {
   await saveApiData(apiId, apiData);
   return json({});
 };
+
+const deleteValidator = withZod(z.object({}));
 
 const JsonNodeZod: z.ZodType<
   JsonNodeTransformedElem,
@@ -507,106 +510,108 @@ const Editor = () => {
   }, [transition.state]);
 
   return (
-    <Box
-      id="api-form"
-      key={`${api.id}-${api.updatedAt}`}
-      position={"relative"}
-      as={ValidatedForm}
-      method="patch"
-      validator={withZod(z.object({}))}
-      replace={true}
-      resetAfterSubmit
-      p={2}
-    >
-      <HeaderWithSubmission>General</HeaderWithSubmission>
-      <Box bg={bg} p={4}>
-        <Container maxW="container.lg">
-          <Box py={2}>
-            <FormHInput
-              isRequired
-              bg={bgBW}
-              labelWidth={labelWidth}
-              name="name"
-              label="Name"
-              size="sm"
-              as={Input}
-              autoComplete="off"
-              defaultValue={defaultValues.name}
-            />
-          </Box>
-          <Box py={2}>
-            <FormPathInput
-              labelWidth={labelWidth}
-              bg={bgBW}
-              method={method}
-              onMethodChange={onMethodChange}
-              defaultValue={defaultValues.path}
-              defaultParams={defaultValues.pathParams}
-            />
-          </Box>
-          <Box py={2}>
-            <FormHInput
-              bg={bgBW}
-              labelWidth={labelWidth}
-              name="description"
-              label="Description"
-              as={Textarea}
-              autoComplete="off"
-              size="sm"
-              rows={5}
-              defaultValue={defaultValues.description || ""}
-            />
-          </Box>
-        </Container>
-      </Box>
+    <Box>
+      <Box
+        id="api-form"
+        key={`${api.id}-${api.updatedAt}`}
+        position={"relative"}
+        as={ValidatedForm}
+        method="patch"
+        validator={withZod(z.object({}))}
+        replace={true}
+        resetAfterSubmit
+        p={2}
+      >
+        <HeaderWithSubmission>General</HeaderWithSubmission>
+        <Box bg={bg} p={4}>
+          <Container maxW="container.lg">
+            <Box py={2}>
+              <FormHInput
+                isRequired
+                bg={bgBW}
+                labelWidth={labelWidth}
+                name="name"
+                label="Name"
+                size="sm"
+                as={Input}
+                autoComplete="off"
+                defaultValue={defaultValues.name}
+              />
+            </Box>
+            <Box py={2}>
+              <FormPathInput
+                labelWidth={labelWidth}
+                bg={bgBW}
+                method={method}
+                onMethodChange={onMethodChange}
+                defaultValue={defaultValues.path}
+                defaultParams={defaultValues.pathParams}
+              />
+            </Box>
+            <Box py={2}>
+              <FormHInput
+                bg={bgBW}
+                labelWidth={labelWidth}
+                name="description"
+                label="Description"
+                as={Textarea}
+                autoComplete="off"
+                size="sm"
+                rows={5}
+                defaultValue={defaultValues.description || ""}
+              />
+            </Box>
+          </Container>
+        </Box>
 
-      <HeaderWithSubmission mt={10}>Request</HeaderWithSubmission>
-      <Box bg={bg} py={4}>
-        <Tabs
-          index={bodyTabIndex}
-          onChange={setBodyTabIndex}
-          variant="solid-rounded"
-          colorScheme="cyan"
-        >
-          <TabList display={"flex"} justifyContent="center">
-            <Tab hidden={!requestHasBody} flexBasis={"100px"}>
-              Body
-            </Tab>
-            <Tab flexBasis={"100px"}>Query</Tab>
-            <Tab flexBasis={"100px"}>Headers</Tab>
-          </TabList>
-          <Divider my={2} borderColor={gray} />
-          <TabPanels>
-            <TabPanel>
-              <BodyEditor
-                type={defaultValues.bodyType}
-                bodyJson={defaultValues.bodyJson}
-                bodyForm={defaultValues.bodyForm}
-                bodyRaw={defaultValues.bodyRaw}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ParamTable
-                defaultValue={defaultValues.queryParams}
-                prefix="queryParams"
-              />
-            </TabPanel>
-            <TabPanel>
-              <ParamTable
-                defaultValue={defaultValues.headers}
-                prefix="headers"
-              />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
-      <HeaderWithSubmission mt={10}>Response</HeaderWithSubmission>
-      <Box bg={bg} p={8}>
-        <JsonEditor
-          prefix="response"
-          isMock={true}
-          defaultValues={defaultValues.response}
-        />
+        <HeaderWithSubmission mt={10}>Request</HeaderWithSubmission>
+        <Box bg={bg} py={4}>
+          <Tabs
+            index={bodyTabIndex}
+            onChange={setBodyTabIndex}
+            variant="solid-rounded"
+            colorScheme="cyan"
+          >
+            <TabList display={"flex"} justifyContent="center">
+              <Tab hidden={!requestHasBody} flexBasis={"100px"}>
+                Body
+              </Tab>
+              <Tab flexBasis={"100px"}>Query</Tab>
+              <Tab flexBasis={"100px"}>Headers</Tab>
+            </TabList>
+            <Divider my={2} borderColor={gray} />
+            <TabPanels>
+              <TabPanel>
+                <BodyEditor
+                  type={defaultValues.bodyType}
+                  bodyJson={defaultValues.bodyJson}
+                  bodyForm={defaultValues.bodyForm}
+                  bodyRaw={defaultValues.bodyRaw}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ParamTable
+                  defaultValue={defaultValues.queryParams}
+                  prefix="queryParams"
+                />
+              </TabPanel>
+              <TabPanel>
+                <ParamTable
+                  defaultValue={defaultValues.headers}
+                  prefix="headers"
+                />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+        <HeaderWithSubmission mt={10}>Response</HeaderWithSubmission>
+        <Box bg={bg} p={8}>
+          <JsonEditor
+            prefix="response"
+            isMock={true}
+            defaultValues={defaultValues.response}
+          />
+        </Box>
       </Box>
     </Box>
   );

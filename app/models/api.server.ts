@@ -1,6 +1,7 @@
 import { RequestParam } from ".prisma/client";
-import { ApiData, ParamType, Prisma, RequestMethod } from "@prisma/client";
+import { ApiData, RequestMethod } from "@prisma/client";
 import { prisma } from "./prisma.server";
+import { getProjectById, Group } from "./project.server";
 
 export const createGroup = async ({
   parentId,
@@ -149,4 +150,79 @@ export const findApisForMock = async (
       },
     },
   });
+};
+
+export const deleteApi = async (id: string) => {
+  let api = await prisma.api.findFirst({
+    where: { id },
+  });
+  await prisma.api.delete({
+    where: { id },
+  });
+  return api;
+};
+
+export const deleteGroup = async (id: string) => {
+  let group = await prisma.group.findFirst({
+    where: { id },
+  });
+  if (!group) {
+    return null;
+  }
+  let project = await getProjectById(group.projectId);
+  if (!project) {
+    return null;
+  }
+  let groups: Group[] = [project.root];
+  let target: Group | undefined;
+  while (groups.length > 0) {
+    let g = groups.pop();
+    if (!g) {
+      return null;
+    }
+    if (g.id === id) {
+      target = g;
+      break;
+    } else {
+      groups = groups.concat(g.groups);
+    }
+  }
+  if (!target) {
+    return null;
+  }
+  groups = [target];
+  let groupsToDelete = [target.id];
+  let apisToDelete: string[] = [];
+  while (groups.length > 0) {
+    let g = groups.pop();
+    if (!g) {
+      return null;
+    }
+    groups = groups.concat(g.groups);
+    groupsToDelete = groupsToDelete.concat(g.groups.map((item) => item.id));
+    apisToDelete = apisToDelete.concat(g.apis.map((item) => item.id));
+  }
+
+  await prisma.$transaction([
+    prisma.group.deleteMany({
+      where: {
+        id: {
+          in: groupsToDelete,
+        },
+      },
+    }),
+    prisma.api.deleteMany({
+      where: {
+        id: {
+          in: apisToDelete,
+        },
+      },
+    }),
+  ]);
+
+  return {
+    group,
+    groupsToDelete,
+    apisToDelete,
+  };
 };
