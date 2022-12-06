@@ -1,3 +1,14 @@
+import Tree, {
+  ItemId,
+  moveItemOnTree,
+  mutateTree,
+  RenderItemParams,
+  TreeData,
+  TreeDestinationPosition,
+  TreeSourcePosition,
+} from '@atlaskit/tree';
+// @ts-ignore
+import { resetServerContext } from 'react-beautiful-dnd-next';
 import {
   Box,
   Button,
@@ -28,33 +39,32 @@ import {
   useColorModeValue,
   useDisclosure,
   VStack,
-} from "@chakra-ui/react";
-import { ProjectUserRole, RequestMethod, RequestParam } from "@prisma/client";
-import { ActionArgs, redirect } from "@remix-run/node";
+} from '@chakra-ui/react';
+import { ProjectUserRole, RequestMethod, RequestParam } from '@prisma/client';
+import { ActionArgs, redirect } from '@remix-run/node';
 import {
   Link as RemixLink,
   useCatch,
   useFetcher,
   useMatches,
-} from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { useEffect, useState } from "react";
+} from '@remix-run/react';
+import { withZod } from '@remix-validated-form/with-zod';
+import { useEffect, useState } from 'react';
 import {
   BsFillCaretDownFill,
   BsFillCaretRightFill,
   BsFolder2Open,
-} from "react-icons/bs";
+} from 'react-icons/bs';
 import {
-  FiAirplay,
   FiFilePlus,
   FiFolder,
   FiFolderPlus,
   FiTrash,
-} from "react-icons/fi";
-import { NavLink, Outlet, useParams } from "react-router-dom";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import invariant from "tiny-invariant";
-import { z } from "zod";
+} from 'react-icons/fi';
+import { Outlet, useParams } from 'react-router-dom';
+import { ValidatedForm, validationError } from 'remix-validated-form';
+import invariant from 'tiny-invariant';
+import { z } from 'zod';
 import {
   createApi,
   createGroup,
@@ -62,30 +72,31 @@ import {
   deleteGroup,
   updateApi,
   updateGroup,
-} from "~/models/api.server";
-import { Api, checkAuthority, Group, Project } from "~/models/project.server";
-import { RequestMethods } from "~/models/type";
-import { requireUserId } from "~/session.server";
-import { PathInput } from "~/ui";
-import FormCancelButton from "~/ui/Form/FormCancelButton";
-import FormHInput from "~/ui/Form/FormHInput";
-import FormInput from "~/ui/Form/FormInput";
-import FormModal from "~/ui/Form/FormModal";
-import FormSubmitButton from "~/ui/Form/FormSubmitButton";
-import { httpResponse, parsePath, useUrl } from "~/utils";
-import { ProjecChangeButton } from "../$projectId";
+} from '~/models/api.server';
+import { Api, checkAuthority, Group, Project } from '~/models/project.server';
+import { RequestMethods } from '~/models/type';
+import { requireUserId } from '~/session.server';
+import { PathInput } from '~/ui';
+import FormCancelButton from '~/ui/Form/FormCancelButton';
+import FormHInput from '~/ui/Form/FormHInput';
+import FormInput from '~/ui/Form/FormInput';
+import FormModal from '~/ui/Form/FormModal';
+import FormSubmitButton from '~/ui/Form/FormSubmitButton';
+import { httpResponse, parsePath, useUrl } from '~/utils';
+import TreeBuilder from '~/utils/treeBuilder';
+import { ProjecChangeButton } from '../$projectId';
 
 export const handle = {
   sideNav: <SideNav />,
 };
 
 enum Action {
-  NEW_GROUP = "NEW_GROUP",
-  NEW_API = "NEW_API",
-  UPDATE_API = "UPDATE_API",
-  UPDATE_GROUP = "UPDATE_GROUP",
-  DELETE_API = "DELETE_API",
-  DELETE_GROUP = "DELETE_GROUP",
+  NEW_GROUP = 'NEW_GROUP',
+  NEW_API = 'NEW_API',
+  UPDATE_API = 'UPDATE_API',
+  UPDATE_GROUP = 'UPDATE_GROUP',
+  DELETE_API = 'DELETE_API',
+  DELETE_GROUP = 'DELETE_GROUP',
 }
 
 export const action = async ({ request, params }: ActionArgs) => {
@@ -98,7 +109,7 @@ export const action = async ({ request, params }: ActionArgs) => {
     return httpResponse.Forbidden;
   }
 
-  switch (formData.get("_action")) {
+  switch (formData.get('_action')) {
     case Action.NEW_GROUP:
       return await newGroupAction(formData, projectId);
     case Action.UPDATE_GROUP:
@@ -113,7 +124,7 @@ export const action = async ({ request, params }: ActionArgs) => {
       return await deleteGroupAction(formData);
 
     default:
-      console.info("_action:", formData.get("_action"));
+      console.info('_action:', formData.get('_action'));
       return httpResponse.NotFound;
   }
 };
@@ -121,7 +132,7 @@ export const action = async ({ request, params }: ActionArgs) => {
 const updateApiAction = async (formData: FormData) => {
   const result = await withZod(
     z.object({
-      id: z.string().min(1, "id is required"),
+      id: z.string().min(1, 'id is required'),
       groupId: z.string(),
       data: z.any(),
     })
@@ -154,7 +165,7 @@ const newGroupAction = async (formData: FormData, projectId: string) => {
 const updateGroupAction = async (formData: FormData) => {
   const result = await withZod(
     z.object({
-      id: z.string().min(1, "id is required"),
+      id: z.string().min(1, 'id is required'),
       parentId: z.string(),
       name: z.string(),
       description: z.string(),
@@ -183,10 +194,10 @@ const newApiAction = async (formData: FormData, projectId: string) => {
     method,
     pathParams: params.map<RequestParam>((param) => ({
       name: param,
-      example: "",
-      description: "",
+      example: '',
+      description: '',
       isRequired: true,
-      type: "STRING",
+      type: 'STRING',
     })),
   });
 
@@ -194,12 +205,12 @@ const newApiAction = async (formData: FormData, projectId: string) => {
 };
 
 export const deleteApiAction = async (formData: FormData) => {
-  let id = formData.get("id")?.toString();
-  let apiId = formData.get("apiId")?.toString();
+  let id = formData.get('id')?.toString();
+  let apiId = formData.get('apiId')?.toString();
   if (!id) {
     return httpResponse.BadRequest;
   }
-  let url = formData.get("url")?.toString() ?? "/";
+  let url = formData.get('url')?.toString() ?? '/';
   let api = await deleteApi(id);
   if (apiId === id) {
     if (api?.groupId) {
@@ -214,13 +225,13 @@ export const deleteApiAction = async (formData: FormData) => {
 };
 
 export const deleteGroupAction = async (formData: FormData) => {
-  let id = formData.get("id")?.toString();
-  let apiId = formData.get("apiId")?.toString();
-  let groupId = formData.get("groupId")?.toString();
+  let id = formData.get('id')?.toString();
+  let apiId = formData.get('apiId')?.toString();
+  let groupId = formData.get('groupId')?.toString();
   if (!id) {
     return httpResponse.BadRequest;
   }
-  let url = formData.get("url")?.toString() ?? "/";
+  let url = formData.get('url')?.toString() ?? '/';
 
   let data = await deleteGroup(id);
 
@@ -251,23 +262,23 @@ function SideNav() {
   const apiModal = useDisclosure();
 
   return (
-    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh" overflowX={"auto"}>
+    <Grid templateRows="50px 40px minmax(0, 1fr)" h="100vh" overflowX={'auto'}>
       <ProjecChangeButton />
       <GridItem>
         <HStack px={2}>
-          <Heading ml="2" fontWeight={"500"} size={"sm"} color="gray.400">
+          <Heading ml="2" fontWeight={'500'} size={'sm'} color="gray.400">
             APIs
           </Heading>
           <Spacer />
           <Box>
             {/* <Tooltip label="Clone">
-              <IconButton
-                aria-label="clone"
-                icon={<FiCopy />}
-                variant="ghost"
-                colorScheme="gray"
-              />
-            </Tooltip> */}
+             <IconButton
+             aria-label="clone"
+             icon={<FiCopy />}
+             variant="ghost"
+             colorScheme="gray"
+             />
+             </Tooltip> */}
             <Tooltip label="New group">
               <IconButton
                 aria-label="add group"
@@ -305,7 +316,7 @@ function SideNav() {
         </HStack>
         <Divider />
       </GridItem>
-      <GridItem overflowY={"auto"}>
+      <GridItem overflowY={'auto'}>
         <SideNavContent />
       </GridItem>
     </Grid>
@@ -314,7 +325,7 @@ function SideNav() {
 
 const newGroupValidator = withZod(
   z.object({
-    name: z.string().min(1, "group name is required"),
+    name: z.string().min(1, 'group name is required'),
     parentId: z.string().optional(),
   })
 );
@@ -376,8 +387,8 @@ const NewGroupModal = ({
 
 const newApiValidator = withZod(
   z.object({
-    name: z.string().trim().min(1, "api name is required"),
-    path: z.string().trim().min(1, "path is required"),
+    name: z.string().trim().min(1, 'api name is required'),
+    path: z.string().trim().min(1, 'path is required'),
     method: z.enum(RequestMethods),
     groupId: z.string().trim().optional(),
   })
@@ -387,20 +398,20 @@ export const NewApiModal = ({
   isOpen,
   onClose,
 }: {
-  isOpen: ModalProps["isOpen"];
-  onClose: ModalProps["onClose"];
+  isOpen: ModalProps['isOpen'];
+  onClose: ModalProps['onClose'];
 }) => {
   const matches = useMatches();
   const params = useParams();
-  const gray = useColorModeValue("gray.200", "gray.700");
-  let groupId = "";
+  const gray = useColorModeValue('gray.200', 'gray.700');
+  let groupId = '';
   if (params.groupId) {
     groupId = params.groupId;
   } else if (params.apiId) {
     groupId = matches?.[3].data?.api?.groupId;
   }
 
-  let labelWidth = "60px";
+  let labelWidth = '60px';
   return (
     <FormModal
       isOpen={isOpen}
@@ -434,10 +445,10 @@ export const NewApiModal = ({
               autoComplete="off"
               size="sm"
             />
-            <Flex width={"full"} pl={labelWidth} flexDir={"row"}>
-              <UnorderedList fontSize={"sm"}>
+            <Flex width={'full'} pl={labelWidth} flexDir={'row'}>
+              <UnorderedList fontSize={'sm'}>
                 <ListItem>
-                  The API path starts with{" "}
+                  The API path starts with{' '}
                   <Text borderRadius={4} px={1} as="span" bg={gray}>
                     /
                   </Text>
@@ -445,14 +456,14 @@ export const NewApiModal = ({
                 <ListItem>
                   Use curly braces to indicate Path Params, such as
                   <Text borderRadius={4} px={1} as="span" bg={gray}>
-                    {"/users/{id}"}
+                    {'/users/{id}'}
                   </Text>
                 </ListItem>
               </UnorderedList>
             </Flex>
           </VStack>
 
-          <input type={"hidden"} name="groupId" value={groupId} />
+          <input type={'hidden'} name="groupId" value={groupId} />
         </ModalBody>
 
         <ModalFooter>
@@ -474,251 +485,230 @@ export const NewApiModal = ({
 };
 
 const SideNavContent = () => {
-  const { projectId } = useParams<{ projectId: string }>();
-  const color = useColorModeValue("teal.800", "teal.100");
-  const bg = useColorModeValue("blue.100", "blue.800");
-  return (
-    <Box>
-      <FileNavbar />
-    </Box>
-  );
-};
-
-const groupDFS = (group: Group, id: string, path: string[]) => {
-  if (group.id === id) {
-    path.push(group.id);
-    return true;
-  }
-  path.push(group.id);
-  for (let child of group.groups) {
-    if (groupDFS(child, id, path)) {
-      return true;
-    }
-  }
-  path.pop();
-  return false;
-};
-
-const useAccordion = (initialValue?: string[] | null | undefined) => {
-  let initial: { [key: string]: boolean } = {};
-  if (initialValue instanceof Array) {
-    for (let value of initialValue) {
-      initial[value] = true;
-    }
-  }
-  const [accordionMap, setAccordionMap] = useState(initial);
-
-  const onAdd = (value: string | string[]) => {
-    let newValues: { [key: string]: boolean } = {};
-    if (!(value instanceof Array)) {
-      value = [value];
-    }
-    for (let v of value) {
-      newValues[v] = true;
-    }
-    setAccordionMap({
-      ...accordionMap,
-      ...newValues,
-    });
-  };
-
-  const onDelete = (value: string) => {
-    let clone = Object.assign({}, accordionMap);
-    delete clone[value];
-    setAccordionMap(clone);
-  };
-
-  const onReset = (value: string[]) => {
-    let initial: { [key: string]: boolean } = {};
-    for (let v of value) {
-      initial[v] = true;
-    }
-    setAccordionMap(initial);
-  };
-
-  return {
-    accordionMap,
-    onAdd,
-    onDelete,
-    onReset,
-  };
-};
-
-const FileNavbar = () => {
   const matches = useMatches();
   const params = useParams();
   const project = matches[1].data.project as Project;
+  const [treeData, setTreeData] = useState<TreeData>(
+    new TreeBuilder('1', null)
+  );
   const fetcher = useFetcher();
   invariant(project);
-
-  const { accordionMap, onAdd, onDelete, onReset } = useAccordion(["root"]);
-
   useEffect(() => {
-    let initialAccord = ["root"];
-    let parentId: string | null = null;
-    if (matches[3]?.data?.group) {
-      parentId = matches[3]?.data?.group?.id;
-    } else if (matches[3]?.data?.api) {
-      parentId = matches[3]?.data?.api?.groupId;
-    }
-    if (parentId) {
-      let path: string[] = [];
-      groupDFS(matches[1].data.project.root, parentId, path);
-      initialAccord = initialAccord.concat(path);
-    }
-    onReset(initialAccord);
-  }, [params.apiId, params.groupId]);
+    const complexTree = new TreeBuilder(1, null);
+    const generateTreeData = (group: Group, builder: TreeBuilder) => {
+      for (let g of group.groups) {
+        const childTree = new TreeBuilder(g.id, g);
+        generateTreeData(g, childTree);
+        builder.withSubTree(childTree);
+      }
+      for (let api of group.apis) {
+        builder.withLeaf(api.id, api);
+      }
+    };
+    generateTreeData(project.root, complexTree);
+    const buildData = complexTree.build();
+    Object.keys(buildData.items).some(itemId => {
+      const itemData = buildData.items[itemId].data;
+      if (itemData && (itemData.id === params.groupId || (itemData.data && itemData.id === params.apiId))) {
+        Object.keys(buildData.items).some(key => {
+          if(`${buildData.items[itemId].id}`.startsWith(key)){
+            buildData.items[key].isExpanded = true;
+          }
+        });
+        return true;
+      }
+    });
+    setTreeData(buildData);
+  }, [params.projectId, params.groupId, params.apiId]);
+  invariant(project);
+  const renderItem = ({
+    item,
+    onExpand,
+    onCollapse,
+    provided,
+  }: RenderItemParams) => {
+    return (
+      <Box
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+      >
+        <Box {...provided.dragHandleProps}>
+          {item.data.data ? (
+            <File key={item.id} api={item.data} />
+          ) : (
+            <Folder
+              key={item.id}
+              group={item.data}
+              isExpanded={item.isExpanded}
+              itemId={item.id}
+              onExpand={onExpand}
+              onCollapse={onCollapse}
+              onAdd={() => {}}
+              onDelete={() => {}}
+            />
+          )}
+        </Box>
+      </Box>
+    );
+  };
 
+  const onExpand = (itemId: ItemId) => {
+    setTreeData(mutateTree(treeData, itemId, { isExpanded: true }));
+  };
+
+  const onCollapse = (itemId: ItemId) => {
+    setTreeData(mutateTree(treeData, itemId, { isExpanded: false }));
+  };
+  const onDragEnd = (
+    source: TreeSourcePosition,
+    destination?: TreeDestinationPosition
+  ) => {
+    if (!destination) {
+      return;
+    }
+    const itemData =
+      treeData.items[treeData.items[source.parentId].children[source.index]].data;
+    const destItem = treeData.items[destination.parentId].data;
+    if (destItem.data) {
+      return;
+    }
+    itemData.data
+      ? fetcher.submit(
+        {
+          id: itemData.id,
+          groupId: destItem.id,
+          _action: Action.UPDATE_API,
+        },
+        {
+          method: 'patch',
+          action: `/projects/${params.projectId}/apis`,
+        }
+      )
+      : fetcher.submit(
+        {
+          id: itemData.id,
+          name: itemData.name,
+          description: itemData.description,
+          parentId: destItem.id,
+          _action: Action.UPDATE_GROUP,
+        },
+        {
+          method: 'patch',
+          action: `/projects/${params.projectId}/apis`,
+        }
+      );
+    setTreeData(moveItemOnTree(treeData, source, destination));
+  };
+  resetServerContext();
   return (
-    <Flex flexDir={"column"}>
-      <Folder
-        accordionMap={accordionMap}
-        onAdd={onAdd}
-        onDelete={onDelete}
-        group={project.root}
-        depth={-1}
+    <Flex flexDir={'column'}>
+      <Tree
+        tree={treeData}
+        renderItem={renderItem}
+        onExpand={onExpand}
+        onCollapse={onCollapse}
+        onDragEnd={onDragEnd}
+        isDragEnabled
+        isNestingEnabled
       />
     </Flex>
   );
 };
 
-const FolderIcon = ({ isExpanded }: { isExpanded: boolean }) => {
-  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
-  return (
-    <Center
-      mr={1}
-      w="4"
-      h="4"
-      borderRadius={"full"}
-      _groupHover={{ background: "blackAlpha.50" }}
-    >
-      <Icon
-        as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
-        fontSize="12px"
-        color={iconColor}
-      />
-    </Center>
-  );
-};
-
 const Folder = ({
+  itemId,
   group,
   onDelete,
   onAdd,
-  depth,
-  accordionMap,
+  onExpand,
+  onCollapse,
+  isExpanded,
 }: {
+  itemId: ItemId;
   group: Group;
   onDelete: (value: string) => void;
+  isExpanded?: boolean;
+  onExpand: (itemId: ItemId) => void;
+  onCollapse: (itemId: ItemId) => void;
   onAdd: (value: string) => void;
-  accordionMap: { [key: string]: boolean };
-
-  depth: number;
 }) => {
   const { projectId, groupId } = useParams<{
     projectId: string;
     groupId: string;
   }>();
   const isActive = groupId === group.id;
-  const bg = useColorModeValue("blue.200", "blue.600");
-  const iconColor = useColorModeValue("blackAlpha.600", "whiteAlpha.800");
-  const hoverColor = useColorModeValue("blue.100", "blue.800");
-  const isOpen = accordionMap[group.id];
+  const bg = useColorModeValue('blue.200', 'blue.600');
+  const iconColor = useColorModeValue('blackAlpha.600', 'whiteAlpha.800');
+  const hoverColor = useColorModeValue('blue.100', 'blue.800');
   const deleteModal = useDisclosure();
   return (
-    <Flex border={"none"} flexDir="column">
-      {depth === -1 ? (
-        <NavLink to={`/projects/${projectId}/apis`} end>
-          {({ isActive }) => (
-            <HStack
-              h={8}
-              pl={2}
-              borderRadius={2}
-              bg={isActive ? bg : undefined}
-              _hover={{ background: isActive ? undefined : hoverColor }}
-            >
-              <Icon as={FiAirplay} mt={0.5} />
-              <Text userSelect={"none"}>Overview</Text>
-            </HStack>
-          )}
-        </NavLink>
-      ) : (
-        <HStack
-          spacing={0}
-          pr={2}
-          w="full"
-          pl={`${8 + depth * 16}px`}
-          _hover={{ background: isActive ? undefined : hoverColor }}
-          cursor="pointer"
-          role="group"
-          h={8}
-          bg={isActive ? bg : undefined}
-          onClick={(_e) =>
-            isActive
-              ? isOpen
-                ? onDelete(group.id)
-                : onAdd(group.id)
-              : isOpen
-              ? undefined
-              : onAdd(group.id)
-          }
-        >
-          <FolderIcon isExpanded={isOpen} />
-          <Box
-            as={RemixLink}
-            flexGrow={1}
-            display="flex"
-            alignItems={"center"}
-            to={`/projects/${projectId}/apis/groups/${group.id}`}
-          >
-            <Icon
-              as={isOpen ? BsFolder2Open : FiFolder}
-              fontWeight="100"
-              color={iconColor}
-              mr={2}
-            />
-            <Text py={1} userSelect={"none"}>
-              {group.name}
-            </Text>
-          </Box>
-          <Spacer />
-          <DeleteButton onOpen={deleteModal.onOpen} />
-          <DeleteApiDialog
-            isOpen={deleteModal.isOpen}
-            onClose={deleteModal.onClose}
-            name={group.name}
-            id={group.id}
-            isGroup={true}
-          />
-        </HStack>
-      )}
-      <Flex
-        display={isOpen ? "flex" : "none"}
-        flexDir={"column"}
+    <Flex border={'none'} flexDir="column">
+      <HStack
+        spacing={0}
         w="full"
-        p={0}
+        borderRadius={2}
+        px={2}
+        _hover={{ background: isActive ? undefined : hoverColor }}
+        cursor="pointer"
+        role="group"
+        h={8}
+        bg={isActive ? bg : undefined}
+        onClick={(_e) =>
+          isActive
+            ? isExpanded
+              ? onDelete(group.id)
+              : onAdd(group.id)
+            : undefined
+        }
       >
-        {group.groups.map((g) => (
-          <Folder
-            key={g.id}
-            accordionMap={accordionMap}
-            onAdd={onAdd}
-            onDelete={onDelete}
-            group={g}
-            depth={depth + 1}
+        <Center
+          mr={1}
+          w="4"
+          h="4"
+          borderRadius={'full'}
+          _groupHover={{ background: 'blackAlpha.50' }}
+          onClick={() => (isExpanded ? onCollapse(itemId) : onExpand(itemId))}
+        >
+          <Icon
+            as={isExpanded ? BsFillCaretDownFill : BsFillCaretRightFill}
+            color={iconColor}
+            fontSize={10}
           />
-        ))}
-        {group.apis.map((api, i) => (
-          <File api={api} depth={depth + 1} key={api.id} />
-        ))}
-      </Flex>
+        </Center>
+        <Box
+          as={RemixLink}
+          flexGrow={1}
+          display="flex"
+          alignItems={'center'}
+          to={`/projects/${projectId}/apis/groups/${group.id}`}
+        >
+          <Icon
+            as={isExpanded ? BsFolder2Open : FiFolder}
+            fontWeight="100"
+            color={iconColor}
+            mr={2}
+          />
+          <Text py={1} userSelect={'none'}>
+            {group.name}
+          </Text>
+        </Box>
+        <Spacer />
+        <DeleteButton onOpen={deleteModal.onOpen} />
+        <DeleteApiDialog
+          isOpen={deleteModal.isOpen}
+          onClose={deleteModal.onClose}
+          name={group.name}
+          id={group.id}
+          isGroup={true}
+        />
+      </HStack>
     </Flex>
   );
 };
 
 export const useMethodTag = (method: string) => {
   let colorMode = useColorMode();
-  let color = "";
+  let color = '';
   let [value, setValue] = useState(generator(method));
 
   useEffect(() => {
@@ -730,30 +720,30 @@ export const useMethodTag = (method: string) => {
 
     switch (method) {
       case RequestMethod.GET:
-        color = "green";
+        color = 'green';
         break;
       case RequestMethod.POST:
-        color = "orange";
+        color = 'orange';
         break;
       case RequestMethod.PUT:
-        color = "blue";
+        color = 'blue';
         break;
       case RequestMethod.PATCH:
-        color = "teal";
-        text = "PAT";
+        color = 'teal';
+        text = 'PAT';
         break;
       case RequestMethod.DELETE:
-        color = "red";
-        text = "DEL";
+        color = 'red';
+        text = 'DEL';
         break;
       case RequestMethod.HEAD:
-        color = "purple";
+        color = 'purple';
         break;
       case RequestMethod.OPTIONS:
-        color = "cyan";
+        color = 'cyan';
     }
 
-    color += colorMode.colorMode === "light" ? ".600" : ".300";
+    color += colorMode.colorMode === 'light' ? '.600' : '.300';
 
     return { text, color };
   }
@@ -793,10 +783,10 @@ const DeleteButton = ({ onOpen }: { onOpen: () => void }) => {
     <Button
       display="none"
       _groupHover={{
-        display: "inline-flex",
+        display: 'inline-flex',
       }}
-      colorScheme={"teal"}
-      variant={"ghost"}
+      colorScheme={'teal'}
+      variant={'ghost'}
       p={0}
       size="xs"
       onClick={(e) => {
@@ -810,24 +800,24 @@ const DeleteButton = ({ onOpen }: { onOpen: () => void }) => {
   );
 };
 
-const File = ({ api, depth, ...rest }: { api: Api; depth: number }) => {
+const File = ({ api }: { api: Api }) => {
   const { projectId, apiId } = useParams();
-  const bg = useColorModeValue("blue.200", "blue.600");
+  const bg = useColorModeValue('blue.200', 'blue.600');
   const isActive = api.id === apiId;
   invariant(projectId);
-  const hoverColor = useColorModeValue("blue.100", "blue.800");
+  const hoverColor = useColorModeValue('blue.100', 'blue.800');
   const deleteModal = useDisclosure();
   return (
     <Flex
       as={RemixLink}
       to={`/projects/${projectId}/apis/details/${api.id}`}
-      pl={`${12 + depth * 16}px`}
       h="8"
+      px={4}
+      borderRadius={2}
       _hover={{ background: isActive ? undefined : hoverColor }}
       bg={isActive ? bg : undefined}
       cursor="pointer"
-      role={"group"}
-      {...rest}
+      role={'group'}
     >
       <HStack w="full" spacing={0} pr={2}>
         <MethodTag method={api.data.method} />
@@ -857,13 +847,13 @@ const DeleteApiDialog: React.FC<{
   const params = useParams();
   const url = useUrl();
   return (
-    <Modal size={"lg"} isOpen={isOpen} onClose={onClose}>
+    <Modal size={'lg'} isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Please confirm</ModalHeader>
         <ModalCloseButton />
         <Divider />
-        <ModalBody py={8} textAlign={"center"}>
+        <ModalBody py={8} textAlign={'center'}>
           <Text>
             Are you sure to delete '<strong>{name}</strong>'
             {isGroup && <span> and it's contents</span>}？
@@ -884,7 +874,7 @@ const DeleteApiDialog: React.FC<{
           <input type="hidden" name="url" value={url.href} />
           <input
             type="hidden"
-            name={isGroup ? "groupId" : "apiId"}
+            name={isGroup ? 'groupId' : 'apiId'}
             value={id}
           />
           <FormCancelButton onClick={onClose} mr={3}>
